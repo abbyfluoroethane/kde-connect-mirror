@@ -70,6 +70,15 @@ Kirigami.Page
                         onTriggered: {
                             deviceView.currentDevice.pluginCall("ping", "sendPing");
                         }
+                    },
+                    Kirigami.Action {
+                        text: i18n("Plugin settings")
+                        onTriggered: {
+                            pageStack.push(
+                                deviceComp,
+                                {device: currentDevice.id()}
+                            );
+                        }
                     }
                 ]
 
@@ -186,6 +195,11 @@ Kirigami.Page
                 }
             }
         }
+    }
+
+    Component {
+        id: deviceComp
+        PluginSettings {}
     }
 
     FileDialog {
