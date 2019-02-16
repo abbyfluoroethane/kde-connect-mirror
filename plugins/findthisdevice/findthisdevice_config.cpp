@@ -77,7 +77,7 @@ void FindThisDeviceConfig::load()
 {
     KCModule::load();
 
-    const QString ringTone = config()->get<QString>(QStringLiteral("ringtone"), Strings::defaultSound());
+    const QString ringTone = config()->getString(QStringLiteral("ringtone"), Strings::defaultSound());
     m_ui->soundFileRequester->setText(ringTone);
 
     Q_EMIT changed(false);
