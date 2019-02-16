@@ -57,7 +57,7 @@ bool FindThisDevicePlugin::receivePacket(const NetworkPacket& np)
 {
     Q_UNUSED(np);
 
-    const QString soundFilename = config()->get<QString>(QStringLiteral("ringtone"), Strings::defaultSound());
+    const QString soundFilename = config()->getString(QStringLiteral("ringtone"), Strings::defaultSound());
 
     QUrl soundURL;
     const auto dataLocations = QStandardPaths::standardLocations(QStandardPaths::GenericDataLocation);
