@@ -123,6 +123,12 @@ int main(int argc, char** argv)
             dialog->setAttribute(Qt::WA_DeleteOnClose);
             dialog->show();
         });
+        if (!QStandardPaths::findExecutable(QStringLiteral("kdeconnect-sms")).isEmpty()) {
+            auto smsApp = menu->addAction(QIcon::fromTheme(QStringLiteral("message-new")), i18n("Messages..."));
+            QObject::connect(smsApp, &QAction::triggered, smsApp, [](){
+
+            });
+        }
         for (int i=0, count = model.rowCount(); i<count; ++i) {
             DeviceDbusInterface* device = model.getDevice(i);
             auto indicator = new DeviceIndicator(device);
