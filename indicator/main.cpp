@@ -125,8 +125,8 @@ int main(int argc, char** argv)
         });
         if (!QStandardPaths::findExecutable(QStringLiteral("kdeconnect-sms")).isEmpty()) {
             auto smsApp = menu->addAction(QIcon::fromTheme(QStringLiteral("message-new")), i18n("Messages..."));
-            QObject::connect(smsApp, &QAction::triggered, smsApp, [](){
-
+            QObject::connect(smsApp, &QAction::triggered, smsApp, []() {
+                QProcess::startDetached(QLatin1String("kdeconnect-kde"));
             });
         }
         for (int i=0, count = model.rowCount(); i<count; ++i) {
