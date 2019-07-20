@@ -34,7 +34,6 @@
 #include <QSslCipher>
 #include <QSslConfiguration>
 
-#include "lanlinkprovider.h"
 #include "daemon.h"
 #include "landevicelink.h"
 #include "lanpairinghandler.h"
@@ -165,7 +164,7 @@ void MDNSLinkProvider::tcpSocketConnected()
         return;
     }
 
-    LanLinkProvider::configureSocket(socket);
+    configureSocket(socket);
 
     connect(socket, &QAbstractSocket::disconnected, socket, &QObject::deleteLater);
 
@@ -238,7 +237,7 @@ void MDNSLinkProvider::newConnection()
 
     while (m_server->hasPendingConnections()) {
         QSslSocket* socket = m_server->nextPendingConnection();
-        LanLinkProvider::configureSocket(socket);
+        configureSocket(socket);
         //This socket is still managed by us (and child of the QTcpServer), if
         //it disconnects before we manage to pass it to a LanDeviceLink, it's
         //our responsibility to delete it. We do so with this connection.
@@ -368,6 +367,32 @@ void MDNSLinkProvider::configureSslSocket(QSslSocket* socket, const QString& dev
     //        qCDebug(KDECONNECT_CORE) << "SSL Error:" << error.errorString();
     //    }
     //});
+}
+
+void MDNSLinkProvider::configureSocket(QSslSocket* socket) {
+
+    socket->setProxy(QNetworkProxy::NoProxy);
+
+    socket->setSocketOption(QAbstractSocket::KeepAliveOption, QVariant(1));
+
+    #ifdef TCP_KEEPIDLE
+        // time to start sending keepalive packets (seconds)
+        int maxIdle = 10;
+        setsockopt(socket->socketDescriptor(), IPPROTO_TCP, TCP_KEEPIDLE, &maxIdle, sizeof(maxIdle));
+    #endif
+
+    #ifdef TCP_KEEPINTVL
+        // interval between keepalive packets after the initial period (seconds)
+        int interval = 5;
+        setsockopt(socket->socketDescriptor(), IPPROTO_TCP, TCP_KEEPINTVL, &interval, sizeof(interval));
+    #endif
+
+    #ifdef TCP_KEEPCNT
+        // number of missed keepalive packets before disconnecting
+        int count = 3;
+        setsockopt(socket->socketDescriptor(), IPPROTO_TCP, TCP_KEEPCNT, &count, sizeof(count));
+    #endif
+
 }
 
 void MDNSLinkProvider::addLink(const QString& deviceId, QSslSocket* socket, NetworkPacket* receivedPacket, LanDeviceLink::ConnectionStarted connectionOrigin)
