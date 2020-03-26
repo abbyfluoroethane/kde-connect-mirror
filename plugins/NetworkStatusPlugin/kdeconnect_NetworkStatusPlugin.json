@@ -1,0 +1,28 @@
+{
+    "KPlugin": {
+        "Authors": [
+            {
+                "Email": "arjunth2001@gmail.com",
+                "Name": "T.H.Arjun"
+            
+            }
+        ],
+        "Description": "Receive Network Status Updates",
+        "EnabledByDefault": true,
+        "Icon": "dialog-ok",
+        "Id": "kdeconnect_NetworkStatusPlugin",
+        "License": "GPL",
+        "Name": "NetworkStatusPlugin",
+        "ServiceTypes": [
+            "KdeConnect/Plugin"
+        ],
+        "Version": "0.1",
+        "Website": "https://arjunth2001.github.io"
+    },
+    "X-KdeConnect-OutgoingPacketType": [
+        "kdeconnect.networkStatus.request"
+    ],
+    "X-KdeConnect-SupportedPacketType": [
+        "kdeconnect.networkStatus"
+    ]
+}
