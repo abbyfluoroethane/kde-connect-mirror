@@ -35,7 +35,15 @@
 // Qt
 #include <QLoggingCategory>
 
+#ifdef HAVE_CANBERRA
+#include <canberra.h>
+#endif
+
 #define PACKET_TYPE_FINDMYPHONE_REQUEST QStringLiteral("kdeconnect.findmyphone.request")
+
+namespace PulseAudioQt {
+    class Sink;
+}
 
 static const QLoggingCategory &KDECONNECT_PLUGIN_FINDTHISDEVICE()
 {
@@ -56,6 +64,20 @@ public:
     void connected() override {};
     QString dbusPath() const override;
     bool receivePacket(const NetworkPacket& np) override;
+
+private:
+    void muteSinks();
+    void unmuteSinks();
+
+#ifndef Q_OS_WIN
+    QVector<PulseAudioQt::Sink*> m_mutedSinks;
+#endif
+
+#ifdef HAVE_CANBERRA
+    ca_context *m_canberraContext = nullptr;
+    ca_proplist *m_canberraProperties = nullptr;
+#endif
+
 };
 
 inline QString defaultSound()

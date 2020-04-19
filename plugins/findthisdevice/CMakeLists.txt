@@ -6,16 +6,20 @@ kdeconnect_add_plugin(kdeconnect_findthisdevice
     JSON kdeconnect_findthisdevice.json
     SOURCES ${kdeconnect_findthisdevice_SRCS})
 
+target_include_directories(kdeconnect_findthisdevice PUBLIC ${CMAKE_BINARY_DIR})
+
 target_link_libraries(kdeconnect_findthisdevice
     kdeconnectcore
     Qt5::Core
     Qt5::Multimedia
     Qt5::DBus
+    KF5::I18n
 )
 
 if (NOT WIN32)
     target_link_libraries(kdeconnect_findthisdevice
         KF5::PulseAudioQt
+        Canberra::Canberra
     )
 endif()
 

@@ -56,6 +56,12 @@ else()
 
     if(UNIX AND NOT APPLE)
         find_package(KF5PulseAudioQt)
+        find_package(Canberra)
+
+        if(TARGET Canberra::Canberra)
+            add_definitions(-DHAVE_CANBERRA)
+        endif()
+
     endif()
 
     find_package(KF5PeopleVCard)
