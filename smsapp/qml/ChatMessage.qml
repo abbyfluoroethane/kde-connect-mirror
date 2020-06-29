@@ -53,7 +53,7 @@ Item {
         anchors.right: parent.right
         anchors.rightMargin: Kirigami.Units.largeSpacing
         anchors.left: avatar.right
-        anchors.leftMargin: Kirigami.Units.smallSpacing
+        anchors.leftMargin: Kirigami.Units.largeSpacing
 
         height: messageColumn.height
 
