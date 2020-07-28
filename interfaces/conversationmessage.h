@@ -79,8 +79,6 @@ public:
     qint32 uID() const { return m_uID; }
     qint64 subID() const { return m_subID; }
 
-    QVariantMap toVariant() const;
-
     bool containsTextBody() const { return (eventField() & ConversationMessage::EventTextMessage); }
     bool isMultitarget() const { return (eventField() & ConversationMessage::EventMultiTarget); }
 
@@ -153,7 +151,6 @@ public:
 
     QString address() const { return m_address; }
 
-    QVariantMap toVariant() const;
 private:
     QString m_address;
 };

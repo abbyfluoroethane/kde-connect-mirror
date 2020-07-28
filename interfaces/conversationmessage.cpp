@@ -98,26 +98,6 @@ ConversationMessage ConversationMessage::fromDBus(const QDBusVariant& var)
     return message;
 }
 
-QVariantMap ConversationMessage::toVariant() const
-{
-    QVariantList addresses;
-    for (const ConversationAddress& address : m_addresses) {
-        addresses.push_back(address.toVariant());
-    }
-
-    return {
-        {QStringLiteral("event"), m_eventField},
-        {QStringLiteral("body"), m_body},
-        {QStringLiteral("addresses"), addresses},
-        {QStringLiteral("date"), m_date},
-        {QStringLiteral("type"), m_type},
-        {QStringLiteral("read"), m_read},
-        {QStringLiteral("thread_id"), m_threadID},
-        {QStringLiteral("_id"), m_uID},
-        {QStringLiteral("sub_id"), m_subID}
-    };
-}
-
 ConversationAddress::ConversationAddress(QString address)
     : m_address(address)
 {}
@@ -141,13 +121,6 @@ QList<ConversationAddress> ConversationAddress::listfromDBus(const QDBusVariant&
     QList<ConversationAddress> addresses;
     data >> addresses;
     return addresses;
-}
-
-QVariantMap ConversationAddress::toVariant() const
-{
-    return {
-        {QStringLiteral("address"), address()},
-    };
 }
 
 void ConversationMessage::registerDbusType()
