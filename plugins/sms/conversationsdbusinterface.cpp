@@ -197,7 +197,7 @@ void ConversationsDbusInterface::replyToConversation(const qint64& conversationI
     const QList<ConversationAddress>& addressList = messagesList.first().addresses();
     QVariantList addresses;
 
-    for (const auto& addresse : addressList) {
+    for (const auto& address : addressList) {
         addresses << QVariant::fromValue(addresse);
     }
 
