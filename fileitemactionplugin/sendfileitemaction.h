@@ -1,6 +1,6 @@
 /*
- * Copyright (C) 2011 Alejandro Fiestas Olivares <afiestas@kde.org>
- * Copyright (C) 2014 Aleix Pol Gonzalez <aleixpol@kde.org>
+ * SPDX-FileCopyrightText: 2011 Alejandro Fiestas Olivares <afiestas@kde.org>
+ * SPDX-FileCopyrightText: 2014 Aleix Pol Gonzalez <aleixpol@kde.org>
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  */

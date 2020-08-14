@@ -1,6 +1,6 @@
 /**
- * Copyright 2018 Friedrich W. H. Kossebau <kossebau@kde.org>
- * Copyright 2019 Piyush Aggarwal <piyushaggarwal002@gmail.com>
+ * SPDX-FileCopyrightText: 2018 Friedrich W. H. Kossebau <kossebau@kde.org>
+ * SPDX-FileCopyrightText: 2019 Piyush Aggarwal <piyushaggarwal002@gmail.com>
  *
  * SPDX-License-Identifier: GPL-2.0-only OR GPL-3.0-only OR LicenseRef-KDE-Accepted-GPL
  */

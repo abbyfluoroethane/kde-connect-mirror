@@ -1,7 +1,7 @@
 /**
- * Copyright (C) 2018 Aleix Pol Gonzalez <aleixpol@kde.org>
- * Copyright (C) 2018 Nicolas Fella <nicolas.fella@gmx.de>
- * Copyright (C) 2018 Simon Redman <simon@ergotech.com>
+ * SPDX-FileCopyrightText: 2018 Aleix Pol Gonzalez <aleixpol@kde.org>
+ * SPDX-FileCopyrightText: 2018 Nicolas Fella <nicolas.fella@gmx.de>
+ * SPDX-FileCopyrightText: 2018 Simon Redman <simon@ergotech.com>
  *
  * SPDX-License-Identifier: GPL-2.0-only OR GPL-3.0-only OR LicenseRef-KDE-Accepted-GPL
  */

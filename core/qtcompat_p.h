@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2017 Kevin Funk <kfunk@.kde.org
+    SPDX-FileCopyrightText: 2017 Kevin Funk <kfunk@.kde.org
 
     SPDX-License-Identifier: LGPL-2.0-or-later
 */

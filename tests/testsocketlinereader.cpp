@@ -1,5 +1,5 @@
 /*************************************************************************************
- *  Copyright (C) 2014 by Alejandro Fiestas Olivares <afiestas@kde.org>              *
+ *  SPDX-FileCopyrightText: 2014 Alejandro Fiestas Olivares <afiestas@kde.org>       *
  *                                                                                   *
  *  SPDX-License-Identifier: LGPL-2.1-or-later
  *************************************************************************************/

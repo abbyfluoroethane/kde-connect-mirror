@@ -7,7 +7,7 @@
 #  LibFakeKey_LIBRARIES - The libraries needed to use LibFakeKey
 #  LibFakeKey_VERSION - The LibFakeKey version
 
-# Copyright (c) 2014 Christophe Giboudeaux <cgiboudeaux@gmx.com>
+# SPDX-FileCopyrightText: 2014 Christophe Giboudeaux <cgiboudeaux@gmx.com>
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
