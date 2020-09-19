@@ -81,11 +81,6 @@ Kirigami.ApplicationWindow
             }
         }
 
-
-        topContent: RowLayout {
-            width: parent.width
-        }
-
         property var objects: [findDevicesAction]
         Instantiator {
             model: DevicesSortProxyModel {
