@@ -11,8 +11,8 @@
 #include <QDebug>
 #include <QStandardPaths>
 
-#include <KIO/JobUiDelegate>
 #include <KIO/OpenUrlJob>
+#include <KNotificationJobUiDelegate>
 #include <KLocalizedString>
 #include <KNotification>
 #include <KFilePlacesModel>
@@ -114,7 +114,7 @@ bool SftpPlugin::startBrowsing()
 {
     if (mountAndWait()) {
         auto *job = new KIO::OpenUrlJob(QUrl(QStringLiteral("kdeconnect://") + deviceId));
-        job->setUiDelegate(new KIO::JobUiDelegate(KJobUiDelegate::AutoHandlingEnabled, nullptr));
+        job->setUiDelegate(new KNotificationJobUiDelegate(KJobUiDelegate::AutoHandlingEnabled));
         job->start();
         return true;
     }
