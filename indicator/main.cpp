@@ -56,7 +56,7 @@ int main(int argc, char** argv)
     QMenu* menu = new QMenu;
 
     DaemonDbusInterface iface;
-    auto refreshMenu = [&iface, &model, &menu]() {
+    auto refreshMenu = [&iface, &model, &menu, &kdeconnectd]() {
         menu->clear();
         auto configure = menu->addAction(QIcon::fromTheme(QStringLiteral("configure")), i18n("Configure..."));
         QObject::connect(configure, &QAction::triggered, configure, [](){
@@ -84,9 +84,10 @@ int main(int argc, char** argv)
             }
         }
 
-#if (defined Q_OS_MAC || defined Q_OS_WIN)
         // Add quit menu
         menu->addAction(i18n("Quit"), [](){
+
+#if defined Q_OS_MAC
             auto message = QDBusMessage::createMethodCall(QStringLiteral("org.kde.kdeconnect.daemon"),
                                                         QStringLiteral("/MainApplication"),
                                                         QStringLiteral("org.qtproject.Qt.QCoreApplication"),
@@ -97,7 +98,15 @@ int main(int argc, char** argv)
                                                         QStringLiteral("org.qtproject.Qt.QCoreApplication"),
                                                         QStringLiteral("quit"));
             DBusHelper::sessionBus().call(message, QDBus::NoBlock); // Close our indicator
+
+#elif defined Q_OS_WIN
+            QProcess::execute(QStringLiteral("taskkill"),
+                        {QStringLiteral("/im"), QStringLiteral("dbus-daemon.exe"), QStringLiteral("/f")});
+            QProcess::execute(QStringLiteral("taskkill"),
+                        {QStringLiteral("/im"), QStringLiteral("kdeconnectd.exe"), QStringLiteral("/f")});
+            qApp->quit();
         });
+
 #endif
     };
 
