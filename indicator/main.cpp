@@ -101,9 +101,9 @@ int main(int argc, char** argv)
 
 #elif defined Q_OS_WIN
             QProcess::execute(QStringLiteral("taskkill"),
-                        {QStringLiteral("/im"), QStringLiteral("dbus-daemon.exe"), QStringLiteral("/f")});
+                        {QStringLiteral("/im"), processes::kdeconnectd, QStringLiteral("/f")});
             QProcess::execute(QStringLiteral("taskkill"),
-                        {QStringLiteral("/im"), QStringLiteral("kdeconnectd.exe"), QStringLiteral("/f")});
+                        {QStringLiteral("/im"), processes::dbusd , QStringLiteral("/f")});
             qApp->quit();
         });
 

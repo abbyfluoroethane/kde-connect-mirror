@@ -21,7 +21,7 @@ void IndicatorHelper::iconPathHook() {}
 
 int IndicatorHelper::daemonHook(QProcess &kdeconnectd)
 {
-    kdeconnectd.start(QStringLiteral("kdeconnectd.exe"));
+    kdeconnectd.start(processes::kdeconnectd);
     return 0;
 }
 

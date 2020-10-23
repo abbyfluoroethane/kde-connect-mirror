@@ -16,6 +16,11 @@
 #include <KStatusNotifierItem>
 #endif
 
+namespace processes {
+        const QString kdeconnectd = QStringLiteral("kdeconnectd.exe");
+        const QString dbusd = QStringLiteral("dbus-daemon.exe");
+};
+
 class IndicatorHelper
 {
 public:
