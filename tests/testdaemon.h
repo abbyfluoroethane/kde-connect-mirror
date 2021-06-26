@@ -13,18 +13,11 @@
 #include <KJobTrackerInterface>
 #include <QCoreApplication>
 
-#ifdef HAVE_KIO
-#include <KIO/AccessManager>
-#else
-#include <QNetworkAccessManager>
-#endif
-
 class TestDaemon : public Daemon
 {
 public:
     TestDaemon(QObject *parent = nullptr)
         : Daemon(parent, true)
-        , m_nam(nullptr)
         , m_jobTrackerInterface(nullptr)
     {
         // Necessary to force the event loop to run because the test harness seems to behave differently
@@ -47,18 +40,6 @@ public:
         d->acceptPairing();
     }
 
-    QNetworkAccessManager *networkAccessManager() override
-    {
-        if (!m_nam) {
-#ifdef HAVE_KIO
-            m_nam = new KIO::Integration::AccessManager(this);
-#else
-            m_nam = new QNetworkAccessManager(this);
-#endif
-        }
-        return m_nam;
-    }
-
     Q_SCRIPTABLE virtual void sendSimpleNotification(const QString &eventId, const QString &title, const QString &text, const QString &iconName) override
     {
         qDebug() << eventId << title << text << iconName;
@@ -78,7 +59,6 @@ public:
     }
 
 private:
-    QNetworkAccessManager *m_nam;
     KJobTrackerInterface *m_jobTrackerInterface;
 };
 

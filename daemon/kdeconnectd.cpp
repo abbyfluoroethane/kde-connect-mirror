@@ -38,7 +38,6 @@ class DesktopDaemon : public Daemon
 public:
     DesktopDaemon(QObject *parent = nullptr)
         : Daemon(parent)
-        , m_nam(nullptr)
     {
         qApp->setWindowIcon(QIcon(QStringLiteral(":/icons/kdeconnect/kdeconnect.svg")));
     }
@@ -73,14 +72,6 @@ public:
         KNotification::event(KNotification::Error, title, description);
     }
 
-    QNetworkAccessManager *networkAccessManager() override
-    {
-        if (!m_nam) {
-            m_nam = new KIO::Integration::AccessManager(this);
-        }
-        return m_nam;
-    }
-
     KJobTrackerInterface *jobTracker() override
     {
         return KIO::getJobTracker();
@@ -100,9 +91,6 @@ public:
     {
         QApplication::quit();
     }
-
-private:
-    QNetworkAccessManager *m_nam;
 };
 
 // Copied from plasma-workspace/libkworkspace/kworkspace.cpp
