@@ -58,10 +58,17 @@ bool VirtualMonitorPlugin::receivePacket(const NetworkPacket& received)
         url.setUserName(QS("user"));
         url.setPassword(received.get<QString>(QS("password")));
         url.setHost(device()->getLocalIpAddress().toString());
-        QDesktopServices::openUrl(url);
+        if (!QDesktopServices::openUrl(url)) {
+            qCWarning(KDECONNECT_PLUGIN_VIRTUALMONITOR) << "Failed to open" << url.toDisplayString();
+            NetworkPacket np(PACKET_TYPE_VIRTUALMONITOR, { { QS("failed"), 0 } });
+            sendPacket(np);
+        }
     } else if (received.type() == PACKET_TYPE_VIRTUALMONITOR) {
         if (received.has(QS("resolutions"))) {
             m_remoteResolution = received.get<QStringList>(QS("resolutions")).constFirst();
+        }
+        if (received.has(QS("failed"))) {
+            stop();
         }
     }
     return true;
