@@ -31,6 +31,7 @@ if(NOT SAILFISHOS)
     add_subdirectory(mousepad)
     add_subdirectory(sms)
     add_subdirectory(screensaver-inhibit)
+    add_subdirectory(virtualdisplay)
 
     if(NOT WIN32)
         add_subdirectory(sendnotifications)
