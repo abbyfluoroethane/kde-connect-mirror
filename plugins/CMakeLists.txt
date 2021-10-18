@@ -31,11 +31,12 @@ if(NOT SAILFISHOS)
     add_subdirectory(mousepad)
     add_subdirectory(sms)
     add_subdirectory(screensaver-inhibit)
+    add_subdirectory(virtualmonitor)
 
     if(NOT WIN32)
         add_subdirectory(sendnotifications)
     endif()
-    
+
     if(NOT APPLE)
         add_subdirectory(sftp)
     endif()
