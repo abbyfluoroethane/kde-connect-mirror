@@ -58,6 +58,7 @@ PlasmaComponents.ListItem
 
         RowLayout
         {
+
             width: parent.width
             Battery {
                 id: battery
@@ -77,6 +78,16 @@ PlasmaComponents.ListItem
                 textFormat: Text.PlainText
             }
 
+            PlasmaComponents3.ToolButton {
+                icon.name: "video-monitor"
+                text: i18n("Virtual Display")
+                VirtualDisplay {
+                    id: vd
+                }
+                onClicked: {
+                    vd.requestVirtualMonitor()
+                }
+            }
             RowLayout
             {
                 id: connectionInformation

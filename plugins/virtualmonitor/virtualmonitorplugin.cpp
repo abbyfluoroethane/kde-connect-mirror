@@ -79,7 +79,7 @@ QString VirtualMonitorPlugin::dbusPath() const
     return QS("/modules/kdeconnect/devices/") + device()->id() + QS("/virtualmonitor");
 }
 
-bool VirtualMonitorPlugin::sendVirtualMonitorRequest()
+bool VirtualMonitorPlugin::requestVirtualMonitor()
 {
     stop();
     if (m_remoteResolution.isEmpty()) {

@@ -25,7 +25,7 @@ public:
     explicit VirtualMonitorPlugin(QObject* parent, const QVariantList& args);
     ~VirtualMonitorPlugin() override;
 
-    Q_SCRIPTABLE bool sendVirtualMonitorRequest();
+    Q_SCRIPTABLE bool requestVirtualMonitor();
 
     void connected() override;
     QString dbusPath() const override;
