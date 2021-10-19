@@ -16,9 +16,9 @@ QtObject
 
     readonly property PluginChecker pluginChecker: PluginChecker {
         id: checker
-        pluginName: "virtualdisplay"
+        pluginName: "virtualmonitor"
     }
 
-    property variant plugin: available ? VirtualDisplayDbusInterfaceFactory.create(device.id()) : null
+    readonly property QtObject plugin: available ? VirtualmonitorDbusInterfaceFactory.create(device.id()) : null
 }
 

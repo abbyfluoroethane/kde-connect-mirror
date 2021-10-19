@@ -202,7 +202,7 @@ BigscreenDbusInterface::~BigscreenDbusInterface()
 }
 
 VirtualmonitorDbusInterface::VirtualmonitorDbusInterface(const QString& deviceId, QObject* parent):
-    OrgKdeKdeconnectDeviceVirtualmonitorInterface(DaemonDbusInterface::activatedService(), QStringLiteral("/modules/kdeconnect/devices/")  + deviceId + QStringLiteral("/bigscreen"), DBusHelper::sessionBus(), parent)
+    OrgKdeKdeconnectDeviceVirtualmonitorInterface(DaemonDbusInterface::activatedService(), QStringLiteral("/modules/kdeconnect/devices/")  + deviceId + QStringLiteral("/virtualmonitor"), DBusHelper::sessionBus(), parent)
 {
 }
 

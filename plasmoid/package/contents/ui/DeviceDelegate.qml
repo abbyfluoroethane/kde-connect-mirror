@@ -79,13 +79,18 @@ PlasmaComponents.ListItem
             }
 
             PlasmaComponents3.ToolButton {
+                VirtualMonitor {
+                    id: vd
+                    device: root.device
+                }
                 icon.name: "video-monitor"
                 text: i18n("Virtual Display")
-                VirtualDisplay {
-                    id: vd
-                }
+                visible: vd.available
                 onClicked: {
-                    vd.requestVirtualMonitor()
+                    console.log("xxxx")
+                    if (!vd.plugin.requestVirtualMonitor()) {
+                        console.warn("Failed to create the virtual monitor")
+                    }
                 }
             }
             RowLayout
