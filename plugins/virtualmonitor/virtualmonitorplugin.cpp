@@ -106,7 +106,8 @@ bool VirtualMonitorPlugin::requestVirtualMonitor()
 
     m_process = new QProcess(this);
     m_process->setProgram(QS("krfb-virtualmonitor"));
-    m_process->setArguments({QS("--name"), device()->name(), QS("--resolution"), m_remoteResolution.value(QStringView(u"resolution")).toString(), QS("--scale"), m_remoteResolution.value(QStringView(u"scale")).toString(), QS("--password"), uuid.toString(), QS("--port"), port});
+    const double scale = m_remoteResolution.value(QLatin1String("scale")).toDouble();
+    m_process->setArguments({QS("--name"), device()->name(), QS("--resolution"), m_remoteResolution.value(QLatin1String("resolution")).toString(), QS("--scale"), QString::number(scale), QS("--password"), uuid.toString(), QS("--port"), port});
     connect(m_process, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), this, [this] {
         qCWarning(KDECONNECT_PLUGIN_VIRTUALMONITOR) << "virtual display finished with" << device()->name() << m_process->readAllStandardError();
         m_process->deleteLater();
@@ -118,7 +119,7 @@ bool VirtualMonitorPlugin::requestVirtualMonitor()
         qCWarning(KDECONNECT_PLUGIN_VIRTUALMONITOR) << "Failed to start krfb-virtualmonitor" << m_process->error() << m_process->errorString();
         return false;
     }
-    NetworkPacket np(PACKET_TYPE_VIRTUALMONITOR, {
+    NetworkPacket np(PACKET_TYPE_VIRTUALMONITOR_REQUEST, {
         { QS("start"), 1 },
         { QS("password"), uuid.toString() },
         { QS("port"), port },

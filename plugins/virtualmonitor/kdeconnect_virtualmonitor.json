@@ -20,10 +20,10 @@
     },
     "X-KdeConnect-OutgoingPacketType": [
         "kdeconnect.virtualmonitor",
-        "kdeconnect.virtualmonitor.connect"
+        "kdeconnect.virtualmonitor.request"
     ],
     "X-KdeConnect-SupportedPacketType": [
         "kdeconnect.virtualmonitor",
-        "kdeconnect.virtualmonitor.connect"
+        "kdeconnect.virtualmonitor.request"
     ]
 }
