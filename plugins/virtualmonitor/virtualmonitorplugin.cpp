@@ -44,9 +44,17 @@ void VirtualMonitorPlugin::stop()
 
 void VirtualMonitorPlugin::connected()
 {
-    auto resolution = QGuiApplication::primaryScreen()->size();
+    auto screen = QGuiApplication::primaryScreen();
+    auto resolution = screen->size();
     QString resolutionString = QString::number(resolution.width()) + QLatin1Char('x') + QString::number(resolution.height());
-    NetworkPacket np(PACKET_TYPE_VIRTUALMONITOR, { { QS("resolutions"), QJsonArray { resolutionString } } });
+    NetworkPacket np(PACKET_TYPE_VIRTUALMONITOR, {
+        { QS("resolutions"), QJsonArray {
+            QJsonObject {
+                { QS("resolution"), resolutionString },
+                { QS("scale"), screen->devicePixelRatio() },
+            }
+        } },
+    });
     sendPacket(np);
 }
 
@@ -65,7 +73,7 @@ bool VirtualMonitorPlugin::receivePacket(const NetworkPacket& received)
         }
     } else if (received.type() == PACKET_TYPE_VIRTUALMONITOR) {
         if (received.has(QS("resolutions"))) {
-            m_remoteResolution = received.get<QStringList>(QS("resolutions")).constFirst();
+            m_remoteResolution = received.get<QJsonArray>(QS("resolutions")).first().toObject();
         }
         if (received.has(QS("failed"))) {
             stop();
@@ -76,6 +84,10 @@ bool VirtualMonitorPlugin::receivePacket(const NetworkPacket& received)
 
 QString VirtualMonitorPlugin::dbusPath() const
 {
+    // Don't offer the feature if krfb-virtualmonitor is not around
+    if (QStandardPaths::findExecutable(QS("krfb-virtualmonitor")).isEmpty())
+        return {};
+
     return QS("/modules/kdeconnect/devices/") + device()->id() + QS("/virtualmonitor");
 }
 
@@ -94,7 +106,7 @@ bool VirtualMonitorPlugin::requestVirtualMonitor()
 
     m_process = new QProcess(this);
     m_process->setProgram(QS("krfb-virtualmonitor"));
-    m_process->setArguments({QS("--name"), device()->name(), QS("--resolution"), m_remoteResolution, QS("--password"), uuid.toString(), QS("--port"), port});
+    m_process->setArguments({QS("--name"), device()->name(), QS("--resolution"), m_remoteResolution.value(QStringView(u"resolution")).toString(), QS("--scale"), m_remoteResolution.value(QStringView(u"scale")).toString(), QS("--password"), uuid.toString(), QS("--port"), port});
     connect(m_process, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), this, [this] {
         qCWarning(KDECONNECT_PLUGIN_VIRTUALMONITOR) << "virtual display finished with" << device()->name() << m_process->readAllStandardError();
         m_process->deleteLater();

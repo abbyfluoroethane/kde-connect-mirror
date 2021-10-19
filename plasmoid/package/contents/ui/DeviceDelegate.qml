@@ -87,7 +87,6 @@ PlasmaComponents.ListItem
                 text: i18n("Virtual Display")
                 visible: vd.available
                 onClicked: {
-                    console.log("xxxx")
                     if (!vd.plugin.requestVirtualMonitor()) {
                         console.warn("Failed to create the virtual monitor")
                     }

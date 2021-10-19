@@ -8,6 +8,7 @@
 #define VIRTUALMONITORPLUGIN_H
 
 #include <core/kdeconnectplugin.h>
+#include <QJsonObject>
 #include "plugin_virtualmonitor_debug.h"
 
 #define PACKET_TYPE_VIRTUALMONITOR QStringLiteral("kdeconnect.virtualmonitor")
@@ -35,7 +36,7 @@ private:
     void stop();
 
     QProcess *m_process = nullptr;
-    QString m_remoteResolution;
+    QJsonObject m_remoteResolution;
 };
 
 #endif
