@@ -25,3 +25,7 @@ KDEConnect.includes
 
 CMakeLists.txt.user
 .DS_Store
+.cache
+.clangd
+compile_commands.json
+
