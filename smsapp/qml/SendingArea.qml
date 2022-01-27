@@ -100,45 +100,6 @@ ColumnLayout {
 
                 RowLayout {
                     Controls.ToolButton {
-                        id: sendButton
-                        enabled: messageField.text.length || selectedFileUrls.length
-                        Layout.preferredWidth: Kirigami.Units.gridUnit * 2
-                        Layout.preferredHeight: Kirigami.Units.gridUnit * 2
-                        padding: 0
-                        Kirigami.Icon {
-                            source: "document-send"
-                            enabled: sendButton.enabled
-                            isMask: true
-                            smooth: true
-                            anchors.centerIn: parent
-                            width: Kirigami.Units.gridUnit * 1.5
-                            height: width
-                        }
-
-                        property bool messageSent: false
-
-                        onClicked: {
-                            // disable the button to prevent sending
-                            // the same message several times
-                            sendButton.enabled = false
-
-                            if (SmsHelper.totalMessageSize(selectedFileUrls, messageField.text) > maxMessageSize) {
-                                messageDialog.visible = true
-                            } else if (page.conversationId === page.invalidId) {
-                                messageSent = conversationModel.startNewConversation(messageField.text, addresses, selectedFileUrls)
-                            } else {
-                                messageSent = conversationModel.sendReplyToConversation(messageField.text, selectedFileUrls)
-                            }
-
-                            if (messageSent) {
-                                messageField.text = ""
-                                selectedFileUrls = []
-                                sendButton.enabled = false
-                            }
-                        }
-                    }
-
-                    Controls.ToolButton {
                         id: attachFilesButton
                         enabled: true
                         Layout.preferredWidth: Kirigami.Units.gridUnit * 2
@@ -183,6 +144,45 @@ ColumnLayout {
                         onClicked: {
                             selectedFileUrls = []
                             if (messageField.text == "") {
+                                sendButton.enabled = false
+                            }
+                        }
+                    }
+
+                    Controls.ToolButton {
+                        id: sendButton
+                        enabled: messageField.text.length || selectedFileUrls.length
+                        Layout.preferredWidth: Kirigami.Units.gridUnit * 2
+                        Layout.preferredHeight: Kirigami.Units.gridUnit * 2
+                        padding: 0
+                        Kirigami.Icon {
+                            source: "document-send"
+                            enabled: sendButton.enabled
+                            isMask: true
+                            smooth: true
+                            anchors.centerIn: parent
+                            width: Kirigami.Units.gridUnit * 1.5
+                            height: width
+                        }
+
+                        property bool messageSent: false
+
+                        onClicked: {
+                            // disable the button to prevent sending
+                            // the same message several times
+                            sendButton.enabled = false
+
+                            if (SmsHelper.totalMessageSize(selectedFileUrls, messageField.text) > maxMessageSize) {
+                                messageDialog.visible = true
+                            } else if (page.conversationId === page.invalidId) {
+                                messageSent = conversationModel.startNewConversation(messageField.text, addresses, selectedFileUrls)
+                            } else {
+                                messageSent = conversationModel.sendReplyToConversation(messageField.text, selectedFileUrls)
+                            }
+
+                            if (messageSent) {
+                                messageField.text = ""
+                                selectedFileUrls = []
                                 sendButton.enabled = false
                             }
                         }
