@@ -74,7 +74,13 @@ ColumnLayout {
                     topPadding: Kirigami.Units.gridUnit * 0.5
                     bottomPadding: topPadding
                     selectByMouse: true
-                    topInset: height * 2 // This removes background (frame) of the TextArea. Setting `background: Item {}` would cause segfault.
+                    hoverEnabled: true
+                    background: MouseArea {
+                        hoverEnabled: true
+                        acceptedButtons: Qt.NoButton
+                        cursorShape: Qt.IBeamCursor
+                        z: 1
+                    }
                     Keys.onReturnPressed: {
                         if (event.key === Qt.Key_Return) {
                             if (event.modifiers & Qt.ShiftModifier) {
@@ -90,6 +96,7 @@ ColumnLayout {
 
             ColumnLayout {
                 id: sendButtonArea
+                Layout.alignment: Qt.AlignBottom
 
                 RowLayout {
                     Controls.ToolButton {
