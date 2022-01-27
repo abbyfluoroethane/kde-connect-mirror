@@ -163,7 +163,9 @@ Kirigami.ScrollablePage
                      * Used as the filter of the list of messages
                      */
                     id: filter
-                    Layout.margins: Kirigami.Units.smallSpacing
+                    Layout.leftMargin: Kirigami.Units.smallSpacing
+                    Layout.topMargin: Kirigami.Units.smallSpacing
+                    Layout.bottomMargin: Kirigami.Units.smallSpacing
                     placeholderText: i18nd("kdeconnect-sms", "Search or start conversation...")
                     Layout.fillWidth: true
                     Layout.fillHeight: true
@@ -194,7 +196,9 @@ Kirigami.ScrollablePage
 
                 Button {
                     id: newButton
-                    Layout.margins: Kirigami.Units.smallSpacing
+                    Layout.rightMargin: Kirigami.Units.smallSpacing
+                    Layout.topMargin: Kirigami.Units.smallSpacing
+                    Layout.bottomMargin: Kirigami.Units.smallSpacing
                     icon.name: "list-add"
                     text: i18nd("kdeconnect-sms", "New")
                     visible: true
