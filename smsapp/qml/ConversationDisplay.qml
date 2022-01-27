@@ -79,6 +79,7 @@ Kirigami.ScrollablePage
 
         Controls.BusyIndicator {
             running: !isInitalized
+            anchors.centerIn: parent
         }
 
         onContentHeightChanged: {
