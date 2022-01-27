@@ -39,7 +39,7 @@ Kirigami.ScrollablePage
         Kirigami.Action {
             text: i18nd("kdeconnect-sms", "Refresh")
             icon.name: "view-refresh"
-            enabled: devicesCombo.count > 0
+            enabled: devicesCount > 0
             onTriggered: {
                 conversationListModel.refresh()
             }
@@ -48,10 +48,11 @@ Kirigami.ScrollablePage
 
     ColumnLayout {
         id: loadingMessage
-        visible: deviceConnected && view.count == 0 && view.headerItem.childAt(0, 0).text.length == 0
+        visible: deviceConnected && view.count == 0 && view.headerItem.children[0].children[0].text.length == 0
         anchors.centerIn: parent
 
         BusyIndicator {
+            visible: loadingMessage.visible
             running: loadingMessage.visible
             Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
         }
@@ -75,6 +76,7 @@ Kirigami.ScrollablePage
 
     property string initialMessage
     property string initialDevice
+    property int currentDeviceIndex: -1
 
     header: Kirigami.InlineMessage {
         Layout.fillWidth: true
@@ -90,26 +92,40 @@ Kirigami.ScrollablePage
         ]
     }
 
-    footer: ComboBox {
+    property int devicesCount
+    property QtObject device
+
+    titleDelegate: ComboBox {
         id: devicesCombo
+        onCountChanged: {
+            devicesCount = count
+        }
         enabled: count > 0
+        Layout.fillWidth: true
+        Layout.margins: Kirigami.Units.smallSpacing
         displayText: !enabled ? i18nd("kdeconnect-sms", "No devices available") : undefined
         model: DevicesSortProxyModel {
             id: devicesModel
             //TODO: make it possible to filter if they can do sms
             sourceModel: DevicesModel { displayFilter: DevicesModel.Paired | DevicesModel.Reachable }
-            onRowsInserted: if (devicesCombo.currentIndex < 0) {
-                if (page.initialDevice)
-                    devicesCombo.currentIndex = devicesModel.rowForDevice(page.initialDevice);
-                else
-                    devicesCombo.currentIndex = 0
+            onRowsInserted: {
+                if (currentIndex < 0) {
+                    if (page.initialDevice) {
+                        currentIndex = devicesModel.rowForDevice(page.initialDevice);
+                    } else {
+                        currentIndex = 0;
+                    }
+                }
             }
+        }
+        onCurrentIndexChanged: {
+            currentDeviceIndex = currentIndex;
+            device = currentDeviceIndex >= 0 ? devicesModel.data(devicesModel.index(currentDeviceIndex, 0), DevicesModel.DeviceRole) : null
         }
         textRole: "display"
     }
 
-    readonly property bool deviceConnected: devicesCombo.enabled
-    readonly property QtObject device: devicesCombo.currentIndex >= 0 ? devicesModel.data(devicesModel.index(devicesCombo.currentIndex, 0), DevicesModel.DeviceRole) : null
+    readonly property bool deviceConnected: devicesCount > 0
     readonly property alias lastDeviceId: conversationListModel.deviceId
 
     Component {
@@ -133,69 +149,76 @@ Kirigami.ScrollablePage
             }
         }
 
-        header: RowLayout {
+        header: Rectangle {
             width: parent.width
+            height: headerLayout.implicitHeight
+            color: Kirigami.Theme.backgroundColor
             z: 10
-            Keys.forwardTo: [filter]
-            TextField {
-                /**
-                 * Used as the filter of the list of messages
-                 */
-                id: filter
-                placeholderText: i18nd("kdeconnect-sms", "Filter...")
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                onTextChanged: {
-                    if (filter.text != "") {
-                        view.model.setConversationsFilterRole(ConversationListModel.AddressesRole)
-                    } else {
-                        view.model.setConversationsFilterRole(ConversationListModel.ConversationIdRole)
-                    }
-                    view.model.setFilterFixedString(SmsHelper.canonicalizePhoneNumber(filter.text))
+            RowLayout {
+                id: headerLayout
+                width: parent.width
+                Keys.forwardTo: [filter]
+                Kirigami.SearchField {
+                    /**
+                     * Used as the filter of the list of messages
+                     */
+                    id: filter
+                    Layout.margins: Kirigami.Units.smallSpacing
+                    placeholderText: i18nd("kdeconnect-sms", "Search or start conversation...")
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    onTextChanged: {
+                        if (filter.text != "") {
+                            view.model.setConversationsFilterRole(ConversationListModel.AddressesRole)
+                        } else {
+                            view.model.setConversationsFilterRole(ConversationListModel.ConversationIdRole)
+                        }
+                        view.model.setFilterFixedString(SmsHelper.canonicalizePhoneNumber(filter.text))
 
-                    view.currentIndex = 0
-                }
-                onAccepted: {
-                    view.currentItem.startChat()
-                }
-                Keys.onReturnPressed: {
-                    event.accepted = true
-                    filter.onAccepted()
-                }
-                Keys.onEscapePressed: {
-                    event.accepted = filter.text != ""
-                    filter.text = ""
-                }
-                Shortcut {
-                    sequence: "Ctrl+F"
-                    onActivated: filter.forceActiveFocus()
-                }
-            }
-
-            Button {
-                id: newButton
-                text: i18nd("kdeconnect-sms", "New")
-                visible: true
-                enabled: SmsHelper.isAddressValid(filter.text) && deviceConnected
-                ToolTip.visible: hovered
-                ToolTip.delay: Qt.styleHints.mousePressAndHoldInterval
-                ToolTip.text: i18nd("kdeconnect-sms", "Start new conversation")
-
-                onClicked: {
-                    // We have to disable the filter temporarily in order to avoid getting key inputs accidently while processing the request
-                    filter.enabled = false
-
-                    // If the address entered by the user already exists then ignore adding new contact
-                    if (!view.model.doesAddressExists(filter.text) && SmsHelper.isAddressValid(filter.text)) {
-                        conversationListModel.createConversationForAddress(filter.text)
                         view.currentIndex = 0
+                        filter.forceActiveFocus();
                     }
-                    filter.enabled = true
+                    Keys.onReturnPressed: {
+                        event.accepted = true
+                        view.currentItem.startChat()
+                    }
+                    Keys.onEscapePressed: {
+                        event.accepted = filter.text != ""
+                        filter.text = ""
+                    }
+                    Shortcut {
+                        sequence: "Ctrl+F"
+                        onActivated: filter.forceActiveFocus()
+                    }
                 }
 
-                Shortcut {
-                    sequence: "Ctrl+N"
-                    onActivated: newButton.onClicked()
+                Button {
+                    id: newButton
+                    Layout.margins: Kirigami.Units.smallSpacing
+                    icon.name: "list-add"
+                    text: i18nd("kdeconnect-sms", "New")
+                    visible: true
+                    enabled: SmsHelper.isAddressValid(filter.text) && deviceConnected
+                    ToolTip.visible: hovered
+                    ToolTip.delay: Qt.styleHints.mousePressAndHoldInterval
+                    ToolTip.text: i18nd("kdeconnect-sms", "Start new conversation")
+
+                    onClicked: {
+                        // We have to disable the filter temporarily in order to avoid getting key inputs accidently while processing the request
+                        filter.enabled = false
+
+                        // If the address entered by the user already exists then ignore adding new contact
+                        if (!view.model.doesAddressExists(filter.text) && SmsHelper.isAddressValid(filter.text)) {
+                            conversationListModel.createConversationForAddress(filter.text)
+                            view.currentIndex = 0
+                        }
+                        filter.enabled = true
+                    }
+
+                    Shortcut {
+                        sequence: "Ctrl+N"
+                        onActivated: newButton.onClicked()
+                    }
                 }
             }
         }
