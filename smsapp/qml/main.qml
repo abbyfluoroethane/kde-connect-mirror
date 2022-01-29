@@ -9,6 +9,7 @@
 import QtQuick 2.1
 import org.kde.kirigami 2.6 as Kirigami
 import org.kde.kdeconnect 1.0
+import org.kde.kdeconnect.sms 1.0
 
 Kirigami.ApplicationWindow
 {
@@ -91,6 +92,15 @@ Kirigami.ApplicationWindow
             Kirigami.Action {
                 text: i18nd("kdeconnect-sms", "Devices")
                 icon.name: "phone"
+                visible: devicesCount > 1
+            },
+            Kirigami.Action {
+                text: i18nd("kdeconnect-sms", "Refresh")
+                icon.name: "view-refresh"
+                enabled: devicesCount > 0
+                onTriggered: {
+                    pageStack.initialPage.conversationListModel.refresh();
+                }
             },
             Kirigami.Action {
                 text: i18nd("kdeconnect-sms", "About")

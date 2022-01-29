@@ -35,17 +35,6 @@ Kirigami.ScrollablePage
         }
     }
 
-    contextualActions: [
-        Kirigami.Action {
-            text: i18nd("kdeconnect-sms", "Refresh")
-            icon.name: "view-refresh"
-            enabled: devicesCount > 0
-            onTriggered: {
-                conversationListModel.refresh()
-            }
-        }
-    ]
-
     ColumnLayout {
         id: loadingMessage
         visible: deviceConnected && view.count == 0 && currentSearchText.length == 0
@@ -71,6 +60,15 @@ Kirigami.ScrollablePage
             Layout.preferredWidth: page.width / 2
             horizontalAlignment: Text.AlignHCenter
             wrapMode: Text.Wrap
+        }
+
+        Button {
+            text: i18nd("kdeconnect-sms", "Refresh")
+            icon.name: "view-refresh"
+            Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
+            onClicked: {
+                conversationListModel.refresh();
+            }
         }
     }
 
@@ -173,6 +171,8 @@ Kirigami.ScrollablePage
             }
         }
     }
+
+    property alias conversationListModel: conversationListModel
 
     ListView {
         id: view
