@@ -200,6 +200,7 @@ Kirigami.ScrollablePage
             property var thumbnail: attachmentPreview
 
             function startChat() {
+                view.currentItem.forceActiveFocus();
                 applicationWindow().pageStack.push(chatView, {
                                                        addresses: addresses,
                                                        conversationId: model.conversationId,
