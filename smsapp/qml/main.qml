@@ -72,7 +72,7 @@ Kirigami.ApplicationWindow
 
     pageStack.initialPage: ConversationList {
         title: i18nd("kdeconnect-sms", "KDE Connect SMS")
-        initialMessage: initialMessage
+        initialMessage: _initialMessage
         device: root.device;
         initialDevice: initialDevice
         currentDeviceIndex: root.currentDeviceIndex;

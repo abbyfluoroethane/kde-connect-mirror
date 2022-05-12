@@ -79,7 +79,7 @@ int main(int argc, char *argv[])
     engine.rootContext()->setContextObject(new KLocalizedContext(&engine));
     engine.addImageProvider(QStringLiteral("thumbnailsProvider"), new ThumbnailsProvider);
     engine.rootContext()->setContextProperties({
-        { QStringLiteral("initialMessage"), initialMessage },
+        { QStringLiteral("_initialMessage"), initialMessage },
         { QStringLiteral("initialDevice"), deviceid },
         { QStringLiteral("aboutData"), QVariant::fromValue(KAboutData::applicationData()) }
     });
