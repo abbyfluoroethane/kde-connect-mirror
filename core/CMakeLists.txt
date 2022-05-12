@@ -66,7 +66,7 @@ PRIVATE
 )
 
 if(${KF5KIO_FOUND})
-    target_link_libraries(kdeconnectcore PUBLIC KF5::KIOCore)
+    target_link_libraries(kdeconnectcore PUBLIC KF5::KIOCore KF5::KIOGui)
 endif()
 
 if (BLUETOOTH_ENABLED)

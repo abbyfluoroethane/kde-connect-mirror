@@ -12,6 +12,10 @@
 #include <QPointer>
 #include <QProcess>
 
+#if HAVE_KIO
+#include <KIO/CommandLauncherJob>
+#endif
+
 #include "core_debug.h"
 #include "kdeconnectconfig.h"
 #include "networkpacket.h"
@@ -350,5 +354,10 @@ void Daemon::openConfiguration(const QString &deviceId, const QString &pluginId)
         args << argument;
     }
 
+#if HAVE_KIO
+    auto job = new KIO::CommandLauncherJob(QStringLiteral("kdeconnect-settings"), args);
+    job->start();
+#else
     QProcess::startDetached(QStringLiteral("kdeconnect-settings"), args);
+#endif
 }
