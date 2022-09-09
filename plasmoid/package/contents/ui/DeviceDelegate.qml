@@ -316,6 +316,20 @@ PlasmaComponents.ListItem
                     anchors.top: notificationLabel.bottom
                     anchors.left: notificationIcon.right
                     width: notificationLabel.width + replyButton.width + dismissButton.width
+                    PlasmaComponents3.Button {
+                        Layout.alignment: Qt.AlignBottom
+                        id: replyCancelButton
+                        text: i18n("Cancel")
+                        display: PlasmaComponents3.AbstractButton.IconOnly
+                        PlasmaComponents3.ToolTip {
+                            text: parent.text
+                        }
+                        icon.name: "dialog-cancel"
+                        onClicked: {
+                            replyTextField.text = "";
+                            replying = false;
+                        }
+                    }
                     PlasmaComponents3.TextArea {
                         id: replyTextField
                         placeholderText: i18nc("@info:placeholder", "Reply to %1…", appName)
@@ -339,16 +353,6 @@ PlasmaComponents.ListItem
                         enabled: replyTextField.text
                         onClicked: {
                             dbusInterface.sendReply(replyTextField.text);
-                            replyTextField.text = "";
-                            replying = false;
-                        }
-                    }
-                    PlasmaComponents3.Button {
-                        Layout.alignment: Qt.AlignBottom
-                        id: replyCancelButton
-                        text: i18n("Cancel")
-                        icon.name: "dialog-cancel"
-                        onClicked: {
                             replyTextField.text = "";
                             replying = false;
                         }
