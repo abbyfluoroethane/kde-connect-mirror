@@ -4,15 +4,14 @@
  * SPDX-License-Identifier: GPL-2.0-only OR GPL-3.0-only OR LicenseRef-KDE-Accepted-GPL
  */
 
-import QtQuick 2.2
-import QtQuick.Controls 2.1
-import QtQuick.Layouts 1.1
+import QtQuick 2.15
+import QtQuick.Controls 2.15 as QQC2
+import QtQuick.Layouts 1.15
 import QtQuick.Dialogs 1.0
-import org.kde.kirigami 2.12 as Kirigami
+import org.kde.kirigami 2.20 as Kirigami
 import org.kde.kdeconnect 1.0
 
-Kirigami.ScrollablePage
-{
+Kirigami.ScrollablePage {
     id: root
     property QtObject currentDevice
     title: currentDevice.name
@@ -46,7 +45,6 @@ Kirigami.ScrollablePage
     ]
 
     ListView {
-
         model: plugins
         delegate: Kirigami.BasicListItem {
             label: name
@@ -57,8 +55,7 @@ Kirigami.ScrollablePage
             onClicked: onClick()
         }
 
-        property list<QtObject> plugins : [
-
+        property list<QtObject> plugins: [
             PluginItem {
                 name: i18nd("kdeconnect-app", "Multimedia control")
                 interfaceFactory: MprisDbusInterfaceFactory
@@ -119,7 +116,7 @@ Kirigami.ScrollablePage
         Kirigami.PlaceholderMessage {
             text: i18nd("kdeconnect-app", "This device is not paired")
             anchors.centerIn: parent
-            visible: root.currentDevice.isReachable && !root.currentDevice.isTrusted && !root.currentDevice.hasPairingRequests
+            visible: root.currentDevice && root.currentDevice.isReachable && !root.currentDevice.isTrusted && !root.currentDevice.hasPairingRequests
             helpfulAction: Kirigami.Action {
                 text: i18nd("kdeconnect-app", "Pair")
                 icon.name:"network-connect"
@@ -127,24 +124,19 @@ Kirigami.ScrollablePage
             }
         }
 
-        Column {
-            visible: root.currentDevice.hasPairingRequests
+        Kirigami.PlaceholderMessage {
+            text: i18n("Pair requested")
+            visible: root.currentDevice && root.currentDevice.hasPairingRequests
             anchors.centerIn: parent
             spacing: Kirigami.Units.largeSpacing
-
-            Kirigami.PlaceholderMessage {
-                text: i18n("Pair requested")
-                anchors.horizontalCenter: parent.horizontalCenter
-            }
-
             RowLayout {
-                Button {
+                QQC2.Button {
                     text: i18nd("kdeconnect-app", "Accept")
                     icon.name:"dialog-ok"
                     onClicked: root.currentDevice.acceptPairing()
                 }
 
-                Button {
+                QQC2.Button {
                     text: i18nd("kdeconnect-app", "Reject")
                     icon.name:"dialog-cancel"
                     onClicked: root.currentDevice.rejectPairing()
@@ -153,7 +145,7 @@ Kirigami.ScrollablePage
         }
 
         Kirigami.PlaceholderMessage {
-            visible: !root.currentDevice.isReachable
+            visible: root.currentDevice && !root.currentDevice.isReachable
             text: i18nd("kdeconnect-app", "This device is not reachable")
             anchors.centerIn: parent
         }
@@ -161,7 +153,7 @@ Kirigami.ScrollablePage
 
     FileDialog {
         id: fileDialog
-        readonly property var shareIface: ShareDbusInterfaceFactory.create(root.currentDevice.id())
+        readonly property var shareIface: root.currentDevice ? ShareDbusInterfaceFactory.create(root.currentDevice.id()) : null
         title: i18nd("kdeconnect-app", "Please choose a file")
         folder: shortcuts.home
         onAccepted: shareIface.shareUrl(fileDialog.fileUrl)
