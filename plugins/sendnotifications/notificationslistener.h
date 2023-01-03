@@ -17,10 +17,9 @@ class KdeConnectPlugin;
 class Notification;
 struct NotifyingApplication;
 
-class NotificationsListener : public QDBusAbstractAdaptor
+class NotificationsListener : public QObject
 {
     Q_OBJECT
-    Q_CLASSINFO("D-Bus Interface", "org.freedesktop.Notifications")
 
 public:
     explicit NotificationsListener(KdeConnectPlugin *aPlugin);
@@ -44,7 +43,7 @@ protected:
     QSharedPointer<QIODevice> iconForIconName(const QString &iconName) const;
 
 public Q_SLOTS:
-    Q_SCRIPTABLE uint Notify(const QString &, uint, const QString &, const QString &, const QString &, const QStringList &, const QVariantMap &, int);
+    void slotNotifyObserved(const QString &, uint, const QString &, const QString &, const QString &, const QStringList &, const QVariantMap &, int);
 
 private Q_SLOTS:
     void loadApplications();

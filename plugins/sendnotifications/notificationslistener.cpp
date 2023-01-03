@@ -28,17 +28,17 @@
 #include "qtcompat_p.h"
 
 NotificationsListener::NotificationsListener(KdeConnectPlugin *aPlugin)
-    : QDBusAbstractAdaptor(aPlugin)
+    : QObject(aPlugin)
     , m_plugin(aPlugin)
 {
     qRegisterMetaTypeStreamOperators<NotifyingApplication>("NotifyingApplication");
 
-    bool ret = QDBusConnection::sessionBus().registerObject(QStringLiteral("/org/freedesktop/Notifications"), this, QDBusConnection::ExportScriptableContents);
-    if (!ret)
-        qCWarning(KDECONNECT_PLUGIN_SENDNOTIFICATION) << "Error registering notifications listener for device" << m_plugin->device()->name() << ":"
-                                                      << QDBusConnection::sessionBus().lastError();
-    else
-        qCDebug(KDECONNECT_PLUGIN_SENDNOTIFICATION) << "Registered notifications listener for device" << m_plugin->device()->name();
+    QDBusConnection::sessionBus().connect(QStringLiteral(""), // any service name
+                                          QStringLiteral(""), // any object path
+                                          QStringLiteral("org.freedesktop.Notifications"),
+                                          QStringLiteral("Notify"),
+                                          this,
+                                          SLOT(slotNotifyObserved(...)));
 
     QDBusInterface iface(QStringLiteral("org.freedesktop.DBus"), QStringLiteral("/org/freedesktop/DBus"), QStringLiteral("org.freedesktop.DBus"));
     iface.call(QStringLiteral("AddMatch"), QStringLiteral("interface='org.freedesktop.Notifications',member='Notify',type='method_call',eavesdrop='true'"));
@@ -55,7 +55,6 @@ NotificationsListener::~NotificationsListener()
     QDBusInterface iface(QStringLiteral("org.freedesktop.DBus"), QStringLiteral("/org/freedesktop/DBus"), QStringLiteral("org.freedesktop.DBus"));
     QDBusMessage res = iface.call(QStringLiteral("RemoveMatch"),
                                   QStringLiteral("interface='org.freedesktop.Notifications',member='Notify',type='method_call',eavesdrop='true'"));
-    QDBusConnection::sessionBus().unregisterObject(QStringLiteral("/org/freedesktop/Notifications"));
 }
 
 void NotificationsListener::setTranslatedAppName()
@@ -154,16 +153,17 @@ QSharedPointer<QIODevice> NotificationsListener::iconForIconName(const QString &
     return QSharedPointer<QIODevice>();
 }
 
-uint NotificationsListener::Notify(const QString &appName,
-                                   uint replacesId,
-                                   const QString &appIcon,
-                                   const QString &summary,
-                                   const QString &body,
-                                   const QStringList &actions,
-                                   const QVariantMap &hints,
-                                   int timeout)
+void NotificationsListener::slotNotifyObserved(const QString &appName,
+                                               uint replacesId,
+                                               const QString &appIcon,
+                                               const QString &summary,
+                                               const QString &body,
+                                               const QStringList &actions,
+                                               const QVariantMap &hints,
+                                               int timeout)
 {
-    static int id = 0;
+    qCritical() << "slotNotifyObserved";
+    static unsigned id = 0;
     Q_UNUSED(actions);
 
     // qCDebug(KDECONNECT_PLUGIN_SENDNOTIFICATION) << "Got notification appName=" << appName << "replacesId=" << replacesId << "appIcon=" << appIcon <<
@@ -171,7 +171,7 @@ uint NotificationsListener::Notify(const QString &appName,
 
     // skip our own notifications
     if (appName == m_translatedAppName)
-        return 0;
+        return;
 
     NotifyingApplication app;
     if (!m_applications.contains(appName)) {
@@ -192,10 +192,10 @@ uint NotificationsListener::Notify(const QString &appName,
     }
 
     if (!app.active)
-        return 0;
+        return;
 
     if (timeout > 0 && m_plugin->config()->getBool(QStringLiteral("generalPersistent"), false))
-        return 0;
+        return;
 
     int urgency = -1;
     if (hints.contains(QStringLiteral("urgency"))) {
@@ -205,14 +205,14 @@ uint NotificationsListener::Notify(const QString &appName,
             urgency = -1;
     }
     if (urgency > -1 && urgency < m_plugin->config()->getInt(QStringLiteral("generalUrgency"), 0))
-        return 0;
+        return;
 
     QString ticker = summary;
     if (!body.isEmpty() && m_plugin->config()->getBool(QStringLiteral("generalIncludeBody"), true))
         ticker += QStringLiteral(": ") + body;
 
     if (app.blacklistExpression.isValid() && !app.blacklistExpression.pattern().isEmpty() && app.blacklistExpression.match(ticker).hasMatch())
-        return 0;
+        return;
 
     // qCDebug(KDECONNECT_PLUGIN_SENDNOTIFICATION) << "Sending notification from" << appName << ":" <<ticker << "; appIcon=" << appIcon;
     NetworkPacket np(PACKET_TYPE_NOTIFICATION,
@@ -246,6 +246,4 @@ uint NotificationsListener::Notify(const QString &appName,
     }
 
     m_plugin->sendPacket(np);
-
-    return (replacesId > 0 ? replacesId : id);
 }
