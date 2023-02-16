@@ -36,6 +36,14 @@ Platforms other than Linux are not officially supported, as there has yet to be 
 ### On BSD
 It should work, but no promises :)
 
+## Missing or limited features on some platforms
+Some platforms are missing some features due to technical limitations:
+
+### iOS:
+- Notification sync
+- Access SMS
+- Shared clipboard (limited)
+
 ## How does it work?
 KDE Connect consists of a UI-agnostic "core" library that exposes a series of DBus interfaces, and several UI components that consume these DBus interfaces. This way, new UI components can be added to integrate better with specific platforms or desktops, without having to reimplement the protocol or any of the internals. The core KDE Connect library is also divided into 4 big blocks:
 
