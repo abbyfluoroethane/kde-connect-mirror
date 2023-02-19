@@ -39,10 +39,24 @@ It should work, but no promises :)
 ## Missing or limited features on some platforms
 Some platforms are missing some features due to technical limitations:
 
-### iOS:
+### iOS
+#### Missing
 - Notification sync
 - Access SMS
-- Shared clipboard (limited)
+- Keeping connection alive when app is not on-screen
+- Virtual Display
+#### One way - only from iOS to PC
+- Remote Input
+- Run Command
+- Slideshow Remote
+- Shared clipboard (limited, need to tap "push clipboard" on the app to push clipboard to the PC)
+### Android
+#### Missing
+- Virtual Display
+#### One way - only from Android to PC
+- Remote Input
+- Run Command
+- Slideshow Remote
 
 ## How does it work?
 KDE Connect consists of a UI-agnostic "core" library that exposes a series of DBus interfaces, and several UI components that consume these DBus interfaces. This way, new UI components can be added to integrate better with specific platforms or desktops, without having to reimplement the protocol or any of the internals. The core KDE Connect library is also divided into 4 big blocks:
