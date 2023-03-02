@@ -14,6 +14,9 @@ KDE Connect is a multi-platform app that allows your devices to communicate (eg:
 
 All this is done completely wirelessly, utilising TLS encryption.
 
+## Userbase wiki
+A user-focused wiki can be found on [KDE Userbase](https://userbase.kde.org/KDEConnect#Missing_or_limited_features_on_some_platforms)
+
 ## Supported platforms
 - Computers running Linux with Plasma 5, Gnome 3, Elementary OS... any distro with Qt5 support :)
 - Android, by installing the KDE Connect app from the [Play Store](https://play.google.com/store/apps/details?id=org.kde.kdeconnect_tp) or [F-Droid](https://f-droid.org/repository/browse/?fdid=org.kde.kdeconnect_tp).
@@ -36,27 +39,6 @@ Platforms other than Linux are not officially supported, as there has yet to be 
 ### On BSD
 It should work, but no promises :)
 
-## Missing or limited features on some platforms
-Some platforms are missing some features due to technical limitations:
-
-### iOS
-#### Missing
-- Notification sync
-- Access SMS
-- Keeping connection alive when app is not on-screen
-- Virtual Display
-#### One way - only from iOS to PC
-- Remote Input
-- Run Command
-- Slideshow Remote
-- Shared clipboard (limited, need to tap "push clipboard" on the app to push clipboard to the PC)
-### Android
-#### Missing
-- Virtual Display
-#### One way - only from Android to PC
-- Remote Input
-- Run Command
-- Slideshow Remote
 
 ## How does it work?
 KDE Connect consists of a UI-agnostic "core" library that exposes a series of DBus interfaces, and several UI components that consume these DBus interfaces. This way, new UI components can be added to integrate better with specific platforms or desktops, without having to reimplement the protocol or any of the internals. The core KDE Connect library is also divided into 4 big blocks:
