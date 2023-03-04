@@ -15,7 +15,7 @@ KDE Connect is a multi-platform app that allows your devices to communicate (eg:
 All this is done completely wirelessly, utilising TLS encryption.
 
 ## Userbase wiki
-A user-focused wiki can be found on [KDE Userbase](https://userbase.kde.org/KDEConnect#Missing_or_limited_features_on_some_platforms)
+A user-focused wiki can be found on [KDE Userbase](https://userbase.kde.org/KDEConnect)
 
 ## Supported platforms
 - Computers running Linux with Plasma 5, Gnome 3, Elementary OS... any distro with Qt5 support :)
