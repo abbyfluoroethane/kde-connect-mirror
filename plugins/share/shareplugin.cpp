@@ -161,11 +161,13 @@ bool SharePlugin::receivePacket(const NetworkPacket &np)
 
         KNotification *notif = new KNotification(QStringLiteral("textShareReceived"));
         notif->setComponentName(QStringLiteral("kdeconnect"));
-        notif->setTitle(i18nc("@info Some piece of text was received from the connected device", "Shared text copied to clipboard"));
+        notif->setText(text);
+        notif->setTitle(i18nc("@info Some piece of text was received from a connected device", "Shared text from %1 copied to clipboard", device()->name()));
         QStringList actions;
-        actions << i18nc("@action:button Edit text with default text editor", "Open in editor");
-        if (url.isValid()) {
-            actions << i18nc("@action:button Open URL with default app", "Open link");
+        actions << i18nc("@action:button Edit text with default text editor", "Open in Text Editor");
+        if (url.isValid() && (url.scheme() == QStringLiteral("http") || url.scheme() == QStringLiteral("https"))) {
+            qDebug() << url;
+            actions << i18nc("@action:button Open URL with default app", "Open Link");
         }
         notif->setActions(actions);
 
