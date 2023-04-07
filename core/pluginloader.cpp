@@ -115,7 +115,18 @@ QSet<QString> PluginLoader::pluginsForCapabilities(const QSet<QString> &incoming
 {
     QSet<QString> ret;
 
+    QString myDeviceType = KdeConnectConfig::instance().deviceType();
+
     for (const KPluginMetaData &service : qAsConst(plugins)) {
+
+        const QSet<QString> supportedPlatforms = KPluginMetaData::readStringList(service.rawData(), QStringLiteral("X-KdeConnect-SupportedDeviceTypes")).toSet();
+        if (!supportedPlatforms.isEmpty()) {
+            if (!supportedPlatforms.contains(myDeviceType)) {
+                qCDebug(KDECONNECT_CORE) << "Not loading plugin" << service.pluginId() << "because this device type (" << myDeviceType << ") is not supported. Supports:" << supportedPlugins;
+            }
+        }
+
+        // Check if capbilites intersect
         const QSet<QString> pluginIncomingCapabilities =
             KPluginMetaData::readStringList(service.rawData(), QStringLiteral("X-KdeConnect-SupportedPacketType")).toSet();
         const QSet<QString> pluginOutgoingCapabilities =
