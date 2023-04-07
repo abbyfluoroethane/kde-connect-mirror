@@ -64,5 +64,8 @@
     ],
     "X-KdeConnect-SupportedPacketType": [
         "kdeconnect.bigscreen.stt"
+    ],
+    "X-KdeConnect-SupportedDeviceTypes": [
+        "tv"
     ]
 }
