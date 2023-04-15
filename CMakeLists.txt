@@ -60,8 +60,8 @@ set_package_properties(KF5Kirigami2 PROPERTIES
 )
 
 if(UNIX AND NOT APPLE)
-    find_package(KF5Package REQUIRED)
-    find_package(KF5PulseAudioQt)
+    find_package(KF${QT_MAJOR_VERSION}Package REQUIRED)
+    find_package(KF${QT_MAJOR_VERSION}PulseAudioQt)
     if (QT_MAJOR_VERSION EQUAL "5")
         find_package(QtWaylandScanner REQUIRED)
     endif()
@@ -90,9 +90,9 @@ find_package(Qt${QT_MAJOR_VERSION} ${QT_MIN_VERSION} REQUIRED COMPONENTS DBus Qu
 if (UNIX AND NOT APPLE AND QT_MAJOR_VERSION EQUAL "5")
     find_package(Qt5 ${QT_MIN_VERSION} REQUIRED COMPONENTS X11Extras)
 endif()
-find_package(KF5 ${KF5_MIN_VERSION} REQUIRED COMPONENTS ${KF5_REQUIRED_COMPONENTS})
+find_package(KF${QT_MAJOR_VERSION} ${KF5_MIN_VERSION} REQUIRED COMPONENTS ${KF5_REQUIRED_COMPONENTS})
 if (KF5_OPTIONAL_COMPONENTS)
-    find_package(KF5 ${KF5_MIN_VERSION} OPTIONAL_COMPONENTS ${KF5_OPTIONAL_COMPONENTS})
+    find_package(KF${QT_MAJOR_VERSION} ${KF5_MIN_VERSION} OPTIONAL_COMPONENTS ${KF5_OPTIONAL_COMPONENTS})
 endif()
 
 if (WIN32)
@@ -108,8 +108,8 @@ add_subdirectory(core)
 add_subdirectory(plugins)
 add_subdirectory(interfaces)
 
-find_package(KF5QQC2DesktopStyle ${KF5_MIN_VERSION} REQUIRED)
-set_package_properties(KF5QQC2DesktopStyle PROPERTIES TYPE RUNTIME)
+find_package(KF${QT_MAJOR_VERSION}QQC2DesktopStyle ${KF5_MIN_VERSION} REQUIRED)
+set_package_properties(KF${QT_MAJOR_VERSION}QQC2DesktopStyle PROPERTIES TYPE RUNTIME)
 
 add_subdirectory(icons)
 add_subdirectory(data)
