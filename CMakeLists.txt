@@ -11,6 +11,9 @@ project(kdeconnect VERSION ${RELEASE_SERVICE_VERSION})
 if (SAILFISHOS)
     set(KF5_MIN_VERSION "5.36.0")
     set(QT_MIN_VERSION "5.6.0")
+    function(qt_add_resources)
+    qt_add_resources(${ARGN})
+    endfunction()
 else()
     set(KF5_MIN_VERSION "5.101.0")
     set(QT_MIN_VERSION "5.15.2")
@@ -76,8 +79,8 @@ else()
     )
 
     if(UNIX AND NOT APPLE)
-        find_package(KF5Package REQUIRED)
-        find_package(KF5PulseAudioQt)
+        find_package(KF${QT_MAJOR_VERSION}Package REQUIRED)
+        find_package(KF${QT_MAJOR_VERSION}PulseAudioQt)
         if (QT_MAJOR_VERSION EQUAL "5")
             find_package(QtWaylandScanner REQUIRED)
         endif()
@@ -88,8 +91,8 @@ else()
         pkg_check_modules(GIO REQUIRED IMPORTED_TARGET gio-2.0)
     endif()
 
-    find_package(KF5PeopleVCard)
-    set_package_properties(KF5PeopleVCard PROPERTIES
+    find_package(KF${QT_MAJOR_VERSION}PeopleVCard)
+    set_package_properties(KF${QT_MAJOR_VERSION}PeopleVCard PROPERTIES
         PURPOSE "Read vcards from the file system"
         URL "https://invent.kde.org/pim/kpeoplevcard"
         TYPE RUNTIME
@@ -108,9 +111,9 @@ find_package(Qt${QT_MAJOR_VERSION} ${QT_MIN_VERSION} REQUIRED COMPONENTS DBus Qu
 if (UNIX AND NOT APPLE AND QT_MAJOR_VERSION EQUAL "5")
     find_package(Qt5 ${QT_MIN_VERSION} REQUIRED COMPONENTS X11Extras)
 endif()
-find_package(KF5 ${KF5_MIN_VERSION} REQUIRED COMPONENTS ${KF5_REQUIRED_COMPONENTS})
+find_package(KF${QT_MAJOR_VERSION} ${KF5_MIN_VERSION} REQUIRED COMPONENTS ${KF5_REQUIRED_COMPONENTS})
 if (KF5_OPTIONAL_COMPONENTS)
-    find_package(KF5 ${KF5_MIN_VERSION} OPTIONAL_COMPONENTS ${KF5_OPTIONAL_COMPONENTS})
+    find_package(KF${QT_MAJOR_VERSION} ${KF5_MIN_VERSION} OPTIONAL_COMPONENTS ${KF5_OPTIONAL_COMPONENTS})
 endif()
 
 if (WIN32)
@@ -128,8 +131,8 @@ add_subdirectory(interfaces)
 
 if (NOT SAILFISHOS)
 
-    find_package(KF5QQC2DesktopStyle ${KF5_MIN_VERSION} REQUIRED)
-    set_package_properties(KF5QQC2DesktopStyle PROPERTIES TYPE RUNTIME)
+    find_package(KF${QT_MAJOR_VERSION}QQC2DesktopStyle ${KF5_MIN_VERSION} REQUIRED)
+    set_package_properties(KF${QT_MAJOR_VERSION}QQC2DesktopStyle PROPERTIES TYPE RUNTIME)
 
     add_subdirectory(icons)
     add_subdirectory(data)
