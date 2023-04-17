@@ -26,7 +26,7 @@
 #include "networkpacket.h"
 #include "pluginloader.h"
 
-// In older Qt released, qAsConst isnt available
+// In older Qt released, qAsConst isn't available
 #include "qtcompat_p.h"
 
 class Device::DevicePrivate
@@ -78,7 +78,7 @@ Device::Device(QObject *parent, const QString &id)
     QDBusConnection::sessionBus().registerObject(dbusPath(), this, QDBusConnection::ExportScriptableContents | QDBusConnection::ExportAdaptors);
 
     // Assume every plugin is supported until addLink is called and we can get the actual list
-    d->m_allPlugins = PluginLoader::instance()->getPluginList().toSet();
+    d->m_allPlugins = PluginLoader::instance()->getPluginSet();
     d->m_supportedPlugins = d->m_allPlugins;
 
     connect(d->m_pairingHandler, &PairingHandler::incomingPairRequest, this, &Device::pairingHandler_incomingPairRequest);
@@ -93,7 +93,7 @@ Device::Device(QObject *parent, const NetworkPacket &identityPacket, DeviceLink 
 {
     d->m_pairingHandler = new PairingHandler(this, PairState::NotPaired);
     d->m_deviceName = identityPacket.get<QString>(QStringLiteral("deviceName"));
-    d->m_allPlugins = PluginLoader::instance()->getPluginList().toSet();
+    d->m_allPlugins = PluginLoader::instance()->getPluginSet();
 
     addLink(identityPacket, dl);
 
@@ -143,7 +143,7 @@ int Device::protocolVersion()
 
 QStringList Device::supportedPlugins() const
 {
-    return d->m_supportedPlugins.toList();
+    return QList(d->m_supportedPlugins.cbegin(), d->m_supportedPlugins.cend());
 }
 
 bool Device::hasPlugin(const QString &name) const
@@ -169,8 +169,7 @@ void Device::reloadPlugins()
             const KPluginMetaData service = loader->getPluginInfo(pluginName);
 
             const bool pluginEnabled = isPluginEnabled(pluginName);
-            const QSet<QString> incomingCapabilities =
-                KPluginMetaData::readStringList(service.rawData(), QStringLiteral("X-KdeConnect-SupportedPacketType")).toSet();
+            const QStringList incomingCapabilities = service.rawData().value(QStringLiteral("X-KdeConnect-SupportedPacketType")).toVariant().toStringList();
 
             if (pluginEnabled) {
                 KdeConnectPlugin *plugin = d->m_plugins.take(pluginName);
@@ -304,14 +303,22 @@ void Device::addLink(const NetworkPacket &identityPacket, DeviceLink *link)
     connect(link, &DeviceLink::receivedPacket, this, &Device::privateReceivedPacket);
 
     const bool capabilitiesSupported = identityPacket.has(QStringLiteral("incomingCapabilities")) || identityPacket.has(QStringLiteral("outgoingCapabilities"));
+    const auto toSet = [](const QStringList &l) {
+#if QT_VERSION < QT_VERSION_CHECK(5, 14, 0)
+        return l.toSet();
+#else
+        return QSet(l.begin(), l.end());
+#endif
+    };
+
     if (capabilitiesSupported) {
-        const QSet<QString> outgoingCapabilities = identityPacket.get<QStringList>(QStringLiteral("outgoingCapabilities")).toSet(),
-                            incomingCapabilities = identityPacket.get<QStringList>(QStringLiteral("incomingCapabilities")).toSet();
+        const QSet<QString> outgoingCapabilities = toSet(identityPacket.get<QStringList>(QStringLiteral("outgoingCapabilities"))),
+                            incomingCapabilities = toSet(identityPacket.get<QStringList>(QStringLiteral("incomingCapabilities")));
 
         d->m_supportedPlugins = PluginLoader::instance()->pluginsForCapabilities(incomingCapabilities, outgoingCapabilities);
         // qDebug() << "new plugins for" << m_deviceName << m_supportedPlugins << incomingCapabilities << outgoingCapabilities;
     } else {
-        d->m_supportedPlugins = PluginLoader::instance()->getPluginList().toSet();
+        d->m_supportedPlugins = PluginLoader::instance()->getPluginSet();
     }
 
     reloadPlugins();
