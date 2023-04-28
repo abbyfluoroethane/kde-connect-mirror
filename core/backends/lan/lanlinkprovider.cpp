@@ -13,15 +13,13 @@
 #include <netinet/tcp.h>
 #include <sys/socket.h>
 #else
-#include <winsock2.h>
 #include <mstcpip.h>
+#include <winsock2.h>
 #endif
 
 #include <QHostInfo>
 #include <QMetaEnum>
-#include <QNetworkConfigurationManager>
 #include <QNetworkProxy>
-#include <QNetworkSession>
 #include <QSslCipher>
 #include <QSslConfiguration>
 #include <QSslKey>
@@ -59,21 +57,26 @@ LanLinkProvider::LanLinkProvider(bool testMode, quint16 udpBroadcastPort, quint1
 
     m_udpSocket.setProxy(QNetworkProxy::NoProxy);
 
-    // Detect when a network interface changes status, so we announce ourselves in the new network
-    QNetworkConfigurationManager *networkManager = new QNetworkConfigurationManager(this);
-    connect(networkManager, &QNetworkConfigurationManager::configurationChanged, this, &LanLinkProvider::onNetworkConfigurationChanged);
-
     connect(&m_udpSocket, &QAbstractSocket::errorOccurred, [](QAbstractSocket::SocketError socketError) {
         qWarning() << "Error sending UDP packet:" << socketError;
     });
-}
 
-void LanLinkProvider::onNetworkConfigurationChanged(const QNetworkConfiguration &config)
-{
-    if (m_lastConfig != config && config.state() == QNetworkConfiguration::Active) {
-        m_lastConfig = config;
-        onNetworkChange();
-    }
+#if QT_VERSION_MAJOR < 6
+    QNetworkConfigurationManager *networkManager = new QNetworkConfigurationManager(this);
+    connect(networkManager, &QNetworkConfigurationManager::configurationChanged, this, [this](QNetworkConfiguration config) {
+        if (m_lastConfig != config && config.state() == QNetworkConfiguration::Active) {
+            m_lastConfig = config;
+            onNetworkChange();
+        }
+    });
+#else
+    // Detect when a network interface changes status, so we announce ourselves in the new network
+    connect(QNetworkInformation::instance(), &QNetworkInformation::reachabilityChanged, this, [this]() {
+        if (QNetworkInformation::instance()->reachability() == QNetworkInformation::Reachability::Online) {
+            onNetworkChange();
+        }
+    });
+#endif
 }
 
 LanLinkProvider::~LanLinkProvider()
@@ -601,7 +604,7 @@ void LanLinkProvider::configureSocket(QSslSocket *socket)
 #endif
 
 #if defined(Q_OS_WIN)
-    int maxIdle = 5 * 60 * 1000; // 5 minutes of idle before sending keep-alives
+    int maxIdle = 5 * 60 * 1000; // 5 minutes of idle before sending keep-alive
     int interval = 5 * 1000; // 5 seconds interval between probes after 5 minute delay
     DWORD nop;
 
@@ -609,12 +612,10 @@ void LanLinkProvider::configureSocket(QSslSocket *socket)
     struct tcp_keepalive keepalive = {
         1 /* true */,
         maxIdle,
-        interval
+        interval,
     };
 
-    int rv = WSAIoctl(socket->socketDescriptor(), SIO_KEEPALIVE_VALS, &keepalive,
-                        sizeof(keepalive), nullptr, 0, &nop,
-                        nullptr, nullptr);
+    int rv = WSAIoctl(socket->socketDescriptor(), SIO_KEEPALIVE_VALS, &keepalive, sizeof(keepalive), nullptr, 0, &nop, nullptr, nullptr);
     if (!rv) {
         int error = WSAGetLastError();
         qCDebug(KDECONNECT_CORE) << "Could not enable TCP Keep-Alive: " << error;
