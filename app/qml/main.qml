@@ -74,7 +74,7 @@ Kirigami.ApplicationWindow {
             Kirigami.BasicListItem {
                 id: findDevicesAction
                 text: i18nd("kdeconnect-app", "Find devices...")
-                icon: "list-add"
+                icon.name: "list-add"
                 checked: pageStack.currentItem && pageStack.currentItem.objectName == "FindDevices"
                 Layout.fillWidth: true
 
@@ -119,7 +119,7 @@ Kirigami.ApplicationWindow {
 
             Kirigami.BasicListItem {
                 text: i18n("Settings")
-                icon: "settings-configure"
+                icon.name: "settings-configure"
                 onClicked: pageStack.pushDialogLayer('qrc:/qml/Settings.qml', {}, {
                     title: i18n("Settings"),
                 });
