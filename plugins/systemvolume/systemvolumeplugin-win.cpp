@@ -188,6 +188,8 @@ public:
         HANDLE threadHandle = CreateThread(NULL, 0, releaseRemovedDevice, &data, 0, &threadId);
         CloseHandle(threadHandle);
 
+        enclosing.sendSinkList();
+
         return S_OK;
     }
 
@@ -195,14 +197,22 @@ public:
     {
         if (dwNewState == DEVICE_STATE_UNPLUGGED)
             return OnDeviceRemoved(pwstrDeviceId);
-
-        enclosing.sendSinkList();
         return S_OK;
     }
 
     HRESULT STDMETHODCALLTYPE OnPropertyValueChanged(LPCWSTR pwstrDeviceId, const PROPERTYKEY key) override
     {
-        enclosing.sendSinkList();
+        // This callback is supper spammy. Care only about name and description changes.
+        if (IsEqualPropertyKey(key, PKEY_Device_FriendlyName)) {
+            qWarning("OnPropertyValueChanged name");
+            enclosing.sendSinkList();
+        }
+#ifndef __MINGW32__
+        if (IsEqualPropertyKey(key, PKEY_Device_DeviceDesc)) {
+            qWarning("OnPropertyValueChanged desc");
+            enclosing.sendSinkList();
+        }
+#endif
         return S_OK;
     }
 
