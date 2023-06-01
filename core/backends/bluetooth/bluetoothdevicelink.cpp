@@ -22,7 +22,6 @@ BluetoothDeviceLink::BluetoothDeviceLink(const QString &deviceId,
     , mSocketReader(new DeviceLineReader(socket.data(), this))
     , mConnection(connection)
     , mChannel(socket)
-    , mPairingHandler(new BluetoothPairingHandler(this))
 {
     connect(mSocketReader, &DeviceLineReader::readyRead, this, &BluetoothDeviceLink::dataReceived);
 
@@ -49,16 +48,6 @@ bool BluetoothDeviceLink::sendPacket(NetworkPacket &np)
     // TODO: handle too-big packets
     int written = mSocketReader->write(np.serialize());
     return (written != -1);
-}
-
-void BluetoothDeviceLink::userRequestsPair()
-{
-    mPairingHandler->requestPairing();
-}
-
-void BluetoothDeviceLink::userRequestsUnpair()
-{
-    mPairingHandler->unpair();
 }
 
 bool BluetoothDeviceLink::linkShouldBeKeptAlive()
