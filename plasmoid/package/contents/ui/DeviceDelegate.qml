@@ -181,7 +181,7 @@ PlasmaComponents.ListItem
                         id: sendclipboard
                         icon: "klipper"
                         visible: clipboard.available && clipboard.clipboard.isAutoShareDisabled
-                        text: i18n("Send clipboard")
+                        text: i18n("Send Clipboard")
 
                         onClicked: {
                             clipboard.sendClipboard()

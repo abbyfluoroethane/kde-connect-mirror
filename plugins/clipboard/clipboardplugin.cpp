@@ -46,12 +46,10 @@ void ClipboardPlugin::clipboardChanged(const QString &content, ClipboardListener
     sendClipboard(content);
 }
 
-#include <iostream>
 void ClipboardPlugin::configChanged()
 {
     autoShare = config()->getBool(QStringLiteral("autoShare"), config()->getBool(QStringLiteral("sendUnknown"), true));
     sharePasswords = config()->getBool(QStringLiteral("sendPassword"), true);
-    std::cout << "CONFIG CHANGED KCM" << std::endl;
     Q_EMIT autoShareDisabledChanged(isAutoShareDisabled());
 }
 
