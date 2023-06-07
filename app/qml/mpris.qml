@@ -79,13 +79,6 @@ Kirigami.Page
             onCurrentTextChanged: root.pluginInterface.player = currentText
         }
         Label {
-            id: nowPlaying
-            Layout.fillWidth: true
-            text: root.pluginInterface.nowPlaying
-            visible: root.pluginInterface.title.length == 0
-            wrapMode: Text.Wrap
-        }
-        Label {
             Layout.fillWidth: true
             text: root.pluginInterface.title
             visible: !nowPlaying.visible

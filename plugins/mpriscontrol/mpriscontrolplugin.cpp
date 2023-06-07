@@ -388,17 +388,10 @@ void MprisControlPlugin::mprisPlayerMetadataToNetworkPacket(NetworkPacket &np, c
         }
     }
 
-    QString nowPlaying = title;
-
-    if (!artist.isEmpty()) {
-        nowPlaying = artist + QStringLiteral(" - ") + title;
-    }
-
     np.set(QStringLiteral("title"), title);
     np.set(QStringLiteral("artist"), artist);
     np.set(QStringLiteral("album"), album);
     np.set(QStringLiteral("albumArtUrl"), albumArtUrl);
-    np.set(QStringLiteral("nowPlaying"), nowPlaying);
 
     bool hasLength = false;
     long long length = nowPlayingMap[QStringLiteral("mpris:length")].toLongLong(&hasLength) / 1000; // nanoseconds to milliseconds

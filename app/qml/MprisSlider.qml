@@ -17,6 +17,7 @@ Loader {
     sourceComponent: plugin.canSeek ? seekBar : progressBar
 
     onLastPositionChanged: {
+        item.value = lastPosition
         lastPositionTime = new Date();
     }
 
@@ -53,12 +54,5 @@ Loader {
         running: updatePositionSlider && plugin.isPlaying
 
         onTriggered: item.value = lastPosition + (new Date().getTime() - lastPositionTime.getTime())
-    }
-
-    Connections {
-        target: plugin
-        function onNowPlayingChanged() {
-            item.value = lastPosition
-        }
     }
 }
