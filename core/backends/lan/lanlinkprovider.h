@@ -17,6 +17,7 @@
 #include "backends/linkprovider.h"
 #include "kdeconnectcore_export.h"
 #include "landevicelink.h"
+#include "mdnsdiscovery.h"
 #include "server.h"
 
 class KDECONNECTCORE_EXPORT LanLinkProvider : public LinkProvider
@@ -40,6 +41,13 @@ public:
     {
         return PRIORITY_HIGH;
     }
+
+    void sendUdpIdentityPacket(const QList<QHostAddress> &addresses);
+
+    QHostAddress localAddress() const
+    {
+        return m_udpSocket.localAddress();
+    };
 
     static void configureSslSocket(QSslSocket *socket, const QString &deviceId, bool isDeviceTrusted);
     static void configureSocket(QSslSocket *socket);
@@ -71,7 +79,8 @@ private:
     void onNetworkConfigurationChanged(const QNetworkConfiguration &config);
     void addLink(const QString &deviceId, QSslSocket *socket, NetworkPacket *receivedPacket, LanDeviceLink::ConnectionStarted connectionOrigin);
     QList<QHostAddress> getBroadcastAddresses();
-    void sendBroadcasts(QUdpSocket &socket, const NetworkPacket &np, const QList<QHostAddress> &addresses);
+    void sendUdpPacket(QUdpSocket &socket, const NetworkPacket &np, const QList<QHostAddress> &addresses);
+    void broadcastUdpIdentityPacket();
 
     Server *m_server;
     QUdpSocket m_udpSocket;
@@ -90,6 +99,8 @@ private:
     QNetworkConfiguration m_lastConfig;
     const bool m_testMode;
     QTimer m_combineBroadcastsTimer;
+
+    MdnsDiscovery m_mdnsDiscovery;
 };
 
 #endif
