@@ -151,6 +151,8 @@ QStringList Device::loadedPlugins() const
 
 void Device::reloadPlugins()
 {
+    qCDebug(KDECONNECT_CORE) << name() << "- reload plugins";
+
     QHash<QString, KdeConnectPlugin *> newPluginMap, oldPluginMap = d->m_plugins;
     QMultiMap<QString, KdeConnectPlugin *> newPluginsByIncomingCapability;
 
