@@ -79,7 +79,7 @@ private:
     void onNetworkConfigurationChanged(const QNetworkConfiguration &config);
     void addLink(const QString &deviceId, QSslSocket *socket, NetworkPacket *receivedPacket, LanDeviceLink::ConnectionStarted connectionOrigin);
     QList<QHostAddress> getBroadcastAddresses();
-    void sendUdpPacket(QUdpSocket &socket, const NetworkPacket &np, const QList<QHostAddress> &addresses);
+    void sendUdpIdentityPacket(QUdpSocket &socket, const QList<QHostAddress> &addresses);
     void broadcastUdpIdentityPacket();
 
     Server *m_server;
