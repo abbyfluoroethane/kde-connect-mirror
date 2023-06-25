@@ -24,7 +24,7 @@ class KDECONNECTCORE_EXPORT MdnsDiscovery : public QObject
     Q_OBJECT
 
 public:
-    MdnsDiscovery(LanLinkProvider *parent);
+    explicit MdnsDiscovery(LanLinkProvider *parent);
     ~MdnsDiscovery();
 
     void startDiscovering();
