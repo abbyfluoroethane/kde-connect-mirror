@@ -349,18 +349,16 @@ void LanLinkProvider::tcpSocketConnected()
         connect(socket, QOverload<const QList<QSslError> &>::of(&QSslSocket::sslErrors), this, &LanLinkProvider::sslErrors);
 
         socket->startServerEncryption();
-
-        return; // Return statement prevents from deleting received packet, needed in slot "encrypted"
-
     } else {
-        // I think this will never happen, but if it happens the deviceLink
-        //(or the socket that is now inside it) might not be valid. Delete them.
+        // The socket doesn't seem to work, so we can't create the connection.
+
         qCDebug(KDECONNECT_CORE) << "Fallback (2), try reverse connection (send udp packet)";
         m_udpSocket.writeDatagram(np2.serialize(), m_receivedIdentityPackets[socket].sender, m_udpBroadcastPort);
-    }
 
-    delete m_receivedIdentityPackets.take(socket).np;
-    // We don't delete the socket because now it's owned by the LanDeviceLink
+        // Cleanup the network packet now. The socket should be deleted via the disconnected() signal.
+        // We don't do this on success, because it is done later in the encrypted() slot.
+        delete m_receivedIdentityPackets.take(socket).np;
+    }
 }
 
 void LanLinkProvider::encrypted()
@@ -379,7 +377,7 @@ void LanLinkProvider::encrypted()
 
     addLink(socket, deviceInfo);
 
-    // Copied from tcpSocketConnected slot, now delete received packet
+    // We don't delete the socket because now it's owned by the LanDeviceLink
     delete m_receivedIdentityPackets.take(socket).np;
 }
 
