@@ -9,6 +9,7 @@ set(backends_kdeconnect_SRCS
     backends/lan/uploadjob.cpp
     backends/lan/socketlinereader.cpp
     backends/lan/mdnsdiscovery.cpp
+    backends/lan/mdns_wrapper.cpp
 
     PARENT_SCOPE
 )
