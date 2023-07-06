@@ -70,15 +70,21 @@ static int query_callback(int sock, const struct sockaddr* from, size_t addrlen,
 
     switch (record_type) {
     case MDNS_RECORDTYPE_PTR: {
-        mdns_string_pair_t namePos = mdns_get_next_substring(data, size, record_offset);
-        discoveredService->serviceName = QString::fromLatin1((char *)data + namePos.offset, namePos.length);
+        // Keep just the service name instead of the full "<service-name>.<_service-type>._tcp.local." string
+        mdns_string_pair_t serviceNamePos = mdns_get_next_substring(data, size, record_offset);
+        discoveredService->serviceName = QString::fromLatin1((char *)data + serviceNamePos.offset, serviceNamePos.length);
+        //static char serviceNameBuffer[256];
+        //mdns_string_t serviceName = mdns_record_parse_ptr(data, size, record_offset, record_length, serviceNameBuffer, sizeof(serviceNameBuffer));
+        //discoveredService->serviceName = QString::fromLatin1(serviceName.str, serviceName.length);
         if (discoveredService->address == QHostAddress::Null) {
             discoveredService->address = QHostAddress(from); // In case we don't receive a A record, use from as address
         }
     } break;
     case MDNS_RECORDTYPE_SRV: {
-        static char auxBuffer[256];
-        mdns_record_srv_t record = mdns_record_parse_srv(data, size, record_offset, record_length, auxBuffer, sizeof(auxBuffer));
+        static char nameBuffer[256];
+        mdns_record_srv_t record = mdns_record_parse_srv(data, size, record_offset, record_length, nameBuffer, sizeof(nameBuffer));
+        // We can use the IP to connect so we don't need to store the "<hostname>.local." address.
+        //discoveredService->qualifiedHostname = QString::fromLatin1(record.name.str, record.name.length);
         discoveredService->port = record.port;
     } break;
     case MDNS_RECORDTYPE_A: {
@@ -88,6 +94,8 @@ static int query_callback(int sock, const struct sockaddr* from, size_t addrlen,
     } break;
     case MDNS_RECORDTYPE_AAAA:
         // Ignore IPv6 for now
+        //sockaddr_in6 addr6;
+        //mdns_record_parse_aaaa(data, size, record_offset, record_length, &addr6);
         break;
     case MDNS_RECORDTYPE_TXT: {
         mdns_record_txt_t records[24];
@@ -106,13 +114,13 @@ static int query_callback(int sock, const struct sockaddr* from, size_t addrlen,
     return 0;
 }
 
-void MdnsWrapper::startDiscovering(const char *serviceName)
+void MdnsWrapper::startDiscovering(const char *serviceType)
 {
     int num_sockets = listenForQueryResponses();
     if (num_sockets <= 0) {
         qWarning() << "Failed to open any client sockets";
     } else {
-        sendQuery(serviceName);
+        sendQuery(serviceType);
     }
 }
 
@@ -180,13 +188,13 @@ int MdnsWrapper::listenForQueryResponses()
     return sockets.size();
 }
 
-void MdnsWrapper::sendQuery(const char *serviceName)
+void MdnsWrapper::sendQuery(const char *serviceType)
 {
-    qCDebug(KDECONNECT_CORE) << "Sending MDNS query for service" << serviceName;
+    qCDebug(KDECONNECT_CORE) << "Sending MDNS query for service" << serviceType;
 
     mdns_query_t query;
-    query.name = serviceName;
-    query.length = strlen(serviceName);
+    query.name = serviceType;
+    query.length = strlen(serviceType);
     query.type = MDNS_RECORDTYPE_PTR;
 
     size_t capacity = 2048;
@@ -387,21 +395,8 @@ static int service_callback(int sock, const struct sockaddr* from, size_t addrle
     size_t offset = name_offset;
     mdns_string_t name = mdns_string_extract(data, size, &offset, namebuffer, sizeof(namebuffer));
 
-    const char* record_name = 0;
-    if (rtype == MDNS_RECORDTYPE_PTR)
-        record_name = "PTR";
-    else if (rtype == MDNS_RECORDTYPE_SRV)
-        record_name = "SRV";
-    else if (rtype == MDNS_RECORDTYPE_A)
-        record_name = "A";
-    else if (rtype == MDNS_RECORDTYPE_AAAA)
-        record_name = "AAAA";
-    else if (rtype == MDNS_RECORDTYPE_TXT)
-        record_name = "TXT";
-    else if (rtype == MDNS_RECORDTYPE_ANY)
-        record_name = "ANY";
-    else
-        return 0;
+    const char* record_name = recordTypeToStr(rtype);
+
     printf("Query %s %.*s\n", record_name, MDNS_STRING_FORMAT(name));
 
     if ((name.length == (sizeof(dns_sd) - 1)) &&
