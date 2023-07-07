@@ -23,8 +23,12 @@ MdnsDiscovery::MdnsDiscovery(LanLinkProvider *lanLinkProvider)
             qCDebug(KDECONNECT_CORE) << "Discovered myself, ignoring";
             return;
         }
-        lanLinkProvider->sendUdpIdentityPacket(QList<QHostAddress>{service.address});
         qCDebug(KDECONNECT_CORE) << "Discovered" << service.name << "at" << service.address;
+        if (!lanLinkProvider->isConnected(service.name)) {
+            qCDebug(KDECONNECT_CORE) << "Ignoring device to which I'm already connected";
+        } else {
+            lanLinkProvider->sendUdpIdentityPacket(QList<QHostAddress>{service.address});
+        }
     });
 }
 

@@ -43,6 +43,8 @@ public:
     static void configureSslSocket(QSslSocket *socket, const QString &deviceId, bool isDeviceTrusted);
     static void configureSocket(QSslSocket *socket);
 
+    bool isConnected(const QString& deviceId);
+
     /**
      * This is the default UDP port both for broadcasting and receiving identity packets
      */

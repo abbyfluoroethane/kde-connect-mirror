@@ -635,3 +635,8 @@ void LanLinkProvider::addLink(QSslSocket *socket, const DeviceInfo &deviceInfo)
     }
     Q_EMIT onConnectionReceived(deviceLink);
 }
+
+bool LanLinkProvider::isConnected(const QString& deviceId)
+{
+    return m_links.contains(deviceId);
+}
