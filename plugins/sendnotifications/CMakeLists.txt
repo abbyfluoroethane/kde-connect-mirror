@@ -12,6 +12,17 @@ set(kdeconnect_sendnotifications_SRCS
     notifyingapplication.cpp
     ${debug_file_SRCS}
 )
+if(WIN32)
+set(kdeconnect_sendnotifications_SRCS
+    ${kdeconnect_sendnotifications_SRCS}
+    windowsnotificationslistener.cpp
+)
+else()
+set(kdeconnect_sendnotifications_SRCS
+    ${kdeconnect_sendnotifications_SRCS}
+    dbusnotificationslistener.cpp
+)
+endif()
 
 kdeconnect_add_plugin(kdeconnect_sendnotifications SOURCES ${kdeconnect_sendnotifications_SRCS})
 
@@ -22,8 +33,13 @@ target_link_libraries(kdeconnect_sendnotifications
     Qt::Gui
     KF${QT_MAJOR_VERSION}::IconThemes
     KF${QT_MAJOR_VERSION}::ConfigCore
-    PkgConfig::GIO
 )
+if(WIN32)
+   target_link_libraries(kdeconnect_sendnotifications windowsapp)
+   target_compile_features(kdeconnect_sendnotifications PUBLIC cxx_std_17)
+else()
+   target_link_libraries(kdeconnect_sendnotifications PkgConfig::GIO)
+endif()
 
 #######################################
 # Config
