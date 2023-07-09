@@ -32,10 +32,15 @@ target_link_libraries(kdeconnect_sendnotifications
     KF5::ConfigCore
     PkgConfig::GIO
 )
+if(WIN32)
+   target_link_libraries(kdeconnect_sendnotifications kdeconnectcore windowsapp)
+   target_compile_features(kdeconnect_sendnotifications PUBLIC cxx_std_17)
+endif()
+
 
 #######################################
 # Config
-if (NOT SAILFISHOS)
+if (NOT WIN32 AND NOT SAILFISHOS)
 
 kcoreaddons_add_plugin(kdeconnect_sendnotifications_config INSTALL_NAMESPACE "kdeconnect/kcms")
 
