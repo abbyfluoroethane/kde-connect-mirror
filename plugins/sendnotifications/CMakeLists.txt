@@ -32,6 +32,11 @@ target_link_libraries(kdeconnect_sendnotifications
     KF5::ConfigCore
     PkgConfig::GIO
 )
+if(WIN32)
+   target_link_libraries(kdeconnect_sendnotifications kdeconnectcore windowsapp)
+   target_compile_features(kdeconnect_sendnotifications PUBLIC cxx_std_17)
+endif()
+
 
 #######################################
 # Config
