@@ -5,17 +5,16 @@
  */
 #include "notificationslistener.h"
 
+#include <chrono>
 #include <unordered_map>
 
-#include <KConfig>
-#include <KConfigGroup>
-#include <QDBusArgument>
-#include <QDBusInterface>
 #include <QImage>
 #include <QScopeGuard>
 #include <QStandardPaths>
 #include <QtDebug>
 
+#include <KConfig>
+#include <KConfigGroup>
 #include <kiconloader.h>
 #include <kicontheme.h>
 
@@ -24,12 +23,16 @@
 
 #include <dbushelper.h>
 
+#ifdef Q_OS_UNIX
+#include <QDBusArgument>
+#include <QDBusInterface>
+#endif
+
 #include "notifyingapplication.h"
 #include "plugin_sendnotification_debug.h"
 #include "sendnotificationsplugin.h"
 
-// In older Qt released, qAsConst isnt available
-#include "qtcompat_p.h"
+using namespace std::chrono_literals;
 
 NotificationsListener::NotificationsListener(KdeConnectPlugin *aPlugin)
     : QObject(aPlugin)
@@ -37,22 +40,12 @@ NotificationsListener::NotificationsListener(KdeConnectPlugin *aPlugin)
 {
     qRegisterMetaTypeStreamOperators<NotifyingApplication>("NotifyingApplication");
 
-    GError *error = nullptr;
-    m_gdbusConnection = g_bus_get_sync(G_BUS_TYPE_SESSION, nullptr, &error);
-    g_assert_no_error(error);
-    m_gdbusFilterId = g_dbus_connection_add_filter(m_gdbusConnection, NotificationsListener::onMessageFiltered, this, nullptr);
-
-    g_autoptr(GDBusMessage) msg =
-        g_dbus_message_new_method_call("org.freedesktop.DBus", "/org/freedesktop/DBus", "org.freedesktop.DBus.Monitoring", "BecomeMonitor");
-
-    GVariantBuilder *arrayBuilder = g_variant_builder_new(G_VARIANT_TYPE("as"));
-    g_variant_builder_add(arrayBuilder, "s", "interface='org.freedesktop.Notifications'");
-    g_variant_builder_add(arrayBuilder, "s", "member='Notify'");
-
-    g_dbus_message_set_body(msg, g_variant_new("(asu)", arrayBuilder, 0u));
-    g_dbus_connection_send_message(m_gdbusConnection, msg, GDBusSendMessageFlags::G_DBUS_SEND_MESSAGE_FLAGS_NONE, nullptr, &error);
-    g_assert_no_error(error);
-
+#ifdef Q_OS_UNIX
+    setUpDBusMonitor();
+#endif
+#ifdef Q_OS_WIN
+    setUpWindowsUserNotificationListener();
+#endif
     setTranslatedAppName();
     loadApplications();
 
@@ -62,8 +55,13 @@ NotificationsListener::NotificationsListener(KdeConnectPlugin *aPlugin)
 NotificationsListener::~NotificationsListener()
 {
     qCDebug(KDECONNECT_PLUGIN_SENDNOTIFICATION) << "Destroying NotificationsListener";
+#ifdef Q_OS_UNIX
     g_dbus_connection_remove_filter(m_gdbusConnection, m_gdbusFilterId);
     g_object_unref(m_gdbusConnection);
+#endif
+#ifdef Q_OS_WIN
+    m_userNotificationListener.NotificationChanged(m_notificationEventToken);
+#endif
 }
 
 void NotificationsListener::setTranslatedAppName()
@@ -94,6 +92,86 @@ void NotificationsListener::loadApplications()
     // qCDebug(KDECONNECT_PLUGIN_SENDNOTIFICATION) << "Loaded" << applications.size() << " applications";
 }
 
+#ifdef Q_OS_UNIX
+void NotificationsListener::setUpDBusMonitor()
+{
+    GError *error = nullptr;
+    m_gdbusConnection = g_bus_get_sync(G_BUS_TYPE_SESSION, nullptr, &error);
+    g_assert_no_error(error);
+    m_gdbusFilterId = g_dbus_connection_add_filter(m_gdbusConnection, NotificationsListener::onMessageFiltered, this, nullptr);
+
+    g_autoptr(GDBusMessage) msg =
+        g_dbus_message_new_method_call("org.freedesktop.DBus", "/org/freedesktop/DBus", "org.freedesktop.DBus.Monitoring", "BecomeMonitor");
+
+    GVariantBuilder *arrayBuilder = g_variant_builder_new(G_VARIANT_TYPE("as"));
+    g_variant_builder_add(arrayBuilder, "s", "interface='org.freedesktop.Notifications'");
+    g_variant_builder_add(arrayBuilder, "s", "member='Notify'");
+
+    g_dbus_message_set_body(msg, g_variant_new("(asu)", arrayBuilder, 0u));
+    g_dbus_connection_send_message(m_gdbusConnection, msg, GDBusSendMessageFlags::G_DBUS_SEND_MESSAGE_FLAGS_NONE, nullptr, &error);
+    g_assert_no_error(error);
+}
+#endif
+
+#ifdef Q_OS_WIN
+void NotificationsListener::setUpWindowsUserNotificationListener()
+{
+    using namespace winrt;
+    using namespace Windows::Foundation;
+    using namespace Windows::UI::Notifications;
+    using namespace Windows::UI::Notifications::Management;
+
+    // Register the notification listener
+    UserNotificationListenerAccessStatus accessStatus m_userNotificationListener.RequestAccessAsync().get();
+    if (accessStatus != UserNotificationListenerAccessStatus::Allowed) {
+        return;
+    }
+
+    // Register the event handler for notifications
+    m_notificationEventToken =
+        m_userNotificationListener.NotificationChanged([this](const UserNotificationListener &sender, const UserNotificationChangedEventArgs &args) {
+            // Get the notification from the event arguments
+            UserNotificationChangedKind changeKind = args.ChangeKind();
+            if (changeKind == UserNotificationChangedKind::Removed) {
+                return;
+            }
+
+            const auto getNotificationsAsync = co_await sender.GetNotificationsAsync();
+            const Collections::IVectorView<UserNotification> notifications = getNotificationsAsync.GetResults();
+            const unsigned notificationId = args.UserNotificationId();
+            auto it = std::find_if(notifications.begin(), notifications.end(), [notificationId](const UserNotification &notification) {
+                return notification.Id() == notificationId;
+            });
+            if (it == notifications.end()) {
+                return;
+            }
+
+            const AppInfo appInfo = it->AppInfo();
+            const std::wstring appName = appInfo.DisplayInfo().DisplayName();
+
+            const Notification notification = it->Notification();
+            const NotificationBinding toastBinding = notification.Visual().GetBinding(KnownNotificationBindings.ToastGeneric());
+            const Collections::IVectorView<AdaptiveNotificationText> textElements = toastBinding.GetTextElements();
+            std::wstring ticker;
+            if (textElements.Size() == 0) {
+                return;
+            } else {
+                for (int i = 1; i < textElements.Size(); ++i) {
+                    ticker += textElements[i].Text() + L"\n";
+                }
+            }
+
+            NetworkPacket np(PACKET_TYPE_NOTIFICATION,
+                             {{QStringLiteral("id"), 0},
+                              {QStringLiteral("appName"), QString::fromStdWString(appName)},
+                              {QStringLiteral("ticker"), QString::fromStdWString(ticker)},
+                              {QStringLiteral("isClearable"), true}}); // A Windows notification is always clearable
+            m_plugin->sendPacket(np);
+        });
+}
+#endif
+
+#ifdef Q_OS_UNIX
 bool NotificationsListener::parseImageDataArgument(GVariant *argument,
                                                    int &width,
                                                    int &height,
@@ -349,3 +427,4 @@ GDBusMessage *NotificationsListener::onMessageFiltered(GDBusConnection *, GDBusM
 
     return nullptr;
 }
+#endif
