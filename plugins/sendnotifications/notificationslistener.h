@@ -7,13 +7,19 @@
 #ifndef NOTIFICATIONSLISTENER_H
 #define NOTIFICATIONSLISTENER_H
 
-#include <QBuffer>
-#include <QDBusAbstractAdaptor>
-#include <QDBusArgument>
-#include <QFile>
 #include <core/device.h>
 
+#include <QBuffer>
+#include <QFile>
+
+#ifdef Q_OS_UNIX
 #include <gio/gio.h>
+#endif
+#ifdef Q_OS_WIN
+#include <winrt/Windows.Foundation.h>
+#include <winrt/Windows.UI.Notifications.Management.h>
+#include <winrt/Windows.UI.Notifications.h>
+#endif
 
 class KdeConnectPlugin;
 class Notification;
@@ -33,6 +39,7 @@ protected:
 
     // virtual helper function to make testing possible (QDBusArgument can not
     // be injected without making a DBUS-call):
+#ifdef Q_OS_UNIX
     virtual bool parseImageDataArgument(GVariant *argument,
                                         int &width,
                                         int &height,
@@ -45,16 +52,30 @@ protected:
     static QSharedPointer<QIODevice> iconForIconName(const QString &iconName);
 
     static GDBusMessage *onMessageFiltered(GDBusConnection *connection, GDBusMessage *msg, int incoming, void *parent);
+#endif
 
 private Q_SLOTS:
     void loadApplications();
 
 private:
+#ifdef Q_OS_UNIX
+    void setupDBusMonitor();
+#endif
+#ifdef Q_OS_WIN
+    void setupWindowsUserNotificationListener();
+#endif
+
     void setTranslatedAppName();
     QString m_translatedAppName;
 
+#ifdef Q_OS_UNIX
     GDBusConnection *m_gdbusConnection = nullptr;
     unsigned m_gdbusFilterId = 0;
+#endif
+#ifdef Q_OS_WIN
+    Windows::UI::Notifications::Management::UserNotificationListener m_userNotificationListener;
+    Windows::Foundation::EventRegistrationToken m_notificationEventToken;
+#endif
 };
 
 #endif // NOTIFICATIONSLISTENER_H
