@@ -479,11 +479,11 @@ Announcer::Announcer(const QString &serviceName, const QString &serviceType, uin
         // mdns.h needs all the qualified names to end with dot for some reason
         self.serviceType.append('.');
     }
-    self.port = port;
-    self.hostname = QHostInfo::localHostName().toLatin1() + QByteArray(".local.");
     self.serviceInstance = serviceName.toLatin1() + '.' + self.serviceType;
+    self.hostname = QHostInfo::localHostName().toLatin1() + ".local.";
     memset(&self.address_ipv4, 0, sizeof(struct sockaddr_in));
     memset(&self.address_ipv6, 0, sizeof(struct sockaddr_in6));
+    self.port = port;
 }
 
 void Announcer::startAnnouncing()
