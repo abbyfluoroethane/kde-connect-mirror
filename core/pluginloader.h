@@ -34,6 +34,9 @@ public:
         return QSet(pluginList.begin(), pluginList.end());
 #endif
     }
+
+    bool doesPluginExist(const QString &name) const;
+
     KPluginMetaData getPluginInfo(const QString &name) const;
     KdeConnectPlugin *instantiatePluginForDevice(const QString &name, Device *device) const;
 

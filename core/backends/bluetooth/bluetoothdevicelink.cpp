@@ -14,16 +14,16 @@
 #include "core_debug.h"
 #include "multiplexchannel.h"
 
-BluetoothDeviceLink::BluetoothDeviceLink(const QString &deviceId,
-                                         LinkProvider *parent,
+BluetoothDeviceLink::BluetoothDeviceLink(const DeviceInfo &deviceInfo,
+                                         BluetoothLinkProvider *parent,
                                          ConnectionMultiplexer *connection,
                                          QSharedPointer<MultiplexChannel> socket)
-    : DeviceLink(deviceId, parent)
-    , mSocketReader(new DeviceLineReader(socket.data(), this))
+    : DeviceLink(deviceInfo.id, parent)
     , mConnection(connection)
     , mChannel(socket)
+    , mDeviceInfo(deviceInfo)
 {
-    connect(mSocketReader, &DeviceLineReader::readyRead, this, &BluetoothDeviceLink::dataReceived);
+    connect(socket.data(), &QIODevice::readyRead, this, &BluetoothDeviceLink::dataReceived);
 
     // We take ownership of the connection.
     // When the link provider destroys us,
@@ -41,36 +41,26 @@ bool BluetoothDeviceLink::sendPacket(NetworkPacket &np)
         uploadJob->start();
     }
     // TODO: handle too-big packets
-    int written = mSocketReader->write(np.serialize());
+    int written = mChannel->write(np.serialize());
     return (written != -1);
 }
 
 void BluetoothDeviceLink::dataReceived()
 {
-    if (mSocketReader->bytesAvailable() == 0)
-        return;
+    while (mChannel->canReadLine()) {
+        const QByteArray serializedPacket = mChannel->readLine();
 
-    const QByteArray serializedPacket = mSocketReader->readLine();
+        // qCDebug(KDECONNECT_CORE) << "BluetoothDeviceLink dataReceived" << packet;
 
-    // qCDebug(KDECONNECT_CORE) << "BluetoothDeviceLink dataReceived" << packet;
+        NetworkPacket packet;
+        NetworkPacket::unserialize(serializedPacket, &packet);
 
-    NetworkPacket packet((QString()));
-    NetworkPacket::unserialize(serializedPacket, &packet);
+        if (packet.hasPayloadTransferInfo()) {
+            BluetoothDownloadJob *downloadJob = new BluetoothDownloadJob(mConnection, packet.payloadTransferInfo(), this);
+            downloadJob->start();
+            packet.setPayload(downloadJob->payload(), packet.payloadSize());
+        }
 
-    if (packet.hasPayloadTransferInfo()) {
-        BluetoothDownloadJob *downloadJob = new BluetoothDownloadJob(mConnection, packet.payloadTransferInfo(), this);
-        downloadJob->start();
-        packet.setPayload(downloadJob->payload(), packet.payloadSize());
+        Q_EMIT receivedPacket(packet);
     }
-
-    Q_EMIT receivedPacket(packet);
-
-    if (mSocketReader->bytesAvailable() > 0) {
-        QMetaObject::invokeMethod(this, &BluetoothDeviceLink::dataReceived, Qt::QueuedConnection);
-    }
-}
-
-QSslCertificate BluetoothDeviceLink::certificate() const
-{
-    return QSslCertificate({}); // TODO Not sure what to do here. For LanDeviceLink we use the SSL connection's certificate, but we don't have that here
 }

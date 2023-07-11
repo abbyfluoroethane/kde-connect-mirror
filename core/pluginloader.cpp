@@ -51,6 +51,11 @@ QStringList PluginLoader::getPluginList() const
     return plugins.keys();
 }
 
+bool PluginLoader::doesPluginExist(const QString &name) const
+{
+    return plugins.contains(name);
+}
+
 KPluginMetaData PluginLoader::getPluginInfo(const QString &name) const
 {
     return plugins.value(name);
@@ -114,7 +119,7 @@ QSet<QString> PluginLoader::pluginsForCapabilities(const QSet<QString> &incoming
 {
     QSet<QString> ret;
 
-    QString myDeviceType = KdeConnectConfig::instance().deviceType();
+    QString myDeviceType = KdeConnectConfig::instance().deviceType().toString();
 
     for (const KPluginMetaData &service : qAsConst(plugins)) {
         // Check if the plugin support this device type
