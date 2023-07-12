@@ -19,10 +19,10 @@
 #include <QStandardPaths>
 #include <QThread>
 #include <QUuid>
-#include <QtCrypto>
 
 #include "core_debug.h"
 #include "daemon.h"
+#include "sslhelper.h"
 #include "dbushelper.h"
 #include "deviceinfo.h"
 #include "pluginloader.h"
@@ -30,12 +30,8 @@
 const QFile::Permissions strictPermissions = QFile::ReadOwner | QFile::WriteOwner | QFile::ReadUser | QFile::WriteUser;
 
 struct KdeConnectConfigPrivate {
-    // The Initializer object sets things up, and also does cleanup when it goes out of scope
-    // Note it's not being used anywhere. That's intended
-    QCA::Initializer m_qcaInitializer;
-
-    QCA::PrivateKey m_privateKey;
-    QSslCertificate m_certificate; // Use QSslCertificate instead of QCA::Certificate due to compatibility with QSslSocket
+    EVP_PKEY* m_privateKey;
+    QSslCertificate m_certificate;
 
     QSettings *m_config;
     QSettings *m_trustedDevices;
@@ -72,15 +68,6 @@ KdeConnectConfig &KdeConnectConfig::instance()
 KdeConnectConfig::KdeConnectConfig()
     : d(new KdeConnectConfigPrivate)
 {
-    // qCDebug(KDECONNECT_CORE) << "QCA supported capabilities:" << QCA::supportedFeatures().join(",");
-    if (!QCA::isSupported("rsa")) {
-        qCritical() << "Could not find support for RSA in your QCA installation";
-        Daemon::instance()->reportError(i18n("KDE Connect failed to start"),
-                                        i18n("Could not find support for RSA in your QCA installation. If your "
-                                             "distribution provides separate packets for QCA-ossl and QCA-gnupg, "
-                                             "make sure you have them installed and try again."));
-    }
-
     // Make sure base directory exists
     QDir().mkpath(baseConfigDir().path());
 
@@ -88,8 +75,7 @@ KdeConnectConfig::KdeConnectConfig()
     d->m_config = new QSettings(baseConfigDir().absoluteFilePath(QStringLiteral("config")), QSettings::IniFormat);
     d->m_trustedDevices = new QSettings(baseConfigDir().absoluteFilePath(QStringLiteral("trusted_devices")), QSettings::IniFormat);
 
-    loadPrivateKey();
-    loadCertificate();
+    loadOrGeneratePrivateKeyAndCertificate(privateKeyPath(), certificatePath());
 
     if (name().isEmpty()) {
         setName(getDefaultDeviceName());
@@ -275,75 +261,67 @@ QDir KdeConnectConfig::pluginConfigDir(const QString &deviceId, const QString &p
     return QDir(pluginConfigDir);
 }
 
-void KdeConnectConfig::loadPrivateKey()
+bool KdeConnectConfig::loadPrivateKey(const QString& keyPath)
 {
-    QString keyPath = privateKeyPath();
     QFile privKey(keyPath);
-
-    bool needsToGenerateKey = false;
     if (privKey.exists() && privKey.open(QIODevice::ReadOnly)) {
-        QCA::ConvertResult result;
-        d->m_privateKey = QCA::PrivateKey::fromPEM(QString::fromLatin1(privKey.readAll()), QCA::SecureArray(), &result);
-        if (result != QCA::ConvertResult::ConvertGood) {
-            qCWarning(KDECONNECT_CORE) << "Private key from" << keyPath << "is not valid";
-            needsToGenerateKey = true;
+        d->m_privateKey = SslHelper::pemToRsaPrivateKey(privKey.readAll());
+        if (d->m_privateKey == nullptr) {
+            qCWarning(KDECONNECT_CORE) << "Private key from" << keyPath << "is not valid!";
         }
-    } else {
-        needsToGenerateKey = true;
     }
+    return (d->m_privateKey == nullptr);
+}
+
+bool KdeConnectConfig::loadCertificate(const QString& certPath)
+{
+    QFile cert(certPath);
+    if (cert.exists() && cert.open(QIODevice::ReadOnly)) {
+        auto loadedCerts = QSslCertificate::fromData(cert.readAll());
+        if (loadedCerts.empty()) {
+            qCWarning(KDECONNECT_CORE) << "Certificate from" << certPath << "is not valid";
+        } else {
+            d->m_certificate = loadedCerts.at(0);
+        }
+    }
+    return d->m_certificate.isNull();
+}
+
+void KdeConnectConfig::loadOrGeneratePrivateKeyAndCertificate(const QString& keyPath, const QString& certPath)
+{
+    bool needsToGenerateKey = loadPrivateKey(keyPath);
+    bool needsToGenerateCert = needsToGenerateKey || loadCertificate(certPath);
 
     if (needsToGenerateKey) {
         generatePrivateKey(keyPath);
+    }
+    if (needsToGenerateCert) {
+        generateCertificate(certPath);
     }
 
     // Extra security check
     if (QFile::permissions(keyPath) != strictPermissions) {
         qCWarning(KDECONNECT_CORE) << "Warning: KDE Connect private key file has too open permissions " << keyPath;
     }
-}
-
-void KdeConnectConfig::loadCertificate()
-{
-    QString certPath = certificatePath();
-    QFile cert(certPath);
-
-    bool needsToGenerateCert = false;
-    if (cert.exists() && cert.open(QIODevice::ReadOnly)) {
-        auto loadedCerts = QSslCertificate::fromPath(certPath);
-        if (loadedCerts.empty()) {
-            qCWarning(KDECONNECT_CORE) << "Certificate from" << certPath << "is not valid";
-            needsToGenerateCert = true;
-        } else {
-            d->m_certificate = loadedCerts.at(0);
-        }
-    } else {
-        needsToGenerateCert = true;
-    }
-
-    if (needsToGenerateCert) {
-        generateCertificate(certPath);
-    }
-
-    // Extra security check
     if (QFile::permissions(certPath) != strictPermissions) {
         qCWarning(KDECONNECT_CORE) << "Warning: KDE Connect certificate file has too open permissions " << certPath;
     }
 }
 
-void KdeConnectConfig::generatePrivateKey(const QString &keyPath)
+void KdeConnectConfig::generatePrivateKey(const QString& keyPath)
 {
     qCDebug(KDECONNECT_CORE) << "Generating private key";
 
-    bool error = false;
-
-    d->m_privateKey = QCA::KeyGenerator().createRSA(2048);
+    d->m_privateKey = SslHelper::generateRsaPrivateKey();
+    QByteArray keyPem = SslHelper::privateKeyToPEM(d->m_privateKey);
 
     QFile privKey(keyPath);
+    bool error = false;
     if (!privKey.open(QIODevice::ReadWrite | QIODevice::Truncate)) {
         error = true;
     } else {
         privKey.setPermissions(strictPermissions);
-        int written = privKey.write(d->m_privateKey.toPEM().toLatin1());
+        int written = privKey.write(keyPem);
         if (written <= 0) {
             error = true;
         }
@@ -354,41 +332,26 @@ void KdeConnectConfig::generatePrivateKey(const QString &keyPath)
     }
 }
 
-void KdeConnectConfig::generateCertificate(const QString &certPath)
+void KdeConnectConfig::generateCertificate(const QString& certPath)
 {
     qCDebug(KDECONNECT_CORE) << "Generating certificate";
-
-    bool error = false;
 
     QString uuid = QUuid::createUuid().toString();
     DBusHelper::filterNonExportableCharacters(uuid);
     qCDebug(KDECONNECT_CORE) << "My id:" << uuid;
 
-    // FIXME: We only use QCA here to generate the cert and key, would be nice to get rid of it completely.
-    // The same thing we are doing with QCA could be done invoking openssl (although it's potentially less portable):
-    // openssl req -new -x509 -sha256 -newkey rsa:2048 -nodes -keyout privateKey.pem -days 3650 -out certificate.pem -subj "/O=KDE/OU=KDE
-    // Connect/CN=_e6e29ad4_2b31_4b6d_8f7a_9872dbaa9095_"
-
-    QCA::CertificateOptions certificateOptions = QCA::CertificateOptions();
-    QDateTime startTime = QDateTime::currentDateTime().addYears(-1);
-    QDateTime endTime = startTime.addYears(10);
-    QCA::CertificateInfo certificateInfo;
-    certificateInfo.insert(QCA::CommonName, uuid);
-    certificateInfo.insert(QCA::Organization, QStringLiteral("KDE"));
-    certificateInfo.insert(QCA::OrganizationalUnit, QStringLiteral("Kde connect"));
-    certificateOptions.setInfo(certificateInfo);
-    certificateOptions.setFormat(QCA::PKCS10);
-    certificateOptions.setSerialNumber(QCA::BigInteger(10));
-    certificateOptions.setValidityPeriod(startTime, endTime);
-
-    d->m_certificate = QSslCertificate(QCA::Certificate(certificateOptions, d->m_privateKey).toPEM().toLatin1());
+    X509* certificate = SslHelper::generateSelfSignedCertificate(d->m_privateKey, uuid);
+    QByteArray pemCertificate = SslHelper::certificateToPEM(certificate);
+    X509_free(certificate);
+    d->m_certificate = QSslCertificate(pemCertificate);
 
     QFile cert(certPath);
+    bool error = false;
     if (!cert.open(QIODevice::ReadWrite | QIODevice::Truncate)) {
         error = true;
     } else {
         cert.setPermissions(strictPermissions);
-        int written = cert.write(d->m_certificate.toPem());
+        int written = cert.write(pemCertificate);
         if (written <= 0) {
             error = true;
         }
