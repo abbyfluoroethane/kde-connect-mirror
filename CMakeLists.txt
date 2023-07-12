@@ -17,7 +17,6 @@ else()
     set(KDE_COMPILERSETTINGS_LEVEL "5.84.0")
 endif()
 set(KDE_COMPILERSETTINGS_LEVEL "5.82")
-set(QCA_MIN_VERSION "2.1.0")
 
 find_package(ECM ${KF5_MIN_VERSION} REQUIRED NO_MODULE)
 set(CMAKE_MODULE_PATH ${ECM_MODULE_PATH} ${CMAKE_SOURCE_DIR}/cmake)
@@ -58,13 +57,8 @@ if (SAILFISHOS)
     set(KF5_REQUIRED_COMPONENTS I18n CoreAddons Config)
     set(KF5_OPTIONAL_COMPONENTS)
 
-    set(Qca_LIBRARY CONAN_PKG::Qca-qt5)
-
     add_definitions(-DSAILFISHOS)
 else()
-    find_package(Qca-qt${QT_MAJOR_VERSION} ${QCA_MIN_VERSION} REQUIRED)
-    set(Qca_LIBRARY qca-qt${QT_MAJOR_VERSION})
-
     set(KF5_REQUIRED_COMPONENTS I18n ConfigWidgets DBusAddons IconThemes Notifications KIO KCMUtils Service Solid Kirigami2 People WindowSystem GuiAddons)
     set(KF5_OPTIONAL_COMPONENTS DocTools)
 
