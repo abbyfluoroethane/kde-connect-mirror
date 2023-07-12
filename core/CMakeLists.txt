@@ -44,6 +44,7 @@ set(kdeconnectcore_SRCS
     compositefiletransferjob.cpp
     daemon.cpp
     device.cpp
+    sslhelper.cpp
     core_debug.cpp
     notificationserverinfo.cpp
     openconfig.cpp
@@ -54,11 +55,14 @@ add_library(kdeconnectcore ${kdeconnectcore_SRCS})
 
 target_include_directories(kdeconnectcore PUBLIC ${PROJECT_SOURCE_DIR})
 
+find_package(OpenSSL REQUIRED)
+
 target_link_libraries(kdeconnectcore
 PUBLIC
     Qt${QT_MAJOR_VERSION}::Network
     KF5::CoreAddons
-    ${Qca_LIBRARY}
+    OpenSSL::Crypto
+    OpenSSL::SSL
 PRIVATE
     Qt${QT_MAJOR_VERSION}::DBus
     KF5::I18n
