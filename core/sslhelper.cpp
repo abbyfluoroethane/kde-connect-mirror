@@ -35,17 +35,14 @@ QSslKey generateRsaPrivateKey()
     QByteArray pemData(mem->data, mem->length);
     BIO_free_all(bio);
 
+    RSA_free(rsa);
+    EVP_PKEY_free(privateKey);
+
     return QSslKey(pemData, QSsl::KeyAlgorithm::Rsa);
 }
 
 QSslCertificate generateSelfSignedCertificate(const QSslKey &qtPrivateKey, const QString &commonName)
 {
-    // Convert the QSslKey to the OpenSSL private key format
-    QByteArray keyPemData = qtPrivateKey.toPem();
-    BIO *keyBio = BIO_new_mem_buf(keyPemData.data(), -1);
-    EVP_PKEY *privateKey = PEM_read_bio_PrivateKey(keyBio, NULL, NULL, NULL);
-    BIO_free(keyBio);
-
     X509 *x509 = X509_new();
     X509_set_version(x509, 2);
 
@@ -71,9 +68,14 @@ QSslCertificate generateSelfSignedCertificate(const QSslKey &qtPrivateKey, const
     ASN1_TIME_set(X509_get_notBefore(x509), now - a_year_in_seconds);
     ASN1_TIME_set(X509_get_notAfter(x509), now + 10 * a_year_in_seconds);
 
-    // Set the public key and sign the certificate
+    // Convert the QSslKey to the OpenSSL private key format and sign the certificate
+    QByteArray keyPemData = qtPrivateKey.toPem();
+    BIO *keyBio = BIO_new_mem_buf(keyPemData.data(), -1);
+    EVP_PKEY *privateKey = PEM_read_bio_PrivateKey(keyBio, NULL, NULL, NULL);
     X509_set_pubkey(x509, privateKey);
     X509_sign(x509, privateKey, EVP_sha256());
+    EVP_PKEY_free(privateKey);
+    BIO_free_all(keyBio);
 
     // Convert to PEM which is the format needed for QSslCertificate
     BIO *bio = BIO_new(BIO_s_mem());
@@ -82,6 +84,8 @@ QSslCertificate generateSelfSignedCertificate(const QSslKey &qtPrivateKey, const
     BIO_get_mem_ptr(bio, &mem);
     QByteArray pemData(mem->data, mem->length);
     BIO_free_all(bio);
+
+    X509_free(x509);
 
     return QSslCertificate(pemData);
 }
