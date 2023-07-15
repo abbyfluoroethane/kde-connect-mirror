@@ -9,12 +9,12 @@
 #include "core_debug.h"
 
 extern "C" {
-    #include <openssl/bn.h>
-    #include <openssl/err.h>
-    #include <openssl/evp.h>
-    #include <openssl/pem.h>
-    #include <openssl/rsa.h>
-    #include <openssl/x509.h>
+#include <openssl/bn.h>
+#include <openssl/err.h>
+#include <openssl/evp.h>
+#include <openssl/pem.h>
+#include <openssl/rsa.h>
+#include <openssl/x509.h>
 }
 
 namespace SslHelper
@@ -31,7 +31,7 @@ QSslKey generateRsaPrivateKey()
 {
     // Initialize context.
     auto pctxRaw = EVP_PKEY_CTX_new_from_name(NULL, "RSA", NULL);
-    auto pctx = std::unique_ptr< EVP_PKEY_CTX, decltype(&::EVP_PKEY_CTX_free) >(pctxRaw, ::EVP_PKEY_CTX_free);
+    auto pctx = std::unique_ptr<EVP_PKEY_CTX, decltype(&::EVP_PKEY_CTX_free)>(pctxRaw, ::EVP_PKEY_CTX_free);
     if (!pctx) {
         qCWarning(KDECONNECT_CORE) << "Generate RSA Private Key failed to allocate context " << getSslError();
         return QSslKey();
@@ -49,7 +49,7 @@ QSslKey generateRsaPrivateKey()
     }
 
     // Generate private key.
-    auto pkey = std::unique_ptr< EVP_PKEY, decltype(&::EVP_PKEY_free) >(EVP_PKEY_new(), ::EVP_PKEY_free);
+    auto pkey = std::unique_ptr<EVP_PKEY, decltype(&::EVP_PKEY_free)>(EVP_PKEY_new(), ::EVP_PKEY_free);
     if (!pkey) {
         qCWarning(KDECONNECT_CORE) << "Generate RSA Private Key failed to allocate private key " << getSslError();
         return QSslKey();
@@ -62,7 +62,7 @@ QSslKey generateRsaPrivateKey()
     }
 
     // Convert private key format to PEM as required by QSslKey.
-    auto bio = std::unique_ptr< BIO, decltype(&::BIO_free_all) >(BIO_new(BIO_s_mem()), ::BIO_free_all);
+    auto bio = std::unique_ptr<BIO, decltype(&::BIO_free_all)>(BIO_new(BIO_s_mem()), ::BIO_free_all);
     if (!bio) {
         qCWarning(KDECONNECT_CORE) << "Generate RSA Private Key failed to allocate I/O abstraction " << getSslError();
         return QSslKey();
@@ -85,7 +85,7 @@ QSslKey generateRsaPrivateKey()
 QSslCertificate generateSelfSignedCertificate(const QSslKey &qtPrivateKey, const QString &commonName)
 {
     // Create certificate.
-    auto x509 = std::unique_ptr< X509, decltype(&::X509_free) >(X509_new(), ::X509_free);
+    auto x509 = std::unique_ptr<X509, decltype(&::X509_free)>(X509_new(), ::X509_free);
     if (!x509) {
         qCWarning(KDECONNECT_CORE) << "Generate Self Signed Certificate failed to allocate certifcate " << getSslError();
         return QSslCertificate();
@@ -97,7 +97,7 @@ QSslCertificate generateSelfSignedCertificate(const QSslKey &qtPrivateKey, const
     }
 
     // Generate a random serial number for the certificate.
-    auto sn = std::unique_ptr< BIGNUM, decltype(&::BN_free) >(BN_new(), ::BN_free);
+    auto sn = std::unique_ptr<BIGNUM, decltype(&::BN_free)>(BN_new(), ::BN_free);
     if (!sn) {
         qCWarning(KDECONNECT_CORE) << "Generate Self Signed Certificate failed to allocate big number structure " << getSslError();
         return QSslCertificate();
@@ -157,7 +157,7 @@ QSslCertificate generateSelfSignedCertificate(const QSslKey &qtPrivateKey, const
     }
 
     auto pkeyRaw = PEM_read_bio_PrivateKey(bio.get(), NULL, NULL, NULL);
-    auto pkey = std::unique_ptr< EVP_PKEY, decltype(&::EVP_PKEY_free) >(pkeyRaw, ::EVP_PKEY_free);
+    auto pkey = std::unique_ptr<EVP_PKEY, decltype(&::EVP_PKEY_free)>(pkeyRaw, ::EVP_PKEY_free);
     if (!pkey) {
         qCWarning(KDECONNECT_CORE) << "Generate Self Signed Certificate failed to read private key " << getSslError();
         return QSslCertificate();
@@ -175,7 +175,7 @@ QSslCertificate generateSelfSignedCertificate(const QSslKey &qtPrivateKey, const
     }
 
     // Convert to PEM which is the format needed for QSslCertificate.
-    bio = std::unique_ptr< BIO, decltype(&::BIO_free_all) >(BIO_new(BIO_s_mem()), ::BIO_free_all);
+    bio = std::unique_ptr<BIO, decltype(&::BIO_free_all)>(BIO_new(BIO_s_mem()), ::BIO_free_all);
     if (!bio) {
         qCWarning(KDECONNECT_CORE) << "Generate Self Signed Certificate failed to allocate I/O abstraction " << getSslError();
         return QSslCertificate();
