@@ -73,8 +73,8 @@ QSslKey generateRsaPrivateKey()
         return QSslKey();
     }
 
-    BUF_MEM *pem = nullptr;
-    if (!BIO_get_mem_ptr(bio.get(), &pem)) {
+    BUF_MEM *mem = nullptr;
+    if (!BIO_get_mem_ptr(bio.get(), &mem)) {
         qCWarning(KDECONNECT_CORE) << "Generate RSA Private Key failed get PEM format address " << getSslError();
         return QSslKey();
     }
@@ -103,7 +103,7 @@ QSslCertificate generateSelfSignedCertificate(const QSslKey &qtPrivateKey, const
         return QSslCertificate();
     }
 
-    if (!BN_rand(sn.get(), 160, -1, 0)) {
+    if (!BN_rand(sn.get(), 160, -1, 0)) { // as per rfc3280, serial numbers must be 20 bytes (160 bits) or less
         qCWarning(KDECONNECT_CORE) << "Generate Self Signed Certificate failed to generate random number " << getSslError();
         return QSslCertificate();
     }
@@ -116,7 +116,7 @@ QSslCertificate generateSelfSignedCertificate(const QSslKey &qtPrivateKey, const
     // Set the certificate subject and issuer (self-signed).
     auto name = X509_get_subject_name(x509.get());
     auto cstr = reinterpret_cast<const unsigned char *>(commonName.toLatin1().data());
-    if (!X509_NAME_add_entry_by_txt(name, "CN", MBSTRING_ASC, cstr, -1, -1, 0)) {} // Common Name
+    if (!X509_NAME_add_entry_by_txt(name, "CN", MBSTRING_ASC, cstr, -1, -1, 0)) { // Common Name
         qCWarning(KDECONNECT_CORE) << "Generate Self Signed Certificate failed to set common name to " << commonName << " " << getSslError();
         return QSslCertificate();
     }
@@ -188,7 +188,7 @@ QSslCertificate generateSelfSignedCertificate(const QSslKey &qtPrivateKey, const
     BUF_MEM *pem = nullptr;
     if (!BIO_get_mem_ptr(bio.get(), &pem)) {
         qCWarning(KDECONNECT_CORE) << "Generate Self Signed Certificate failed get PEM format address " << getSslError();
-        return QSslKey();
+        return QSslCertificate();
     }
 
     return QSslCertificate(QByteArray(pem->data, pem->length));
