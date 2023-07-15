@@ -55,14 +55,13 @@ add_library(kdeconnectcore ${kdeconnectcore_SRCS})
 
 target_include_directories(kdeconnectcore PUBLIC ${PROJECT_SOURCE_DIR})
 
-find_package(OpenSSL REQUIRED)
+find_package(OpenSSL 3.0 REQUIRED COMPONENTS Crypto)
 
 target_link_libraries(kdeconnectcore
 PUBLIC
     Qt${QT_MAJOR_VERSION}::Network
     KF5::CoreAddons
     OpenSSL::Crypto
-    OpenSSL::SSL
 PRIVATE
     Qt${QT_MAJOR_VERSION}::DBus
     KF5::I18n
