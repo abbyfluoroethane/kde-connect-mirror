@@ -29,26 +29,57 @@ QString getSslError()
 
 QSslKey generateRsaPrivateKey()
 {
-    RSA *rsa = RSA_new();
-    BIGNUM *exponent = BN_new();
-    BN_set_word(exponent, RSA_F4);
-    RSA_generate_key_ex(rsa, 2048, exponent, nullptr);
-    BN_free(exponent);
+    // Initialize context.
+    auto pctxRaw = EVP_PKEY_CTX_new_from_name(NULL, "RSA", NULL);
+    auto pctx = std::unique_ptr< EVP_PKEY_CTX, decltype(&::EVP_PKEY_CTX_free) >(pctxRaw, ::EVP_PKEY_CTX_free);
+    if (!pctx) {
+        qCWarning(KDECONNECT_CORE) << "Generate RSA Private Key failed to allocate context " << getSslError();
+        return QSslKey();
+    }
 
-    EVP_PKEY *privateKey = EVP_PKEY_new();
-    EVP_PKEY_assign_RSA(privateKey, rsa);
+    if (EVP_PKEY_keygen_init(pctx.get()) <= 0) {
+        qCWarning(KDECONNECT_CORE) << "Generate RSA Private Key failed to initialize context " << getSslError();
+        return QSslKey();
+    }
 
-    // Convert to PEM which is the format needed for QSslKey
-    BIO *bio = BIO_new(BIO_s_mem());
-    PEM_write_bio_PrivateKey(bio, privateKey, nullptr, nullptr, 0, nullptr, nullptr);
-    BUF_MEM *mem = nullptr;
-    BIO_get_mem_ptr(bio, &mem);
-    QByteArray pemData(mem->data, mem->length);
-    BIO_free_all(bio);
+    // Set key bits.
+    if (EVP_PKEY_CTX_set_rsa_keygen_bits(pctx.get(), 2048) <= 0) {
+        qCWarning(KDECONNECT_CORE) << "Generate RSA Private Key failed to set key bits " << getSslError();
+        return QSslKey();
+    }
 
-    EVP_PKEY_free(privateKey);
+    // Generate private key.
+    auto pkey = std::unique_ptr< EVP_PKEY, decltype(&::EVP_PKEY_free) >(EVP_PKEY_new(), ::EVP_PKEY_free);
+    if (!pkey) {
+        qCWarning(KDECONNECT_CORE) << "Generate RSA Private Key failed to allocate private key " << getSslError();
+        return QSslKey();
+    }
 
-    return QSslKey(pemData, QSsl::KeyAlgorithm::Rsa);
+    auto pkey_raw = pkey.get();
+    if (EVP_PKEY_keygen(pctx.get(), &pkey_raw) <= 0) {
+        qCWarning(KDECONNECT_CORE) << "Generate RSA Private Key failed to generate private key " << getSslError();
+        return QSslKey();
+    }
+
+    // Convert private key format to PEM as required by QSslKey.
+    auto bio = std::unique_ptr< BIO, decltype(&::BIO_free_all) >(BIO_new(BIO_s_mem()), ::BIO_free_all);
+    if (!bio) {
+        qCWarning(KDECONNECT_CORE) << "Generate RSA Private Key failed to allocate I/O abstraction " << getSslError();
+        return QSslKey();
+    }
+
+    if (!PEM_write_bio_PrivateKey(bio.get(), pkey_raw, nullptr, nullptr, 0, nullptr, nullptr)) {
+        qCWarning(KDECONNECT_CORE) << "Generate RSA Private Key failed write PEM format private key to BIO " << getSslError();
+        return QSslKey();
+    }
+
+    BUF_MEM *pem = nullptr;
+    if (!BIO_get_mem_ptr(bio.get(), &pem)) {
+        qCWarning(KDECONNECT_CORE) << "Generate RSA Private Key failed get PEM format address " << getSslError();
+        return QSslKey();
+    }
+
+    return QSslKey(QByteArray(mem->data, mem->length), QSsl::KeyAlgorithm::Rsa);
 }
 
 QSslCertificate generateSelfSignedCertificate(const QSslKey &qtPrivateKey, const QString &commonName)
