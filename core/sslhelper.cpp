@@ -149,7 +149,8 @@ QSslCertificate generateSelfSignedCertificate(const QSslKey &qtPrivateKey, const
     X509_gmtime_adj(X509_getm_notAfter(x509.get()), 10 * a_year_in_seconds);
 
     // Convert the QSslKey to the OpenSSL private key format.
-    auto bio = std::unique_ptr< BIO, decltype(&::BIO_free_all) >(BIO_new_mem_buf(qtPrivateKey.toPem().data(), -1), ::BIO_free_all);
+    QByteArray keyPemData = qtPrivateKey.toPem();
+    auto bio = std::unique_ptr<BIO, decltype(&::BIO_free_all)>(BIO_new_mem_buf(keyPemData.data(), -1), ::BIO_free_all);
     if (!bio) {
         qCWarning(KDECONNECT_CORE) << "Generate Self Signed Certificate failed to allocate I/O abstraction " << getSslError();
         return QSslCertificate();
