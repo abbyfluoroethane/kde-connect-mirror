@@ -115,20 +115,21 @@ QSslCertificate generateSelfSignedCertificate(const QSslKey &qtPrivateKey, const
 
     // Set the certificate subject and issuer (self-signed).
     auto name = X509_get_subject_name(x509.get());
-    auto cstr = reinterpret_cast<const unsigned char *>(commonName.toLatin1().data());
-    if (!X509_NAME_add_entry_by_txt(name, "CN", MBSTRING_ASC, cstr, -1, -1, 0)) { // Common Name
+    QByteArray commonNameBytes = commonName.toLatin1();
+    const unsigned char *commonNameCStr = reinterpret_cast<const unsigned char *>(commonNameBytes.data());
+    if (!X509_NAME_add_entry_by_txt(name, "CN", MBSTRING_ASC, commonNameCStr, -1, -1, 0)) { // Common Name
         qCWarning(KDECONNECT_CORE) << "Generate Self Signed Certificate failed to set common name to " << commonName << " " << getSslError();
         return QSslCertificate();
     }
 
-    cstr = reinterpret_cast<const unsigned char *>("KDE");
-    if (!X509_NAME_add_entry_by_txt(name, "O", MBSTRING_ASC, cstr, -1, -1, 0)) { // Organization
+    const unsigned char *organizationCStr = reinterpret_cast<const unsigned char *>("KDE");
+    if (!X509_NAME_add_entry_by_txt(name, "O", MBSTRING_ASC, organizationCStr, -1, -1, 0)) { // Organization
         qCWarning(KDECONNECT_CORE) << "Generate Self Signed Certificate failed to set organization " << getSslError();
         return QSslCertificate();
     }
 
-    cstr = reinterpret_cast<const unsigned char *>("KDE Connect");
-    if (!X509_NAME_add_entry_by_txt(name, "OU", MBSTRING_ASC, cstr, -1, -1, 0)) { // Organizational Unit
+    const unsigned char *organizationalUnitCStr = reinterpret_cast<const unsigned char *>("KDE Connect");
+    if (!X509_NAME_add_entry_by_txt(name, "OU", MBSTRING_ASC, organizationalUnitCStr, -1, -1, 0)) { // Organizational Unit
         qCWarning(KDECONNECT_CORE) << "Generate Self Signed Certificate failed to set organizational unit " << getSslError();
         return QSslCertificate();
     }
