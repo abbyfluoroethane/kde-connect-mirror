@@ -55,7 +55,7 @@ add_library(kdeconnectcore ${kdeconnectcore_SRCS})
 
 target_include_directories(kdeconnectcore PUBLIC ${PROJECT_SOURCE_DIR})
 
-find_package(OpenSSL 3.0 REQUIRED COMPONENTS Crypto)
+find_package(OpenSSL REQUIRED COMPONENTS Crypto)
 
 target_link_libraries(kdeconnectcore
 PUBLIC
