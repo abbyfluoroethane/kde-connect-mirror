@@ -56,7 +56,7 @@ ecm_qt_declare_logging_category(kdeconnectcore
 
 target_include_directories(kdeconnectcore PUBLIC ${PROJECT_SOURCE_DIR})
 
-find_package(OpenSSL 3.0 REQUIRED COMPONENTS Crypto)
+find_package(OpenSSL REQUIRED COMPONENTS Crypto)
 
 target_link_libraries(kdeconnectcore
 PUBLIC
