@@ -9,18 +9,18 @@ if(UNIX AND NOT APPLE)
 
     target_sources(kdeconnect_mousepad PUBLIC waylandremoteinput.cpp ${SRCS})
 
-    find_package(LibFakeKey REQUIRED)
-    set_package_properties(LibFakeKey PROPERTIES DESCRIPTION "fake key events"
-                        URL "https://github.com/dtapuska/fakekey"
-                        TYPE REQUIRED
-                        PURPOSE "Needed for the remote mouse input plugin"
-                        )
-
     target_sources(kdeconnect_mousepad PRIVATE ${wayland_SRCS})
     target_link_libraries(kdeconnect_mousepad Wayland::Client Qt::WaylandClient PkgConfig::XkbCommon)
     target_sources(kdeconnect_mousepad PUBLIC waylandremoteinput.cpp)
 
     if (WITH_X11)
+        find_package(LibFakeKey REQUIRED)
+        set_package_properties(LibFakeKey PROPERTIES DESCRIPTION "fake key events"
+                            URL "https://github.com/dtapuska/fakekey"
+                            TYPE REQUIRED
+                            PURPOSE "Needed for the remote mouse input plugin"
+                            )
+
         if (QT_MAJOR_VERSION EQUAL "5")
             find_package(Qt5 ${QT_MIN_VERSION} REQUIRED COMPONENTS X11Extras)
         endif()
