@@ -19,7 +19,6 @@ public:
     RunCommandConfig(QObject *parent, const QVariantList &);
     ~RunCommandConfig() override;
 
-public Q_SLOTS:
     void save() override;
     void load() override;
     void defaults() override;
