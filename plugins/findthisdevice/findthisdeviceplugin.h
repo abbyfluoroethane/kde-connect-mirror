@@ -18,8 +18,6 @@
 #include <QStandardPaths>
 #include <QUrl>
 #endif
-// Qt
-#include "plugin_findthisdevice_debug.h"
 
 #define PACKET_TYPE_FINDMYPHONE_REQUEST QStringLiteral("kdeconnect.findmyphone.request")
 
