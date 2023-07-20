@@ -94,7 +94,7 @@ void CompositeUploadJob::startNextSubJob()
     m_currentJobSendPayloadSize = 0;
     emitDescription(m_currentJob->getNetworkPacket().get<QString>(QStringLiteral("filename")));
 
-    connect(m_currentJob, &UploadJob::processedAmount, this, &CompositeUploadJob::slotProcessedAmount);
+    connect(m_currentJob, &UploadJob::processedAmountChanged, this, &CompositeUploadJob::slotProcessedAmount);
 
     // Already done by KCompositeJob
     // connect(m_currentJob, &KJob::result, this, &CompositeUploadJob::slotResult);
