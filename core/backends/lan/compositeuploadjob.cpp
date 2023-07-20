@@ -11,10 +11,7 @@
 #include <KLocalizedString>
 #include <core_debug.h>
 #include <daemon.h>
-
-#ifdef HAVE_KIO
 #include <kio/global.h>
-#endif
 
 CompositeUploadJob::CompositeUploadJob(const QString &deviceId, bool displayNotification)
     : KCompositeJob()
