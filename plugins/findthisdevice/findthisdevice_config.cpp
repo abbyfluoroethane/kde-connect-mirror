@@ -73,7 +73,7 @@ void FindThisDeviceConfig::playSound(const QUrl &soundUrl)
     QMediaPlayer *player = new QMediaPlayer;
 #if QT_VERSION_MAJOR < 6
     player->setAudioRole(QAudio::Role(QAudio::NotificationRole));
-    player->setMedia(soundURL);
+    player->setMedia(soundUrl);
     player->setVolume(100);
     player->play();
     connect(player, &QMediaPlayer::stateChanged, player, &QObject::deleteLater);
