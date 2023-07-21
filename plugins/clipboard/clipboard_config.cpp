@@ -18,7 +18,7 @@ ClipboardConfig::ClipboardConfig(QObject *parent, const QVariantList &args)
     m_ui->setupUi(widget());
 
     connect(m_ui->check_autoshare, &QCheckBox::toggled, this, &ClipboardConfig::autoShareChanged);
-    connect(m_ui->check_password, &QCheckBox::toggled, this, &KCModule::markAsChanged);
+    connect(m_ui->check_password, &QCheckBox::toggled, this, &ClipboardConfig::markAsChanged);
 }
 
 ClipboardConfig::~ClipboardConfig()

@@ -35,12 +35,12 @@ SendNotificationsConfig::SendNotificationsConfig(QObject *parent, const QVariant
 
     connect(m_ui->appList->horizontalHeader(), &QHeaderView::sortIndicatorChanged, m_ui->appList, &QTableView::sortByColumn);
 
-    connect(m_ui->check_persistent, &QCheckBox::toggled, this, &KCModule::markAsChanged);
-    connect(m_ui->spin_urgency, &QSpinBox::editingFinished, this, &KCModule::markAsChanged);
-    connect(m_ui->check_body, &QCheckBox::toggled, this, &KCModule::markAsChanged);
-    connect(m_ui->check_icons, &QCheckBox::toggled, this, &KCModule::markAsChanged);
+    connect(m_ui->check_persistent, &QCheckBox::toggled, this, &SendNotificationsConfig::markAsChanged);
+    connect(m_ui->spin_urgency, &QSpinBox::editingFinished, this, &SendNotificationsConfig::markAsChanged);
+    connect(m_ui->check_body, &QCheckBox::toggled, this, &SendNotificationsConfig::markAsChanged);
+    connect(m_ui->check_icons, &QCheckBox::toggled, this, &SendNotificationsConfig::markAsChanged);
 
-    connect(appModel, &NotifyingApplicationModel::applicationsChanged, this, &KCModule::markAsChanged);
+    connect(appModel, &NotifyingApplicationModel::applicationsChanged, this, &SendNotificationsConfig::markAsChanged);
 
     connect(config(), &KdeConnectPluginConfig::configChanged, this, &SendNotificationsConfig::loadApplications);
 }
