@@ -42,7 +42,7 @@ inline QString defaultSound()
 #ifdef Q_OS_WIN
     wchar_t infoBuf[INFO_BUFFER_SIZE];
     if (!GetWindowsDirectory(infoBuf, INFO_BUFFER_SIZE)) {
-        qCWarning(KDECONNECT_PLUGIN_FINDTHISDEVICE) << "Error with getting the Windows Directory.";
+        qCWarning() << "Error with getting the Windows Directory.";
     } else {
         dirPath = QString::fromStdWString(infoBuf) + QStringLiteral("/media");
         if (!dirPath.isEmpty()) {
