@@ -19,7 +19,6 @@ class Q_DECL_EXPORT RemoteControlPlugin : public KdeConnectPlugin
 
 public:
     explicit RemoteControlPlugin(QObject *parent, const QVariantList &args);
-    ~RemoteControlPlugin() override;
 
     bool receivePacket(const NetworkPacket & /*np*/) override
     {

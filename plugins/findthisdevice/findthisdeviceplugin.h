@@ -28,7 +28,6 @@ class FindThisDevicePlugin : public KdeConnectPlugin
 
 public:
     explicit FindThisDevicePlugin(QObject *parent, const QVariantList &args);
-    ~FindThisDevicePlugin() override;
 
     QString dbusPath() const override;
     bool receivePacket(const NetworkPacket &np) override;

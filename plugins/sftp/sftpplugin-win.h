@@ -21,7 +21,6 @@ class SftpPlugin : public KdeConnectPlugin
 
 public:
     explicit SftpPlugin(QObject *parent, const QVariantList &args);
-    ~SftpPlugin() override;
 
     bool receivePacket(const NetworkPacket &np) override;
     QString dbusPath() const override
