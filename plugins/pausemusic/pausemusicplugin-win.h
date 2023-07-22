@@ -34,9 +34,6 @@ public:
     ~PauseMusicPlugin();
 
     bool receivePacket(const NetworkPacket &np) override;
-    void connected() override
-    {
-    }
 
 private:
     void updatePlayersList();

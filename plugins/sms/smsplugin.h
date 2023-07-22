@@ -147,9 +147,6 @@ public:
     ~SmsPlugin() override;
 
     bool receivePacket(const NetworkPacket &np) override;
-    void connected() override
-    {
-    }
 
     QString dbusPath() const override;
 

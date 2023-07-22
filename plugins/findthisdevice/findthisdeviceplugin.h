@@ -30,7 +30,6 @@ public:
     explicit FindThisDevicePlugin(QObject *parent, const QVariantList &args);
     ~FindThisDevicePlugin() override;
 
-    void connected() override{};
     QString dbusPath() const override;
     bool receivePacket(const NetworkPacket &np) override;
 };

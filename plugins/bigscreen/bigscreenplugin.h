@@ -21,7 +21,6 @@ public:
     ~BigscreenPlugin() override;
 
     bool receivePacket(const NetworkPacket &np) override;
-    void connected() override{};
     QString dbusPath() const override;
 
 Q_SIGNALS:

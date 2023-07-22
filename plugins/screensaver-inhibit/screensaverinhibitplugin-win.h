@@ -19,5 +19,4 @@ public:
     ~ScreensaverInhibitPlugin() override;
 
     bool receivePacket(const NetworkPacket &np) override;
-    void connected() override{};
 };
