@@ -17,10 +17,10 @@
 #include <core/device.h>
 #include <dbushelper.h>
 
-#include "dbusproperties.h"
-#include "mprisplayer.h"
-#include "mprisroot.h"
 #include "plugin_mpris_debug.h"
+#include "systeminterfaces/dbusproperties.h"
+#include "systeminterfaces/mprisplayer.h"
+#include "systeminterfaces/mprisroot.h"
 
 K_PLUGIN_CLASS_WITH_JSON(MprisControlPlugin, "kdeconnect_mpriscontrol.json")
 

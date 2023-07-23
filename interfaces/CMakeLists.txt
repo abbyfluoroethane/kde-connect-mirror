@@ -6,11 +6,11 @@ function(geninterface source_h output_h)
 
     set_source_files_properties(${xml_file} PROPERTIES NO_NAMESPACE true)
 
-    qt_add_dbus_interface(libkdeconnect_SRC ${xml_file} generated/${output_h})
-    set(libkdeconnect_SRC ${libkdeconnect_SRC} PARENT_SCOPE)
+    qt_add_dbus_interface(interfaces_SRC ${xml_file} generated/${output_h})
+    set(interfaces_SRC ${interfaces_SRC} PARENT_SCOPE)
 endfunction()
 
-set(libkdeconnect_SRC
+set(interfaces_SRC
     dbusinterfaces.cpp
     devicesmodel.cpp
     notificationsmodel.cpp
@@ -23,6 +23,7 @@ set(libkdeconnect_SRC
     commandsmodel.cpp
 )
 
+# KDE Connect interfaces
 geninterface(${PROJECT_SOURCE_DIR}/core/daemon.h daemoninterface)
 geninterface(${PROJECT_SOURCE_DIR}/core/device.h deviceinterface)
 geninterface(${PROJECT_SOURCE_DIR}/plugins/battery/batteryplugin.h batteryinterface)
@@ -45,14 +46,28 @@ geninterface(${PROJECT_SOURCE_DIR}/plugins/virtualmonitor/virtualmonitorplugin.h
 geninterface(${PROJECT_SOURCE_DIR}/plugins/photo/photoplugin.h photointerface)
 geninterface(${PROJECT_SOURCE_DIR}/plugins/clipboard/clipboardplugin.h deviceclipboardinterface)
 
-if ("${QT_MAJOR_VERSION}" STREQUAL "6")
-    add_library(kdeconnectinterfaces STATIC)
-    set_property(TARGET kdeconnectinterfaces PROPERTY POSITION_INDEPENDENT_CODE ON)
-else()
-    add_library(kdeconnectinterfaces)
+# System dbus interfaces
+if (UNIX AND NOT APPLE)
+    # Fixes "redefinition of 'MediaPlayer2' as different kind of symbol"
+    set_source_files_properties(
+        systeminterfaces/org.mpris.MediaPlayer2.Player.xml
+        systeminterfaces/org.mpris.MediaPlayer2.xml
+        PROPERTIES NO_NAMESPACE true
+    )
+
+    qt_add_dbus_interface(interfaces_SRC systeminterfaces/org.freedesktop.login1.xml generated/systeminterfaces/login1)
+    qt_add_dbus_interface(interfaces_SRC systeminterfaces/org.freedesktop.ScreenSaver.xml generated/systeminterfaces/screensaver)
+    qt_add_dbus_interface(interfaces_SRC systeminterfaces/org.freedesktop.DBus.Properties.xml generated/systeminterfaces/dbusproperties)
+    qt_add_dbus_interface(interfaces_SRC systeminterfaces/org.mpris.MediaPlayer2.Player.xml generated/systeminterfaces/mprisplayer)
+    qt_add_dbus_interface(interfaces_SRC systeminterfaces/org.mpris.MediaPlayer2.xml generated/systeminterfaces/mprisroot)
+    qt_add_dbus_interface(interfaces_SRC systeminterfaces/org.freedesktop.portal.RemoteDesktop.xml generated/systeminterfaces/remotedesktop)
 endif()
 
-target_sources(kdeconnectinterfaces PRIVATE ${libkdeconnect_SRC})
+add_library(kdeconnectinterfaces STATIC)
+set_property(TARGET kdeconnectinterfaces PROPERTY POSITION_INDEPENDENT_CODE ON)
+
+target_sources(kdeconnectinterfaces PRIVATE ${interfaces_SRC})
+
 ecm_qt_declare_logging_category(kdeconnectinterfaces
     HEADER interfaces_conversation_message_debug.h
     IDENTIFIER CONVERSATION_MESSAGE_LOGGING_CATEGORY CATEGORY_NAME kdeconnect.interfaces.conversationmessage
