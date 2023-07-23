@@ -8,7 +8,7 @@
 #pragma once
 
 #include "abstractremoteinput.h"
-#include "systeminterfaces/remotedesktop.h"
+#include "generated/systeminterfaces/remotedesktop.h"
 #include <QDBusObjectPath>
 
 class FakeInput;

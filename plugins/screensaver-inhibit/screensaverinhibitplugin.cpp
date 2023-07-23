@@ -6,8 +6,8 @@
 
 #include "screensaverinhibitplugin.h"
 
+#include "generated/systeminterfaces/screensaver.h"
 #include "kdeconnect_screensaverinhibit_debug.h"
-#include "systeminterfaces/screensaver.h"
 #include <KLocalizedString>
 #include <KPluginFactory>
 #include <QDBusConnection>
