@@ -6,8 +6,17 @@ function(geninterface source_h output_h)
 
     set_source_files_properties(${xml_file} PROPERTIES NO_NAMESPACE true)
 
-    qt_add_dbus_interface(interfaces_SRC ${xml_file} generated/${output_h})
-    set(interfaces_SRC ${interfaces_SRC} PARENT_SCOPE)
+    qt_add_dbus_interface(generated_sources ${xml_file} generated/${output_h})
+
+    # Hack to append clazy:skip to generated files
+    set(fake_file ${CMAKE_CURRENT_BINARY_DIR}/generated/fake_${output_h})
+    add_custom_command(OUTPUT ${fake_file}
+        COMMAND ${CMAKE_COMMAND} -E echo "// clazy:skip" >> generated/${output_h}.h
+        COMMAND ${CMAKE_COMMAND} -E touch ${fake_file}
+        DEPENDS generated/${output_h}.h
+    )
+
+    set(interfaces_SRC ${interfaces_SRC} ${generated_sources} ${fake_file} PARENT_SCOPE)
 endfunction()
 
 set(interfaces_SRC
@@ -85,10 +94,6 @@ set_target_properties(kdeconnectinterfaces PROPERTIES
     VERSION ${KDECONNECT_VERSION}
     SOVERSION ${KDECONNECT_VERSION_MAJOR}
 )
-
-# pretend the dbus generated headers are from the system so that clazy and other similar
-# tools do not show warnings about their contents
-target_include_directories(kdeconnectinterfaces SYSTEM PUBLIC ${CMAKE_CURRENT_BINARY_DIR}/generated)
 
 generate_export_header(kdeconnectinterfaces EXPORT_FILE_NAME ${CMAKE_CURRENT_BINARY_DIR}/kdeconnectinterfaces_export.h BASE_NAME KDEConnectInterfaces)
 
