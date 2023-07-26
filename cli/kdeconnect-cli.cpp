@@ -63,7 +63,7 @@ int main(int argc, char **argv)
                                         i18n("File urls to send attachments with the message (can be passed multiple times)"),
                                         i18n("file urls")));
     parser.addOption(QCommandLineOption(QStringList{QStringLiteral("device"), QStringLiteral("d")}, i18n("Device ID"), QStringLiteral("dev")));
-    parser.addOption(QCommandLineOption(QStringList{QStringLiteral("name")) , QStringLiteral("n")}, i18n("Device Name"), QStringLiteral("name")));
+    parser.addOption(QCommandLineOption(QStringList{QStringLiteral("name"), QStringLiteral("n")}, i18n("Device Name"), QStringLiteral("name")));
     parser.addOption(QCommandLineOption(QStringLiteral("encryption-info"), i18n("Get encryption info about said device")));
     parser.addOption(QCommandLineOption(QStringLiteral("list-commands"), i18n("Lists remote commands and their ids")));
     parser.addOption(QCommandLineOption(QStringLiteral("execute-command"), i18n("Executes a remote command by id"), QStringLiteral("id")));
