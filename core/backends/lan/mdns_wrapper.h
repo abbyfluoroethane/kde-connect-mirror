@@ -39,7 +39,7 @@ public:
     void sendQuery(const QString &serviceName);
 
 Q_SIGNALS:
-    void serviceFound(const MdnsService &service);
+    void serviceFound(const MdnsWrapper::Discoverer::MdnsService &service);
 
 private:
     int listenForQueryResponses();

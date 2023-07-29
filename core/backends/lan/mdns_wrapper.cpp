@@ -160,7 +160,7 @@ void Discoverer::stopDiscovering()
 void Discoverer::stopListeningForQueryResponses()
 {
     qCDebug(KDECONNECT_CORE) << "Closing" << responseSocketNotifiers.size() << "sockets";
-    for (QSocketNotifier *socketNotifier : responseSocketNotifiers) {
+    for (QSocketNotifier *socketNotifier : qAsConst(responseSocketNotifiers)) {
         mdns_socket_close(socketNotifier->socket());
         delete socketNotifier;
     }
@@ -226,7 +226,7 @@ void Discoverer::sendQuery(const QString &serviceType)
     query.type = MDNS_RECORDTYPE_PTR;
 
     static char buffer[2048];
-    for (QSocketNotifier *socketNotifier : responseSocketNotifiers) {
+    for (QSocketNotifier *socketNotifier : qAsConst(responseSocketNotifiers)) {
         int socket = socketNotifier->socket();
         qCDebug(KDECONNECT_CORE) << "Sending mDNS query via socket" << socket;
         int ret = mdns_multiquery_send(socket, &query, 1, buffer, sizeof(buffer), 0);
@@ -329,9 +329,9 @@ static int service_callback(int sock, const struct sockaddr* from, size_t addrle
             if (unicast) {
                 mdns_query_answer_unicast(sock, from, addrlen, sendbuffer, sizeof(sendbuffer), query_id,
                                           (mdns_record_type_t)record_type, nameMdnsString.str, nameMdnsString.length,
-                                          answer, NULL, 0, NULL, 0);
+                                          answer, nullptr, 0, nullptr, 0);
             } else {
-                mdns_query_answer_multicast(sock, sendbuffer, sizeof(sendbuffer), answer, 0, 0, 0, 0);
+                mdns_query_answer_multicast(sock, sendbuffer, sizeof(sendbuffer), answer, nullptr, 0, nullptr, 0);
             }
         }
     } else if (name == self.serviceType) {
@@ -363,9 +363,9 @@ static int service_callback(int sock, const struct sockaddr* from, size_t addrle
             if (unicast) {
                 mdns_query_answer_unicast(sock, from, addrlen, sendbuffer, sizeof(sendbuffer), query_id,
                                           (mdns_record_type_t)record_type, nameMdnsString.str, nameMdnsString.length,
-                                          answer, 0, 0, additional.constData(), additional.length());
+                                          answer, nullptr, 0, additional.constData(), additional.length());
             } else {
-                mdns_query_answer_multicast(sock, sendbuffer, sizeof(sendbuffer), answer, 0, 0,
+                mdns_query_answer_multicast(sock, sendbuffer, sizeof(sendbuffer), answer, nullptr, 0,
                                             additional.constData(), additional.length());
             }
         }
@@ -397,9 +397,9 @@ static int service_callback(int sock, const struct sockaddr* from, size_t addrle
             if (unicast) {
                 mdns_query_answer_unicast(sock, from, addrlen, sendbuffer, sizeof(sendbuffer), query_id,
                                           (mdns_record_type_t)record_type, nameMdnsString.str, nameMdnsString.length,
-                                          answer, 0, 0, additional.constData(), additional.length());
+                                          answer, nullptr, 0, additional.constData(), additional.length());
             } else {
-                mdns_query_answer_multicast(sock, sendbuffer, sizeof(sendbuffer), answer, 0, 0,
+                mdns_query_answer_multicast(sock, sendbuffer, sizeof(sendbuffer), answer, nullptr, 0,
                                             additional.constData(), additional.length());
             }
         }
@@ -427,9 +427,9 @@ static int service_callback(int sock, const struct sockaddr* from, size_t addrle
             if (unicast) {
                 mdns_query_answer_unicast(sock, from, addrlen, sendbuffer, sizeof(sendbuffer), query_id,
                                           (mdns_record_type_t)record_type, nameMdnsString.str, nameMdnsString.length,
-                                          answer, 0, 0, additional.constData(), additional.length());
+                                          answer, nullptr, 0, additional.constData(), additional.length());
             } else {
-                mdns_query_answer_multicast(sock, sendbuffer, sizeof(sendbuffer), answer, 0, 0,
+                mdns_query_answer_multicast(sock, sendbuffer, sizeof(sendbuffer), answer, nullptr, 0,
                                             additional.constData(), additional.length());
             }
         } else if (((record_type == MDNS_RECORDTYPE_AAAA) || (record_type == MDNS_RECORDTYPE_ANY)) && !self.addressesV6.empty()) {
@@ -454,9 +454,9 @@ static int service_callback(int sock, const struct sockaddr* from, size_t addrle
             if (unicast) {
                 mdns_query_answer_unicast(sock, from, addrlen, sendbuffer, sizeof(sendbuffer), query_id,
                                           (mdns_record_type_t)record_type, nameMdnsString.str, nameMdnsString.length,
-                                          answer, 0, 0, additional.constData(), additional.length());
+                                          answer, nullptr, 0, additional.constData(), additional.length());
             } else {
-                mdns_query_answer_multicast(sock, sendbuffer, sizeof(sendbuffer), answer, 0, 0,
+                mdns_query_answer_multicast(sock, sendbuffer, sizeof(sendbuffer), answer, nullptr, 0,
                                             additional.constData(), additional.length());
             }
         }
@@ -602,15 +602,15 @@ void Announcer::sendMulticastAnnounce(bool isGoodbye)
     if (isGoodbye) {
         qCDebug(KDECONNECT_CORE) << "Sending goodbye";
         if (socketNotifier)
-            mdns_goodbye_multicast(socketNotifier->socket(), buffer, sizeof(buffer), ptr_record, 0, 0, additional.constData(), additional.length());
+            mdns_goodbye_multicast(socketNotifier->socket(), buffer, sizeof(buffer), ptr_record, nullptr, 0, additional.constData(), additional.length());
         if (socketNotifierV6)
-            mdns_goodbye_multicast(socketNotifierV6->socket(), buffer, sizeof(buffer), ptr_record, 0, 0, additional.constData(), additional.length());
+            mdns_goodbye_multicast(socketNotifierV6->socket(), buffer, sizeof(buffer), ptr_record, nullptr, 0, additional.constData(), additional.length());
     } else {
         qCDebug(KDECONNECT_CORE) << "Sending announce";
         if (socketNotifier)
-            mdns_announce_multicast(socketNotifier->socket(), buffer, sizeof(buffer), ptr_record, 0, 0, additional.constData(), additional.length());
+            mdns_announce_multicast(socketNotifier->socket(), buffer, sizeof(buffer), ptr_record, nullptr, 0, additional.constData(), additional.length());
         if (socketNotifierV6)
-            mdns_announce_multicast(socketNotifierV6->socket(), buffer, sizeof(buffer), ptr_record, 0, 0, additional.constData(), additional.length());
+            mdns_announce_multicast(socketNotifierV6->socket(), buffer, sizeof(buffer), ptr_record, nullptr, 0, additional.constData(), additional.length());
     }
 }
 
