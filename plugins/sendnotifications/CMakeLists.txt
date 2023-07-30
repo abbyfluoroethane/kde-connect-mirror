@@ -1,11 +1,23 @@
 
 kdeconnect_add_plugin(kdeconnect_sendnotifications)
 
-target_sources(kdeconnect_sendnotifications PRIVATE
+set(kdeconnect_sendnotifications_SRCS
     sendnotificationsplugin.cpp
     notificationslistener.cpp
     notifyingapplication.cpp
 )
+if(WIN32)
+set(kdeconnect_sendnotifications_SRCS
+    ${kdeconnect_sendnotifications_SRCS}
+    windowsnotificationslistener.cpp
+)
+else()
+set(kdeconnect_sendnotifications_SRCS
+    ${kdeconnect_sendnotifications_SRCS}
+    dbusnotificationslistener.cpp
+)
+endif()
+target_sources(kdeconnect_sendnotifications PRIVATE ${kdeconnect_sendnotifications_SRCS})
 ecm_qt_declare_logging_category(kdeconnect_sendnotifications
     HEADER plugin_sendnotification_debug.h
     IDENTIFIER KDECONNECT_PLUGIN_SENDNOTIFICATION CATEGORY_NAME kdeconnect.plugin.sendnotification
@@ -18,8 +30,13 @@ target_link_libraries(kdeconnect_sendnotifications
     Qt::Gui
     KF${QT_MAJOR_VERSION}::IconThemes
     KF${QT_MAJOR_VERSION}::ConfigCore
-    PkgConfig::GIO
 )
+if(WIN32)
+   target_link_libraries(kdeconnect_sendnotifications windowsapp)
+   target_compile_features(kdeconnect_sendnotifications PUBLIC cxx_std_17)
+else()
+   target_link_libraries(kdeconnect_sendnotifications PkgConfig::GIO)
+endif()
 
 # Config
 kcoreaddons_add_plugin(kdeconnect_sendnotifications_config INSTALL_NAMESPACE "kdeconnect/kcms")
