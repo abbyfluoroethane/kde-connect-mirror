@@ -6,7 +6,12 @@
 
 #include "sendnotificationsplugin.h"
 
-#include "notificationslistener.h"
+#ifdef Q_OS_UNIX
+#include "dbusnotificationslistener.h"
+#endif
+#ifdef Q_OS_WIN
+#include "windowsnotificationslistener.h"
+#endif
 #include "plugin_sendnotification_debug.h"
 
 #include <KPluginFactory>
@@ -16,7 +21,12 @@ K_PLUGIN_CLASS_WITH_JSON(SendNotificationsPlugin, "kdeconnect_sendnotifications.
 SendNotificationsPlugin::SendNotificationsPlugin(QObject *parent, const QVariantList &args)
     : KdeConnectPlugin(parent, args)
 {
-    notificationsListener = new NotificationsListener(this);
+#ifdef Q_OS_UNIX
+    notificationsListener = new DBusNotificationsListener(this);
+#endif
+#ifdef Q_OS_WIN
+    notificationsListener = new WindowsNotificationsListener(this);
+#endif
 }
 
 SendNotificationsPlugin::~SendNotificationsPlugin()
