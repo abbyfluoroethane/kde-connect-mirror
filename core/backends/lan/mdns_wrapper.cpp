@@ -231,7 +231,7 @@ void Discoverer::sendQuery(const QString &serviceType)
         qCDebug(KDECONNECT_CORE) << "Sending mDNS query via socket" << socket;
         int ret = mdns_multiquery_send(socket, &query, 1, buffer, sizeof(buffer), 0);
         if (ret < 0) {
-            qWarning() << "Failed to send mDNS query:" << strerror(errno);
+            qCWarning(KDECONNECT_CORE) << "Failed to send mDNS query:" << strerror(errno);
         }
     }
 }
@@ -362,17 +362,12 @@ static int service_callback(int sock, const struct sockaddr* from, size_t addrle
     QByteArray name = QByteArray(nameMdnsString.str, nameMdnsString.length);
 
     if (name == dnsSdName) {
-        qWarning() << "Someone queried all services for" << recordTypeToStr(record_type);
         if ((record_type == MDNS_RECORDTYPE_PTR) || (record_type == MDNS_RECORDTYPE_ANY)) {
             // The PTR query was for the DNS-SD domain, send answer with a PTR record for the service name we advertise.
 
             mdns_record_t answer = createMdnsRecord(self, MDNS_RECORDTYPE_PTR);
 
-            // Send the answer, unicast or multicast depending on flag in query
             uint16_t unicast = (rclass & MDNS_UNICAST_RESPONSE);
-
-            printf("  --> answer %.*s (%s)\n", MDNS_STRING_FORMAT(answer.data.ptr.name), (unicast ? "unicast" : "multicast"));
-
             if (unicast) {
                 mdns_query_answer_unicast(sock, from, addrlen, sendbuffer, sizeof(sendbuffer), query_id,
                                           (mdns_record_type_t)record_type, nameMdnsString.str, nameMdnsString.length,
@@ -382,7 +377,6 @@ static int service_callback(int sock, const struct sockaddr* from, size_t addrle
             }
         }
     } else if (name == self.serviceType) {
-        qWarning() << "Someone queried my service type for" << recordTypeToStr(record_type);
         if ((record_type == MDNS_RECORDTYPE_PTR) || (record_type == MDNS_RECORDTYPE_ANY)) {
             // The PTR query was for our service, answer a PTR record reverse mapping the queried service name
             // to our service instance name and add additional records containing the SRV record mapping the
@@ -403,10 +397,7 @@ static int service_callback(int sock, const struct sockaddr* from, size_t addrle
                 additional.append(createMdnsRecord(self, MDNS_RECORDTYPE_TXT, nullptr, txtIterator));
             }
 
-            // Send the answer, unicast or multicast depending on flag in query
             uint16_t unicast = (rclass & MDNS_UNICAST_RESPONSE);
-            printf("  --> answer %.*s (%s)\n", MDNS_STRING_FORMAT(answer.data.ptr.name), (unicast ? "unicast" : "multicast"));
-
             if (unicast) {
                 mdns_query_answer_unicast(sock, from, addrlen, sendbuffer, sizeof(sendbuffer), query_id,
                                           (mdns_record_type_t)record_type, nameMdnsString.str, nameMdnsString.length,
@@ -417,7 +408,6 @@ static int service_callback(int sock, const struct sockaddr* from, size_t addrle
             }
         }
     } else if (name == self.serviceInstance) {
-        qWarning() << "Someone queried my service instance" << recordTypeToStr(record_type);
         if ((record_type == MDNS_RECORDTYPE_SRV) || (record_type == MDNS_RECORDTYPE_ANY)) {
             // The SRV query was for our service instance, answer a SRV record mapping the service
             // instance name to our qualified hostname (typically "<hostname>.local.") and port, as
@@ -437,10 +427,7 @@ static int service_callback(int sock, const struct sockaddr* from, size_t addrle
                 additional.append(createMdnsRecord(self, MDNS_RECORDTYPE_TXT, nullptr, txtIterator));
             }
 
-            // Send the answer, unicast or multicast depending on flag in query
             uint16_t unicast = (rclass & MDNS_UNICAST_RESPONSE);
-            printf("  --> answer %.*s port %d (%s)\n", MDNS_STRING_FORMAT(answer.data.srv.name), answer.data.srv.port, (unicast ? "unicast" : "multicast"));
-
             if (unicast) {
                 mdns_query_answer_unicast(sock, from, addrlen, sendbuffer, sizeof(sendbuffer), query_id,
                                           (mdns_record_type_t)record_type, nameMdnsString.str, nameMdnsString.length,
@@ -451,7 +438,6 @@ static int service_callback(int sock, const struct sockaddr* from, size_t addrle
             }
         }
     } else if (name == self.hostname) {
-        qWarning() << "Someone queried my host for" << recordTypeToStr(record_type);
         if (((record_type == MDNS_RECORDTYPE_A) || (record_type == MDNS_RECORDTYPE_ANY)) && !self.addressesV4.empty()) {
             // The A query was for our qualified hostname and we have an IPv4 address, answer with an A
             // record mapping the hostname to an IPv4 address, as well as an AAAA record and TXT records
@@ -467,10 +453,7 @@ static int service_callback(int sock, const struct sockaddr* from, size_t addrle
                 additional.append(createMdnsRecord(self, MDNS_RECORDTYPE_TXT, nullptr, txtIterator));
             }
 
-            // Send the answer, unicast or multicast depending on flag in query
             uint16_t unicast = (rclass & MDNS_UNICAST_RESPONSE);
-            printf("  --> answer %.*s IPv4 (%s)\n", MDNS_STRING_FORMAT(answer.name), (unicast ? "unicast" : "multicast"));
-
             if (unicast) {
                 mdns_query_answer_unicast(sock, from, addrlen, sendbuffer, sizeof(sendbuffer), query_id,
                                           (mdns_record_type_t)record_type, nameMdnsString.str, nameMdnsString.length,
@@ -494,10 +477,7 @@ static int service_callback(int sock, const struct sockaddr* from, size_t addrle
                 additional.append(createMdnsRecord(self, MDNS_RECORDTYPE_TXT, nullptr, txtIterator));
             }
 
-            // Send the answer, unicast or multicast depending on flag in query
             uint16_t unicast = (rclass & MDNS_UNICAST_RESPONSE);
-            printf("  --> answer %.*s IPv6 (%s)\n", MDNS_STRING_FORMAT(answer.name), (unicast ? "unicast" : "multicast"));
-
             if (unicast) {
                 mdns_query_answer_unicast(sock, from, addrlen, sendbuffer, sizeof(sendbuffer), query_id,
                                           (mdns_record_type_t)record_type, nameMdnsString.str, nameMdnsString.length,
@@ -579,7 +559,6 @@ Announcer::Announcer(const QString &serviceName, const QString &serviceType, uin
 
 void Announcer::detectHostAddresses()
 {
-    qWarning() << "detectHostAddresses";
     self.addressesV4.clear();
     self.addressesV6.clear();
     for (const QNetworkInterface &iface : QNetworkInterface::allInterfaces()) {
@@ -590,10 +569,8 @@ void Announcer::detectHostAddresses()
         for (const QNetworkAddressEntry &ifaceAddress : iface.addressEntries()) {
             QHostAddress sourceAddress = ifaceAddress.ip();
             if (sourceAddress.protocol() == QAbstractSocket::IPv4Protocol && sourceAddress != QHostAddress::LocalHost) {
-                qWarning() << "Found ipv4" << sourceAddress;
                 self.addressesV4.append(sourceAddress);
             } else if (sourceAddress.protocol() == QAbstractSocket::IPv6Protocol && sourceAddress != QHostAddress::LocalHostIPv6) {
-                qWarning() << "Found ipv6" << sourceAddress;
                 self.addressesV6.append(sourceAddress);
             }
         }
@@ -604,7 +581,7 @@ void Announcer::startAnnouncing()
 {
     int num_sockets = listenForQueries();
     if (num_sockets <= 0) {
-        qWarning() << "Failed to open any client sockets";
+        qCWarning(KDECONNECT_CORE) << "Failed to open any MDNS client sockets";
         return;
     }
     sendMulticastAnnounce(false);
