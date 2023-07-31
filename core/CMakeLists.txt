@@ -10,7 +10,7 @@ configure_file(dbushelper.h.in ${CMAKE_CURRENT_BINARY_DIR}/dbushelper.h)
 add_subdirectory(backends/lan)
 add_subdirectory(backends/loopback)
 
-option(MDNS_ENABLED "Use MDNS for device discovery (under development)" OFF)
+option(MDNS_ENABLED "Use MDNS for device discovery" ON)
 
 option(BLUETOOTH_ENABLED "Bluetooth support for kdeconnect" OFF)
 if(BLUETOOTH_ENABLED)
