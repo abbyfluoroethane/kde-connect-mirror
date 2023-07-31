@@ -71,7 +71,7 @@ private Q_SLOTS:
     void newConnection();
     void dataReceived();
     void sslErrors(const QList<QSslError> &errors);
-    void broadcastToNetwork();
+    void combinedOnNetworkChange();
 
 private:
     void addLink(QSslSocket *socket, const DeviceInfo &deviceInfo);
@@ -94,13 +94,10 @@ private:
     };
     QMap<QSslSocket *, PendingConnect> m_receivedIdentityPackets;
     const bool m_testMode;
-    QTimer m_combineBroadcastsTimer;
+    QTimer m_combineNetworkChangeTimer;
 
 #ifdef KDECONNECT_MDNS
     MdnsDiscovery m_mdnsDiscovery;
-#endif
-#if QT_VERSION_MAJOR < 6
-    QNetworkConfiguration m_lastConfig;
 #endif
 };
 
