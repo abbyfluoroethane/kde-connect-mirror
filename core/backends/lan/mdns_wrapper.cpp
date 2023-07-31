@@ -55,7 +55,7 @@ const char *entryTypeToStr(int entry)
     }
 }
 
-static sockaddr_in qHostAddresstoSockaddr(QHostAddress hostAddress)
+static sockaddr_in qHostAddressToSockaddr(QHostAddress hostAddress)
 {
     Q_ASSERT(hostAddress.protocol() == QAbstractSocket::IPv4Protocol);
     sockaddr_in socketAddress;
@@ -65,7 +65,7 @@ static sockaddr_in qHostAddresstoSockaddr(QHostAddress hostAddress)
     return socketAddress;
 }
 
-static sockaddr_in6 qHostAddresstoSockaddr6(QHostAddress hostAddress)
+static sockaddr_in6 qHostAddressToSockaddr6(QHostAddress hostAddress)
 {
     Q_ASSERT(hostAddress.protocol() == QAbstractSocket::IPv6Protocol);
     sockaddr_in6 socketAddress;
@@ -146,7 +146,7 @@ void Discoverer::startDiscovering(const QString &serviceType)
 {
     int num_sockets = listenForQueryResponses();
     if (num_sockets <= 0) {
-        qWarning() << "Failed to open any client sockets";
+        qCWarning(KDECONNECT_CORE) << "Failed to open any MDNS server sockets";
         return;
     }
     sendQuery(serviceType);
@@ -180,12 +180,12 @@ int Discoverer::listenForQueryResponses()
             QHostAddress sourceAddress = ifaceAddress.ip();
             if (sourceAddress.protocol() == QAbstractSocket::IPv4Protocol && sourceAddress != QHostAddress::LocalHost) {
                 qCDebug(KDECONNECT_CORE) << "Opening socket for address" << sourceAddress;
-                struct sockaddr_in saddr = qHostAddresstoSockaddr(sourceAddress);
+                struct sockaddr_in saddr = qHostAddressToSockaddr(sourceAddress);
                 int socket = mdns_socket_open_ipv4(&saddr);
                 sockets.append(socket);
             } else if (sourceAddress.protocol() == QAbstractSocket::IPv6Protocol && sourceAddress != QHostAddress::LocalHostIPv6) {
                 qCDebug(KDECONNECT_CORE) << "Opening socket for address6" << sourceAddress;
-                struct sockaddr_in6 saddr = qHostAddresstoSockaddr6(sourceAddress);
+                struct sockaddr_in6 saddr = qHostAddressToSockaddr6(sourceAddress);
                 int socket = mdns_socket_open_ipv6(&saddr);
                 sockets.append(socket);
             }
@@ -243,13 +243,60 @@ static mdns_string_t createMdnsString(const QByteArray &str)
     return mdns_string_t{str.constData(), (size_t)str.length()};
 }
 
-static QHostAddress findBestAddressMatch(QVector<QHostAddress> hostAddresses, const struct sockaddr *fromAddress)
+int countCommonLeadingBits(quint32 int1, quint32 int2) {
+    int count = 0;
+    while (int1 != 0 && int2 != 0) {
+        if ((int1 & 0x80000000) == (int2 & 0x80000000)) {
+            count++;
+            int1 <<= 1;
+            int2 <<= 1;
+        } else {
+            break;
+        }
+    }
+    return count;
+}
+
+static QHostAddress findBestAddressMatchV4(QVector<QHostAddress> hostAddresses, const struct sockaddr *fromAddress)
 {
+    Q_ASSERT(!hostAddresses.empty());
     if (hostAddresses.size() == 1 || fromAddress == nullptr) {
         return hostAddresses[0];
     }
-    // FIXME
+
+    QHostAddress otherIp = QHostAddress(fromAddress);
+
+    if (otherIp.protocol() != QAbstractSocket::IPv4Protocol) {
+        return hostAddresses[0];
+    }
+
+    // qDebug() << "I have more than one IP address:" << hostAddresses << "- Finding best match for source IP:" << otherIp;
+
+    QHostAddress matchingIp = hostAddresses[0];
+    int matchingBits = -1;
+    quint32 rawOtherIp = otherIp.toIPv4Address();
+    for (const QHostAddress& ip : hostAddresses) {
+        Q_ASSERT(ip.protocol() == QAbstractSocket::IPv4Protocol);
+        quint32 rawMyIp = ip.toIPv4Address();
+        // Since we don't have the network mask, we just compare the prefixes of the IPs to find the longest match
+        int matchingBitsCount = countCommonLeadingBits(rawMyIp, rawOtherIp);
+        if (matchingBitsCount > matchingBits) {
+            matchingIp = ip;
+            matchingBits = matchingBitsCount;
+        }
+    }
+
+    // qDebug() << "Found match:" << matchingIp;
+
+    return matchingIp;
+}
+
+static QHostAddress findBestAddressMatchV6(QVector<QHostAddress> hostAddresses, const struct sockaddr *fromAddress)
+{
+    Q_ASSERT(!hostAddresses.empty());
+    // We could do the same logic for v6 that we do for V4, but we don't care that much about IPv6
     return hostAddresses[0];
+    Q_UNUSED(fromAddress);
 }
 
 static mdns_record_t createMdnsRecord(const Announcer::AnnouncedInfo &self,
@@ -275,11 +322,11 @@ static mdns_record_t createMdnsRecord(const Announcer::AnnouncedInfo &self,
         break;
     case MDNS_RECORDTYPE_A: // maps "<hostname>.local." to IPv4
         answer.name = createMdnsString(self.hostname);
-        answer.data.a.addr = qHostAddresstoSockaddr(findBestAddressMatch(self.addressesV4, fromAddress));
+        answer.data.a.addr = qHostAddressToSockaddr(findBestAddressMatchV4(self.addressesV4, fromAddress));
         break;
     case MDNS_RECORDTYPE_AAAA: // maps "<hostname>.local." to IPv6
         answer.name = createMdnsString(self.hostname);
-        answer.data.aaaa.addr = qHostAddresstoSockaddr6(findBestAddressMatch(self.addressesV6, fromAddress));
+        answer.data.aaaa.addr = qHostAddressToSockaddr6(findBestAddressMatchV6(self.addressesV6, fromAddress));
         break;
     case MDNS_RECORDTYPE_TXT:
         answer.name = createMdnsString(self.serviceInstance);
