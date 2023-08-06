@@ -5,8 +5,8 @@
  */
 
 #include "mpriscontrolplugin-win.h"
-#include "plugin_mpris_debug.h"
 
+#include "plugin_mpriscontrol_debug.h"
 #include <core/device.h>
 
 #include <KPluginFactory>
