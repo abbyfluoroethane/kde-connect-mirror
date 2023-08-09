@@ -15,6 +15,10 @@ K_PLUGIN_CLASS_WITH_JSON(SendNotificationsPlugin, "kdeconnect_sendnotifications.
 SendNotificationsPlugin::SendNotificationsPlugin(QObject *parent, const QVariantList &args)
     : KdeConnectPlugin(parent, args)
 {
+    if (!qEnvironmentVariableIsSet("GVFS_REMOTE_VOLUME_MONITOR_IGNORE")) {
+        // Disable the GVFS remote volume monitor since it's unused and can cause crashes
+        qputenv("GVFS_REMOTE_VOLUME_MONITOR_IGNORE", "1");
+    }
     notificationsListener = new NotificationsListener(this);
 }
 
