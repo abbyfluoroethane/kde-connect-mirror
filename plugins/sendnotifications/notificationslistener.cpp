@@ -55,7 +55,7 @@ QString becomeMonitor(DBusConnection *conn, const char *match)
     return QString();
 }
 
-extern "C" DBusHandlerResult handleMessageFromC(DBusConnection *connection, DBusMessage *message, void *user_data)
+extern "C" DBusHandlerResult handleMessageFromC(DBusConnection *, DBusMessage *message, void *user_data)
 {
     Q_UNUSED(connection);
     auto *self = static_cast<NotificationsListenerThread *>(user_data);
@@ -237,7 +237,9 @@ NotificationsListener::NotificationsListener(KdeConnectPlugin *aPlugin)
     , m_plugin(aPlugin)
     , m_thread(new NotificationsListenerThread())
 {
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
     qRegisterMetaTypeStreamOperators<NotifyingApplication>("NotifyingApplication");
+#endif
 
     loadApplications();
 
@@ -379,7 +381,7 @@ void NotificationsListener::onNotify(const QString &appName,
         m_applications.insert(app.name, app);
         // update config
         QVariantList list;
-        for (const auto &a : qAsConst(m_applications))
+        for (const auto &a : std::as_const(m_applications))
             list << QVariant::fromValue<NotifyingApplication>(a);
         config->setList(QStringLiteral("applications"), list);
         // qCDebug(KDECONNECT_PLUGIN_SENDNOTIFICATIONS) << "Added new application to config:" << app;
