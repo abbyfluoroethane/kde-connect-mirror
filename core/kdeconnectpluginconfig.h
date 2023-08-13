@@ -66,7 +66,7 @@ Q_SIGNALS:
 private:
     void loadConfig();
 
-    QScopedPointer<KdeConnectPluginConfigPrivate> d;
+    std::unique_ptr<KdeConnectPluginConfigPrivate> d;
     QString m_deviceId;
     QString m_pluginName;
 };
