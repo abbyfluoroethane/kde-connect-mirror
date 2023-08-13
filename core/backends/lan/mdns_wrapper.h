@@ -68,7 +68,7 @@ public:
     // serviceType must be of the form "_<service-type>._<tcp/udp>.local"
     Announcer(const QString &instanceName, const QString &serviceType, uint16_t port);
 
-    void putTxtRecord(const QString &key, const QString &value)
+    void putTxtRecord(const QLatin1String &key, const QString &value)
     {
         self.txtRecords[key.toLatin1()] = value.toLatin1();
     }
