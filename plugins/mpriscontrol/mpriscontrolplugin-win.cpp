@@ -9,6 +9,7 @@
 #include "plugin_mpriscontrol_debug.h"
 #include <core/device.h>
 
+#include <KLocalizedString>
 #include <KPluginFactory>
 
 #include <QBuffer>
@@ -23,7 +24,10 @@ using namespace Windows::Foundation;
 
 K_PLUGIN_CLASS_WITH_JSON(MprisControlPlugin, "kdeconnect_mpriscontrol.json")
 
-const static QString defaultPlayer = QStringLiteral("Default player");
+namespace
+{
+const QString DEFAULT_PLAYER = i18nc("@title", "Current Player");
+}
 
 MprisControlPlugin::MprisControlPlugin(QObject *parent, const QVariantList &args)
     : KdeConnectPlugin(parent, args)
@@ -241,7 +245,7 @@ void MprisControlPlugin::sendPlayerList()
 {
     NetworkPacket np(PACKET_TYPE_MPRIS);
 
-    np.set(QStringLiteral("playerList"), playerList.keys() + QStringList(defaultPlayer));
+    np.set(QStringLiteral("playerList"), playerList.keys() + QStringList(DEFAULT_PLAYER));
     np.set(QStringLiteral("supportAlbumArtPayload"), false); // TODO: Sending albumArt doesn't work
 
     sendPacket(np);
@@ -299,8 +303,7 @@ void MprisControlPlugin::handleDefaultPlayer(const NetworkPacket &np)
         if (action == QStringLiteral("PlayPause") || (action == QStringLiteral("Play")) || (action == QStringLiteral("Pause")) ) {
             input.ki.wVk = VK_MEDIA_PLAY_PAUSE;
             ::SendInput(1,&input,sizeof(INPUT));
-        }
-        else if (action == QStringLiteral("Stop")) {
+        } else if (action == QStringLiteral("Stop")) {
             input.ki.wVk = VK_MEDIA_STOP;
             ::SendInput(1,&input,sizeof(INPUT));
         }
@@ -320,7 +323,7 @@ void MprisControlPlugin::handleDefaultPlayer(const NetworkPacket &np)
 
     //Send something read from the mpris interface
     NetworkPacket answer(PACKET_TYPE_MPRIS);
-    answer.set(QStringLiteral("player"), defaultPlayer);
+    answer.set(QStringLiteral("player"), DEFAULT_PLAYER);
     bool somethingToSend = false;
     if (np.get<bool>(QStringLiteral("requestNowPlaying"))) {
         answer.set(QStringLiteral("pos"), 0);
@@ -342,7 +345,6 @@ void MprisControlPlugin::handleDefaultPlayer(const NetworkPacket &np)
     if (somethingToSend) {
         sendPacket(answer);
     }
-
 }
 
 void MprisControlPlugin::receivePacket(const NetworkPacket &np)
@@ -354,7 +356,7 @@ void MprisControlPlugin::receivePacket(const NetworkPacket &np)
     // Send the player list
     const QString name = np.get<QString>(QStringLiteral("player"));
 
-    if (name == defaultPlayer) {
+    if (name == DEFAULT_PLAYER) {
         handleDefaultPlayer(np);
         return;
     }
