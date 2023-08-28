@@ -26,7 +26,7 @@ K_PLUGIN_CLASS_WITH_JSON(MprisControlPlugin, "kdeconnect_mpriscontrol.json")
 
 namespace
 {
-const QString DEFAULT_PLAYER = i18nc("@title", "Current Player");
+const QString DEFAULT_PLAYER = i18nc("@title Users select this to control the current media player when we can't detect a specific player name like VLC", "Current Player");
 }
 
 MprisControlPlugin::MprisControlPlugin(QObject *parent, const QVariantList &args)
