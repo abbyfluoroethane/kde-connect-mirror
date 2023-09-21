@@ -37,7 +37,7 @@ else()
     set(KIRIGAMIADDONS_COMPONENTS "org.kde.kirigamiaddons.components as KirigamiComponents")
 endif()
 
-configure_file(resources.qrc.in ${CMAKE_CURRENT_SOURCE_DIR}/resources.qrc)
+configure_file(resources.qrc.in ${CMAKE_CURRENT_SOURCE_DIR}/resources.generated.qrc)
 configure_file(qml/AttachmentViewer.qml ${CMAKE_CURRENT_BINARY_DIR}/qml/AttachmentViewer.qml)
 configure_file(qml/ChatMessage.qml ${CMAKE_CURRENT_BINARY_DIR}/qml/ChatMessage.qml)
 configure_file(qml/ConversationDisplay.qml ${CMAKE_CURRENT_BINARY_DIR}/qml/ConversationDisplay.qml)
@@ -51,7 +51,7 @@ add_executable(kdeconnect-sms
     conversationlistmodel.cpp
     conversationmodel.cpp
     conversationssortfilterproxymodel.cpp
-    resources.qrc
+    resources.generated.qrc
     thumbnailsprovider.cpp
     attachmentinfo.cpp
     ${kdeconnect_custom_icons_SRCS}
