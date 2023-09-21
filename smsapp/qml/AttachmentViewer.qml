@@ -15,7 +15,7 @@ Kirigami.Page {
     property string filePath
     property string mimeType
 
-    contextualActions: [
+    @KIRIGAMI_PAGE_ACTIONS@: [
         Kirigami.Action {
             text: i18nd("kdeconnect-sms", "Open with default")
             icon.name: "window-new"

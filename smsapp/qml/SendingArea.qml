@@ -9,7 +9,7 @@ import QtQuick.Controls 2.2 as Controls
 import QtQuick.Layouts 1.1
 import org.kde.kirigami 2.4 as Kirigami
 import @QTGRAPHICALEFFECTS@
-import QtQuick.Dialogs 1.1
+import QtQuick.Dialogs @QTQUICK_DIALOGS_IMPORT_VERSION@
 import org.kde.kdeconnect.sms 1.0
 
 ColumnLayout {
@@ -31,8 +31,7 @@ ColumnLayout {
 
     FileDialog {
         id: fileDialog
-        folder: shortcuts.home
-        selectMultiple: true
+        @QTQUICK_FILEDIALOG_FOLDER@: shortcuts.home
 
         onAccepted: {
             root.selectedFileUrls = fileDialog.fileUrls
