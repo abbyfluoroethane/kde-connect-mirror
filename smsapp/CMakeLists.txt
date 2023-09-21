@@ -31,6 +31,17 @@ target_link_libraries(kdeconnectsmshelper
     kdeconnectinterfaces
 )
 
+if (QT_MAJOR_VERSION STREQUAL 5)
+    set(KIRIGAMIADDONS_COMPONENTS "org.kde.kirigami 2.13 as KirigamiComponents")
+else()
+    set(KIRIGAMIADDONS_COMPONENTS "org.kde.kirigamiaddons.components as KirigamiComponents")
+endif()
+
+configure_file(resources.qrc.in ${CMAKE_CURRENT_SOURCE_DIR}/resources.qrc)
+configure_file(qml/ChatMessage.qml ${CMAKE_CURRENT_BINARY_DIR}/qml/ChatMessage.qml)
+configure_file(qml/ConversationDisplay.qml ${CMAKE_CURRENT_BINARY_DIR}/qml/ConversationDisplay.qml)
+configure_file(qml/MessageAttachments.qml ${CMAKE_CURRENT_BINARY_DIR}/qml/MessageAttachments.qml)
+configure_file(qml/SendingArea.qml ${CMAKE_CURRENT_BINARY_DIR}/qml/SendingArea.qml)
 qt_add_resources(kdeconnect_custom_icons_SRCS ${CMAKE_SOURCE_DIR}/icons/custom_icons.qrc)
 
 add_executable(kdeconnect-sms

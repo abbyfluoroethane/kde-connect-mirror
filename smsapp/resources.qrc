@@ -2,10 +2,10 @@
     <qresource prefix="/">
         <file>qml/main.qml</file>
         <file>qml/ConversationList.qml</file>
-        <file>qml/ConversationDisplay.qml</file>
-        <file>qml/ChatMessage.qml</file>
-        <file>qml/MessageAttachments.qml</file>
+        <file alias="qml/ConversationDisplay.qml">/home/user/kde/build/kdeconnect-kde/smsapp/qml/ConversationDisplay.qml</file>
+        <file alias="qml/ChatMessage.qml">/home/user/kde/build/kdeconnect-kde/smsapp/qml/ChatMessage.qml</file>
+        <file alias="qml/MessageAttachments.qml">/home/user/kde/build/kdeconnect-kde/smsapp/qml/MessageAttachments.qml</file>
         <file>qml/AttachmentViewer.qml</file>
-        <file>qml/SendingArea.qml</file>
+        <file alias="qml/SendingArea.qml">/home/user/kde/build/kdeconnect-kde/smsapp/qml/SendingArea.qml</file>
     </qresource>
 </RCC>

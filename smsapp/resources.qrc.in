@@ -1,0 +1,11 @@
+<RCC>
+    <qresource prefix="/">
+        <file>qml/main.qml</file>
+        <file>qml/ConversationList.qml</file>
+        <file alias="qml/ConversationDisplay.qml">@CMAKE_CURRENT_BINARY_DIR@/qml/ConversationDisplay.qml</file>
+        <file alias="qml/ChatMessage.qml">@CMAKE_CURRENT_BINARY_DIR@/qml/ChatMessage.qml</file>
+        <file alias="qml/MessageAttachments.qml">@CMAKE_CURRENT_BINARY_DIR@/qml/MessageAttachments.qml</file>
+        <file>qml/AttachmentViewer.qml</file>
+        <file alias="qml/SendingArea.qml">@CMAKE_CURRENT_BINARY_DIR@/qml/SendingArea.qml</file>
+    </qresource>
+</RCC>

@@ -7,9 +7,9 @@
 import QtQuick 2.12
 import QtQuick.Layouts 1.12
 import QtQuick.Controls 2.12
-import QtGraphicalEffects 1.12
+import @QTGRAPHICALEFFECTS@
 import org.kde.kirigami 2.13 as Kirigami
-
+import @KIRIGAMIADDONS_COMPONENTS@
 Item {
     id: root
 
@@ -25,7 +25,7 @@ Item {
 
     signal messageCopyRequested(string message)
 
-    Kirigami.Avatar {
+    KirigamiComponents.Avatar {
         id: avatar
         width: visible ? Kirigami.Units.gridUnit * 2 : 0
         height: width
