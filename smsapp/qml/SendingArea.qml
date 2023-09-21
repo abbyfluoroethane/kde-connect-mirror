@@ -32,6 +32,7 @@ ColumnLayout {
     FileDialog {
         id: fileDialog
         @QTQUICK_FILEDIALOG_FOLDER@: shortcuts.home
+        fileMode: FileDialog.OpenFiles
 
         onAccepted: {
             root.selectedFileUrls = fileDialog.fileUrls

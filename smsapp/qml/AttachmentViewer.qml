@@ -8,7 +8,7 @@ import QtQuick 2.12
 import QtQuick.Layouts 1.12
 import QtQuick.Controls 2.12
 import org.kde.kirigami 2.13 as Kirigami
-import QtMultimedia 5.12
+import QtMultimedia
 
 Kirigami.Page {
     id: root
@@ -66,13 +66,15 @@ Kirigami.Page {
             height: parent.height - mediaControls.height
             anchors.topMargin: root.implicitHeaderHeight
 
-            VideoOutput {
-                anchors.fill: parent
+            MediaPlayer {
                 source: mediaPlayer
-                fillMode: VideoOutput.PreserveAspectFit
+                videoOutput: VideoOutput {
+                    anchors.fill: parent
+                    fillMode: VideoOutput.PreserveAspectFit
 
-                // By default QML's videoOutput element rotates the vdeeo files by 90 degrees in clockwise direction
-                orientation: -90
+                    // By default QML's videoOutput element rotates the vdeeo files by 90 degrees in clockwise direction
+                    orientation: -90
+                }
             }
         }
 
