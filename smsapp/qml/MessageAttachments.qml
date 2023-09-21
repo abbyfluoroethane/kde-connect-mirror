@@ -7,7 +7,7 @@
 import QtQuick 2.12
 import QtQuick.Layouts 1.12
 import QtQuick.Controls 2.12
-import QtGraphicalEffects 1.12
+import @QTGRAPHICALEFFECTS@
 import org.kde.kirigami 2.13 as Kirigami
 import QtMultimedia 5.12
 

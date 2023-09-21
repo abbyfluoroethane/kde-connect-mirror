@@ -41,11 +41,13 @@ if(QT_MAJOR_VERSION STREQUAL "6")
     set(KIRIGAMI_ICON "icon.name")
     set(KIRIGAMI_PAGE_ACTIONS "actions")
     set(QTQUICK_FILEDIALOG_FOLDER "currentFolder")
+    set(QTGRAPHICALEFFECTS "Qt5Compat.GraphicalEffects")
 else()
     set(QTQUICK_DIALOGS_IMPORT_VERSION 1.0)
     set(KIRIGAMI_ICON "icon")
     set(KIRIGAMI_PAGE_ACTIONS "contextualActions")
     set(QTQUICK_FILEDIALOG_FOLDER "folder")
+    set(QTGRAPHICALEFFECTS "QtGraphicalEffects 1.12")
 endif()
 
 ecm_set_disabled_deprecation_versions(
