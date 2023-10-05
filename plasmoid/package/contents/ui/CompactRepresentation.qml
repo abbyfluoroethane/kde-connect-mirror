@@ -10,14 +10,14 @@ import org.kde.plasma.core 2.0 as PlasmaCore
 import org.kde.plasma.components 3.0 as PlasmaComponents3
 
 DropArea {
-    readonly property bool inPanel: (plasmoid.location == PlasmaCore.Types.TopEdge
-        || plasmoid.location == PlasmaCore.Types.RightEdge
-        || plasmoid.location == PlasmaCore.Types.BottomEdge
-        || plasmoid.location == PlasmaCore.Types.LeftEdge)
+    readonly property bool inPanel: (Plasmoid.location == PlasmaCore.Types.TopEdge
+        || Plasmoid.location == PlasmaCore.Types.RightEdge
+        || Plasmoid.location == PlasmaCore.Types.BottomEdge
+        || Plasmoid.location == PlasmaCore.Types.LeftEdge)
 
     onEntered: {
         if (drag.hasUrls) {
-            plasmoid.expanded = true;
+            Plasmoid.expanded = true;
         }
     }
 
@@ -26,13 +26,13 @@ DropArea {
         anchors.fill: parent
 
         onClicked: {
-            plasmoid.expanded = !plasmoid.expanded;
+            Plasmoid.expanded = !Plasmoid.expanded;
         }
     }
 
     PlasmaCore.IconItem {
         id: kdeConnectIcon
         anchors.fill: parent
-        source: plasmoid.icon
+        source: Plasmoid.icon
     }
 }

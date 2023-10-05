@@ -35,7 +35,7 @@ Item
     Plasmoid.compactRepresentation: CompactRepresentation {
     }
 
-    readonly property bool isConstrained: (plasmoid.formFactor == PlasmaCore.Types.Vertical || plasmoid.formFactor == PlasmaCore.Types.Horizontal)
+    readonly property bool isConstrained: (Plasmoid.formFactor == PlasmaCore.Types.Vertical || Plasmoid.formFactor == PlasmaCore.Types.Horizontal)
 
     Plasmoid.preferredRepresentation: isConstrained ? Plasmoid.compactRepresentation : Plasmoid.fullRepresentation
 
@@ -44,9 +44,9 @@ Item
     }
 
     Component.onCompleted: {
-        plasmoid.removeAction("configure");
+        Plasmoid.removeAction("configure");
         if (KCMShell.authorize("kcm_kdeconnect.desktop").length > 0) {
-            plasmoid.setAction("launchkcm", i18n("KDE Connect Settings..."), "configure");
+            Plasmoid.setAction("launchkcm", i18n("KDE Connect Settings..."), "configure");
         }
     }
 }
