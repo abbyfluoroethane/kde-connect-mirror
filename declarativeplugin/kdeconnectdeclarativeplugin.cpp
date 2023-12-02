@@ -18,11 +18,11 @@
 
 #include "core/kdeconnectpluginconfig.h"
 #include "interfaces/commandsmodel.h"
-#include "interfaces/devicesmodel.h"
 #include "interfaces/devicessortproxymodel.h"
 #include "interfaces/notificationsmodel.h"
 #include "openconfig.h"
 #include "pointerlocker.h"
+#include "interfaces/devicesmodel.h"
 #if defined(Q_OS_LINUX) || defined(Q_OS_FREEBSD)
 #include "pointerlockerwayland.h"
 #endif
