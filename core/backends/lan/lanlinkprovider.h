@@ -12,12 +12,7 @@
 #include <QTcpServer>
 #include <QTimer>
 #include <QUdpSocket>
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-#include <QNetworkConfigurationManager>
-#include <QNetworkSession>
-#else
 #include <QNetworkInformation>
-#endif
 
 #include "backends/linkprovider.h"
 #include "kdeconnectcore_export.h"
