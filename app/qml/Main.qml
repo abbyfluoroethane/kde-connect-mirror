@@ -94,11 +94,31 @@ Kirigami.ApplicationWindow {
 
                 QQC2.ItemDelegate {
                     Layout.fillWidth: true
-                    text: model.name + "\n" + toolTip
+                    contentItem: RowLayout {
+                        Kirigami.Icon {
+                            source: model.iconName
+                            color: "transparent"
+                            Layout.preferredWidth: Kirigami.Units.iconSizes.smallMedium
+                            Layout.preferredHeight: Kirigami.Units.iconSizes.smallMedium
+                        }
+
+                        ColumnLayout {
+                            Layout.fillWidth: true
+
+                            QQC2.Label {
+                                Layout.fillWidth: true
+                                text: model.name
+                            }
+                            QQC2.Label {
+                                Layout.fillWidth: true
+                                text:  model.toolTip
+                                elide: Qt.ElideRight
+                                color: Kirigami.Theme.disabledTextColor
+                            }
+                        }
+                    }
                     enabled: status & DevicesModel.Reachable
                     checked: pageStack.currentItem && pageStack.currentItem.currentDevice == device
-                    icon.name: model.iconName
-                    icon.color: "transparent"
                     onClicked: {
                         root.pageStack.clear()
                         root.pageStack.push(
