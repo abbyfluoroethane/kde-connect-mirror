@@ -121,8 +121,9 @@ Kirigami.Page
 
                 function subtractTapCount(n: int) {
                     tapCount -= n;
-                    if (tapCount == 0) {
+                    if (tapCount === 0) {
                         ignoreTaps = false;
+                        holdTimer.running = false;
 
                         if (holdTap) {
                             holdTap = false;
