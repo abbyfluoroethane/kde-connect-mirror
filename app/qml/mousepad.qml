@@ -7,6 +7,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QtQml
 import org.kde.kirigami as Kirigami
 import org.kde.kdeconnect
 
@@ -69,10 +70,121 @@ Kirigami.Page
                 }
             }
 
-            // We don't want to see the lock button when using a touchscreen
-            TapHandler {
-                acceptedDevices: PointerDevice.TouchScreen
-                onTapped: lockButton.visible = false
+            MultiPointTouchArea {
+                id: touchArea
+                anchors.fill: parent
+                mouseEnabled: false
+
+                touchPoints: [
+                    TouchPoint { id: touch1 }
+                ]
+
+                property var tapCount: 0
+                property var ignoreTaps: false
+                property var holdTap: false
+
+                // This is the maximum time between the first touch and release for the tap/click events
+                Timer {
+                    id: tapTimer
+                    interval: 100
+                    onTriggered: touchArea.ignoreTaps = true;
+                }
+
+                // This is the minimum time for the tap-and-hold event to trigger
+                Timer {
+                    id: holdTimer
+                    interval: 500
+                    onTriggered: {
+                        if (touch1.x != touch1.startX || touch1.y != touch1.startY) {
+                            return;
+                        }
+
+                        touchArea.holdTap = true;
+                        mousepad.pluginInterface.sendCommand({"singlehold" : true});
+                    }
+                }
+
+                onPressed: (points) => {
+                    // We don't want to see the lock button when using a touchscreen
+                    lockButton.visible = false;
+
+                    if (tapCount === 0) {
+                        tapTimer.running = true;
+                    }
+
+                    tapCount += points.length;
+
+                    if (!holdTap) {
+                        holdTimer.running = tapCount === 1;
+                    }
+                }
+
+                function subtractTapCount(n: int) {
+                    tapCount -= n;
+                    if (tapCount == 0) {
+                        ignoreTaps = false;
+
+                        if (holdTap) {
+                            holdTap = false;
+                            mousepad.pluginInterface.sendCommand({"singlerelease" : true});
+                        }
+                    }
+                }
+
+                onReleased: (points) => {
+                    if (ignoreTaps || holdTap) {
+                        subtractTapCount(points.length);
+                        return;
+                    }
+
+                    tapTimer.running = false;
+                    ignoreTaps = true; // Avoid sending multiple click events if the user did a multi finger tap but lifted some of the fingers slower than the others
+
+                    var clickType = "";
+                    var packet = {};
+
+                    switch (tapCount) {
+                    case 1:
+                        clickType = "singleclick";
+                        break;
+                    case 2:
+                        clickType = "rightclick";
+                        break;
+                    case 3:
+                        clickType = "middleclick";
+                        break;
+                    }
+
+                    if (clickType) {
+                        packet[clickType] = true;
+                        mousepad.pluginInterface.sendCommand(packet);
+                    }
+
+                    subtractTapCount(points.length);
+                }
+
+                onTouchUpdated: (points) => {
+                    switch (points.length) {
+                    case 1:
+                        var deltaX = points[0].x - points[0].previousX;
+                        var deltaY = points[0].y - points[0].previousY;
+                        var delta = Qt.point(deltaX * 2, deltaY * 2);
+                        pluginInterface.moveCursor(delta);
+                        break;
+                    case 2:
+                        var prevX = (points[0].previousX + points[1].previousX) / 2
+                        var prevY = (points[0].previousY + points[1].previousY) / 2
+                        var newX = (points[0].x + points[1].x) / 2
+                        var newY = (points[0].y + points[1].y) / 2
+                        delta = Qt.point(newX - prevX, newY - prevY);
+                        var packet = {};
+                        packet["scroll"] = true;
+                        packet["dy"] = newY - prevY;
+                        packet["dx"] = newX - prevX;
+                        mousepad.pluginInterface.sendCommand(packet);
+                        break;
+                    }
+                }
             }
 
             Shortcut {
