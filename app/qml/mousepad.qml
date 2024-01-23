@@ -76,7 +76,9 @@ Kirigami.Page
                 mouseEnabled: false
 
                 touchPoints: [
-                    TouchPoint { id: touch1 }
+                    TouchPoint { id: touch1 },
+                    TouchPoint { id: touch2 },
+                    TouchPoint { id: touch3 }
                 ]
 
                 property var tapCount: 0
