@@ -22,8 +22,7 @@ Kirigami.ScrollablePage {
             icon.name: "network-disconnect"
             onTriggered: {
                 root.currentDevice.unpair()
-                pageStack.clear()
-                pageStack.push(Qt.resolvedUrl("FindDevicesPage.qml"));
+                pageStack.pop(0)
             }
             text: i18nd("kdeconnect-app", "Unpair")
             visible: root.currentDevice && root.currentDevice.isPaired
@@ -127,6 +126,7 @@ Kirigami.ScrollablePage {
 
         Kirigami.PlaceholderMessage {
             // FIXME: not accessible. screen readers won't read this. Idem for the other PlaceholderMessages
+            //        https://invent.kde.org/frameworks/kirigami/-/merge_requests/1482
             text: i18nd("kdeconnect-app", "This device is not paired")
             anchors.centerIn: parent
             visible: root.currentDevice && root.currentDevice.isReachable && !root.currentDevice.isPaired && !root.currentDevice.isPairRequestedByPeer && !root.currentDevice.isPairRequested
@@ -168,6 +168,7 @@ Kirigami.ScrollablePage {
 
         Kirigami.PlaceholderMessage {
             // FIXME: not accessible. screen readers won't read this.
+            //        https://invent.kde.org/frameworks/kirigami/-/merge_requests/1482
             visible: root.currentDevice && !root.currentDevice.isReachable
             text: i18nd("kdeconnect-app", "This device is not reachable")
             anchors.centerIn: parent
