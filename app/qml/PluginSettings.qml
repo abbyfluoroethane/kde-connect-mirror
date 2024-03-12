@@ -60,6 +60,7 @@ Kirigami.ScrollablePage {
                     icon.name: "settings-configure"
                     visible: configSource != ""
                     // FIXME: not accessible. screen readers won't read this and just say "push button".
+                    //        https://bugreports.qt.io/browse/QTBUG-123123
                     Accessible.name: i18nd("kdeconnect-app", "Configure plugin")
                     onTriggered: {
                         if (pageStack.lastItem.toString().startsWith("PluginInfoPage")) {
