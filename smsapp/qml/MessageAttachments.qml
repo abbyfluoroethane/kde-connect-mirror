@@ -7,7 +7,7 @@
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls
-import Qt5Compat.GraphicalEffects
+import org.kde.graphicaleffects
 import org.kde.kirigami as Kirigami
 import QtMultimedia
 
@@ -45,17 +45,15 @@ Item {
         anchors.verticalCenter: parent.verticalCenter
 
         layer.enabled: rounded
-        layer.effect: OpacityMask {
-            maskSource: Item {
-                width: thumbnailElement.width
-                height: thumbnailElement.height
-                Rectangle {
-                    anchors.centerIn: parent
+        layer.effect: BadgeEffect {
+            source: thumbnailElement
+            mask: Rectangle {
+                    anchors.fill: parent
                     width: thumbnailElement.adapt ? thumbnailElement.width : Math.min(thumbnailElement.width, thumbnailElement.height)
                     height: thumbnailElement.adapt ? thumbnailElement.height : width
                     radius: messageBox.radius
                 }
-            }
+            
         }
 
         MouseArea {
