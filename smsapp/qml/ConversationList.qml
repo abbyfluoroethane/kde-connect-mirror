@@ -74,6 +74,10 @@ Kirigami.ScrollablePage
     }
 
     property string initialMessage : AppData.initialMessage
+    property string currentSearchText
+    property alias conversationListModel: conversationListModel
+    property int devicesCount
+    readonly property bool deviceConnected: devicesCount > 0
 
     header: Kirigami.InlineMessage {
         Layout.fillWidth: true
@@ -89,22 +93,11 @@ Kirigami.ScrollablePage
         ]
     }
 
-    property int devicesCount
-
-    readonly property bool deviceConnected: devicesCount > 0
-    property string currentSearchText
-
-    Component {
-        id: chatView
-        ConversationDisplay {
-            deviceConnected: page.deviceConnected
-        }
-    }
-
     titleDelegate: RowLayout {
         id: headerLayout
-        width: parent.width
+
         Keys.forwardTo: [filter]
+
         Kirigami.SearchField {
             /**
              * Used as the filter of the list of messages
@@ -145,6 +138,7 @@ Kirigami.ScrollablePage
             text: i18nd("kdeconnect-sms", "New")
             visible: true
             enabled: SmsHelper.isAddressValid(filter.text) && deviceConnected
+
             ToolTip.visible: hovered
             ToolTip.delay: Qt.styleHints.mousePressAndHoldInterval
             ToolTip.text: i18nd("kdeconnect-sms", "Start new conversation")
@@ -168,12 +162,15 @@ Kirigami.ScrollablePage
         }
     }
 
-    property alias conversationListModel: conversationListModel
+    Component {
+        id: chatView
+        ConversationDisplay {
+            deviceConnected: page.deviceConnected
+        }
+    }
 
     ListView {
         id: view
-        currentIndex: 0
-
         model: QSortFilterProxyModel {
             sortOrder: Qt.DescendingOrder
             filterCaseSensitivity: Qt.CaseInsensitive
@@ -181,60 +178,6 @@ Kirigami.ScrollablePage
                 id: conversationListModel
                 deviceId: AppData.deviceId
             }
-        }
-
-        Keys.forwardTo: [headerItem]
-
-        delegate: KirigamiDelegates.SubtitleDelegate
-        {
-            id: listItem
-            icon.name: decoration
-            text: displayNames
-            subtitle: toolTip
-            width: view.width
-
-            property var thumbnail: attachmentPreview
-
-            function startChat() {
-                view.currentItem.forceActiveFocus();
-                applicationWindow().pageStack.push(chatView, {
-                                                       addresses: addresses,
-                                                       conversationId: model.conversationId,
-                                                       isMultitarget: isMultitarget,
-                                                       initialMessage: page.initialMessage})
-                initialMessage = ""
-            }
-
-            onClicked: {
-                view.currentIndex = index
-                startChat();
-            }
-
-            Kirigami.Icon {
-                id: thumbnailItem
-                source: {
-                    if (!listItem.thumbnail) {
-                        return undefined
-                    }
-                    if (listItem.thumbnail.hasOwnProperty) {
-                        if (listItem.thumbnail.hasOwnProperty("name") && listItem.thumbnail.name !== "")
-                            return listItem.thumbnail.name;
-                        if (listItem.thumbnail.hasOwnProperty("source"))
-                            return listItem.thumbnail.source;
-                    }
-                    return listItem.thumbnail;
-                }
-                property int size: Kirigami.Units.iconSizes.huge
-                Layout.minimumHeight: size
-                Layout.maximumHeight: size
-                Layout.minimumWidth: size
-                selected: (listItem.highlighted || listItem.checked || listItem.pressed)
-                opacity: 1
-                visible: source != undefined
-            }
-
-            // Keep the currently-open chat highlighted even if this element is not focused
-            highlighted: ListView.isCurrentItem
         }
 
         Component.onCompleted: {
@@ -249,6 +192,74 @@ Kirigami.ScrollablePage
             width: parent.width - (Kirigami.Units.largeSpacing * 4)
             visible: deviceConnected && view.count == 0 && currentSearchText.length != 0
             text: i18ndc("kdeconnect-sms", "Placeholder message text when no messages are found", "No matches")
+        }
+
+        Keys.forwardTo: [headerItem]
+
+        delegate: ItemDelegate {
+            id: listItem
+            text: displayNames
+            icon.name: decoration
+
+            required property string displayNames
+            required property string toolTip
+            required property string decoration
+            required property var attachmentPreview
+            required property int index
+            required property var addresses
+            required property bool isMultitarget
+            required property int conversationId
+
+            // Keep the currently-open chat highlighted even if this element is not focused
+            highlighted: ListView.isCurrentItem
+
+            function startChat() {
+                view.currentItem.forceActiveFocus();
+                applicationWindow().pageStack.push(chatView, {
+                                                       addresses: listItem.addresses,
+                                                       conversationId: listItem.conversationId,
+                                                       isMultitarget: listItem.isMultitarget,
+                                                       initialMessage: page.initialMessage})
+                initialMessage = ""
+            }
+
+            onClicked: {
+                view.currentIndex = index
+                startChat();
+            }
+
+            contentItem: RowLayout {
+                spacing: Kirigami.Units.smallSpacing
+                implicitWidth: view.width
+
+                Kirigami.Icon {
+                    id: thumbnailItem
+                    source: {
+                        if (!listItem.attachmentPreview) {
+                            return undefined
+                        }
+
+                        if (listItem.attachmentPreview.hasOwnProperty("name") && listItem.attachmentPreview.name !== "")
+                            return listItem.attachmentPreview.name;
+                        if (listItem.attachmentPreview.hasOwnProperty("source"))
+                            return listItem.attachmentPreview.source;
+                        return listItem.attachmentPreview;
+                    }
+
+                    width: Kirigami.Units.iconSizes.small
+                    height: Kirigami.Units.iconSizes.small
+
+                    visible: source !== undefined
+                }
+
+                KirigamiDelegates.TitleSubtitle {
+                    title: listItem.text
+                    subtitle: listItem.toolTip
+                    elide: Text.ElideRight
+                    implicitWidth: view.width
+                }
+            }
+
         }
     }
 }
