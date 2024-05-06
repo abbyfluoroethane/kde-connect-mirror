@@ -191,12 +191,11 @@ Kirigami.ScrollablePage
         delegate: ItemDelegate {
             id: listItem
             text: displayNames
-            icon.name: decoration
             width: view.width
 
             required property string displayNames
             required property string toolTip
-            required property string decoration
+            required property var decoration
             required property var attachmentPreview
             required property int index
             required property var addresses
@@ -225,6 +224,10 @@ Kirigami.ScrollablePage
             contentItem: RowLayout {
                 spacing: Kirigami.Units.smallSpacing
                 implicitWidth: view.width - Kirigami.Units.largeSpacing
+
+                Kirigami.Icon {
+                    source: listItem.decoration
+                }
 
                 Kirigami.Icon {
                     id: thumbnailItem
