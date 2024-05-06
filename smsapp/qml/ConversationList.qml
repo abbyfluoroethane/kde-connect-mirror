@@ -229,6 +229,14 @@ Kirigami.ScrollablePage
                     source: listItem.decoration
                 }
 
+                // Set width here to force elide and account for scrollbar
+                KirigamiDelegates.TitleSubtitle {
+                    title: listItem.text
+                    subtitle: listItem.toolTip
+                    elide: Text.ElideRight
+                    implicitWidth: view.width - Kirigami.Units.largeSpacing*2
+                }
+
                 Kirigami.Icon {
                     id: thumbnailItem
                     source: {
@@ -248,16 +256,7 @@ Kirigami.ScrollablePage
 
                     visible: source !== undefined
                 }
-
-                // Set width here to force elide and account for scrollbar
-                KirigamiDelegates.TitleSubtitle {
-                    title: listItem.text
-                    subtitle: listItem.toolTip
-                    elide: Text.ElideRight
-                    implicitWidth: view.width - Kirigami.Units.largeSpacing*2
-                }
             }
-
         }
     }
 }
