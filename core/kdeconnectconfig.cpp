@@ -117,6 +117,11 @@ QSslCertificate KdeConnectConfig::certificate()
     return d->m_certificate;
 }
 
+QSslKey KdeConnectConfig::privateKey()
+{
+    return d->m_privateKey;
+}
+
 DeviceInfo KdeConnectConfig::deviceInfo()
 {
     const auto incoming = PluginLoader::instance()->incomingCapabilities();
