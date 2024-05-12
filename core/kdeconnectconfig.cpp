@@ -295,7 +295,7 @@ void KdeConnectConfig::generatePrivateKey(const QString &keyPath)
 {
     qCDebug(KDECONNECT_CORE) << "Generating private key";
 
-    d->m_privateKey = SslHelper::generateRsaPrivateKey();
+    d->m_privateKey = SslHelper::generateEcPrivateKey();
     if (d->m_privateKey.isNull()) {
         qCritical() << "Could not generate the private key";
         Daemon::instance()->reportError(i18n("KDE Connect failed to start"), i18n("Could not generate the private key."));

@@ -26,6 +26,61 @@ QString getSslError()
     return QString::fromLatin1(buf);
 }
 
+QSslKey generateEcPrivateKey()
+{
+    // Initialize context.
+    auto pctxRaw = EVP_PKEY_CTX_new_id(EVP_PKEY_EC, nullptr);
+    auto pctx = std::unique_ptr<EVP_PKEY_CTX, decltype(&::EVP_PKEY_CTX_free)>(pctxRaw, ::EVP_PKEY_CTX_free);
+    if (!pctx) {
+        qCWarning(KDECONNECT_CORE) << "Generate EC Private Key failed to allocate context " << getSslError();
+        return QSslKey();
+    }
+
+    if (EVP_PKEY_keygen_init(pctx.get()) <= 0) {
+        qCWarning(KDECONNECT_CORE) << "Generate EC Private Key failed to initialize context " << getSslError();
+        return QSslKey();
+    }
+
+    // Set the curve.
+    if (EVP_PKEY_CTX_set_ec_paramgen_curve_nid(pctx.get(), NID_secp256k1) <= 0) {
+        qCWarning(KDECONNECT_CORE) << "Generate EC Private Key failed to set curve " << getSslError();
+        return QSslKey();
+    }
+
+    // Generate private key.
+    auto pkey = std::unique_ptr<EVP_PKEY, decltype(&::EVP_PKEY_free)>(EVP_PKEY_new(), ::EVP_PKEY_free);
+    if (!pkey) {
+        qCWarning(KDECONNECT_CORE) << "Generate EC Private Key failed to allocate private key " << getSslError();
+        return QSslKey();
+    }
+
+    auto pkey_raw = pkey.get();
+    if (EVP_PKEY_keygen(pctx.get(), &pkey_raw) <= 0) {
+        qCWarning(KDECONNECT_CORE) << "Generate EC Private Key failed to generate private key " << getSslError();
+        return QSslKey();
+    }
+
+    // Convert private key format to PEM as required by QSslKey.
+    auto bio = std::unique_ptr<BIO, decltype(&::BIO_free_all)>(BIO_new(BIO_s_mem()), ::BIO_free_all);
+    if (!bio) {
+        qCWarning(KDECONNECT_CORE) << "Generate EC Private Key failed to allocate I/O abstraction " << getSslError();
+        return QSslKey();
+    }
+
+    if (!PEM_write_bio_PrivateKey(bio.get(), pkey_raw, nullptr, nullptr, 0, nullptr, nullptr)) {
+        qCWarning(KDECONNECT_CORE) << "Generate EC Private Key failed write PEM format private key to BIO " << getSslError();
+        return QSslKey();
+    }
+
+    BUF_MEM *mem = nullptr;
+    if (!BIO_get_mem_ptr(bio.get(), &mem)) {
+        qCWarning(KDECONNECT_CORE) << "Generate EC Private Key failed get PEM format address " << getSslError();
+        return QSslKey();
+    }
+
+    return QSslKey(QByteArray(mem->data, mem->length), QSsl::KeyAlgorithm::Ec);
+}
+
 QSslKey generateRsaPrivateKey()
 {
     // Initialize context.
