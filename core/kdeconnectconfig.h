@@ -8,6 +8,7 @@
 #define KDECONNECTCONFIG_H
 
 #include <QDir>
+#include <QSslKey>
 
 #include "deviceinfo.h"
 #include "kdeconnectcore_export.h"
@@ -26,6 +27,7 @@ public:
     QString deviceId();
     QString name();
     DeviceType deviceType();
+    QSslKey privateKey();
     QSslCertificate certificate();
     DeviceInfo deviceInfo();
     QString privateKeyPath();
