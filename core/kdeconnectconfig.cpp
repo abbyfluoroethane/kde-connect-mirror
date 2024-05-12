@@ -135,6 +135,16 @@ DeviceInfo KdeConnectConfig::deviceInfo()
                       QSet(outgoing.begin(), outgoing.end()));
 }
 
+QSsl::KeyAlgorithm KdeConnectConfig::privateKeyAlgorithm()
+{
+    QString value = d->m_config->value(QStringLiteral("keyAlgorithm"), QStringLiteral("RSA")).toString();
+    if (value == QStringLiteral("EC")) {
+        return QSsl::KeyAlgorithm::Ec;
+    } else {
+        return QSsl::KeyAlgorithm::Rsa;
+    }
+}
+
 QDir KdeConnectConfig::baseConfigDir()
 {
     QString configPath = QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation);
@@ -255,7 +265,7 @@ bool KdeConnectConfig::loadPrivateKey(const QString &keyPath)
 {
     QFile privKey(keyPath);
     if (privKey.exists() && privKey.open(QIODevice::ReadOnly)) {
-        d->m_privateKey = QSslKey(privKey.readAll(), QSsl::KeyAlgorithm::Rsa);
+        d->m_privateKey = QSslKey(privKey.readAll(), privateKeyAlgorithm());
         if (d->m_privateKey.isNull()) {
             qCWarning(KDECONNECT_CORE) << "Private key from" << keyPath << "is not valid!";
         }
@@ -300,7 +310,7 @@ void KdeConnectConfig::generatePrivateKey(const QString &keyPath)
 {
     qCDebug(KDECONNECT_CORE) << "Generating private key";
 
-    d->m_privateKey = SslHelper::generateRsaPrivateKey();
+    d->m_privateKey = SslHelper::generateEcPrivateKey();
     if (d->m_privateKey.isNull()) {
         qCritical() << "Could not generate the private key";
         Daemon::instance()->reportError(i18n("KDE Connect failed to start"), i18n("Could not generate the private key."));
@@ -317,6 +327,9 @@ void KdeConnectConfig::generatePrivateKey(const QString &keyPath)
             error = true;
         }
     }
+
+    d->m_config->setValue(QStringLiteral("keyAlgorithm"), QStringLiteral("EC"));
+    d->m_config->sync();
 
     if (error) {
         Daemon::instance()->reportError(QStringLiteral("KDE Connect"), i18n("Could not store private key file: %1", keyPath));

@@ -30,6 +30,7 @@ public:
     QSslKey privateKey();
     QSslCertificate certificate();
     DeviceInfo deviceInfo();
+    QSsl::KeyAlgorithm privateKeyAlgorithm();
     QString privateKeyPath();
     QString certificatePath();
 
