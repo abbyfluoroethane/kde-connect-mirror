@@ -138,7 +138,7 @@ DeviceInfo KdeConnectConfig::deviceInfo()
 QSsl::KeyAlgorithm KdeConnectConfig::privateKeyAlgorithm()
 {
     QString value = d->m_config->value(QStringLiteral("keyAlgorithm"), QStringLiteral("RSA")).toString();
-    if (value == QStringLiteral("EC")) {
+    if (value == QLatin1String("EC")) {
         return QSsl::KeyAlgorithm::Ec;
     } else {
         return QSsl::KeyAlgorithm::Rsa;

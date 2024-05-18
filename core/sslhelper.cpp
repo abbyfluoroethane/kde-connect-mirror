@@ -145,8 +145,8 @@ QSslCertificate generateSelfSignedCertificate(const QSslKey &qtPrivateKey, const
         return QSslCertificate();
     }
 
-    const int x509version = 3;
-    if (!X509_set_version(x509.get(), x509version - 1)) { // version is 0-indexed
+    constexpr int x509version = 3 - 1; // version is 0-indexed, so we need the -1
+    if (!X509_set_version(x509.get(), x509version)) {
         qCWarning(KDECONNECT_CORE) << "Generate Self Signed Certificate failed to set version " << getSslError();
         return QSslCertificate();
     }
