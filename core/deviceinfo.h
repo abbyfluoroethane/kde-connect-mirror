@@ -146,7 +146,7 @@ struct DeviceInfo {
                           QSet<QString>(outgoingCapabilities.begin(), outgoingCapabilities.end()));
     }
 
-    static QString filterName(QString input)
+    static QStringView filterName(QStringView input)
     {
         static const QRegularExpression NAME_INVALID_CHARACTERS_REGEX(QStringLiteral("[\"',;:.!?()\\[\\]<>]"));
         constexpr int MAX_DEVICE_NAME_LENGTH = 32;
