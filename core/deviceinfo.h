@@ -8,6 +8,7 @@
 #define DEVICE_INFO_H
 
 #include "networkpacket.h"
+#include <QRegularExpression>
 #include <QSet>
 #include <QSslCertificate>
 #include <QString>
@@ -143,6 +144,19 @@ struct DeviceInfo {
                           np.get<int>(QStringLiteral("protocolVersion"), -1),
                           QSet<QString>(incomingCapabilities.begin(), incomingCapabilities.end()),
                           QSet<QString>(outgoingCapabilities.begin(), outgoingCapabilities.end()));
+    }
+
+    static QString filterName(QString input)
+    {
+        static const QRegularExpression NAME_INVALID_CHARACTERS_REGEX(QStringLiteral("[\"',;:.!?()\\[\\]<>]"));
+        static int MAX_DEVICE_NAME_LENGTH = 32;
+        return input.remove(NAME_INVALID_CHARACTERS_REGEX).left(MAX_DEVICE_NAME_LENGTH);
+    }
+
+    static bool isValidIdentityPacket(NetworkPacket *np)
+    {
+        return np->type() == PACKET_TYPE_IDENTITY && !filterName(np->get(QLatin1String("deviceName"), QString())).isEmpty()
+            && !np->get(QLatin1String("deviceId"), QString()).isEmpty();
     }
 };
 
