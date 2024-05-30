@@ -1,4 +1,5 @@
 {
+    "$schema": "../kdeconnect.schema.json",
     "KPlugin": {
         "Authors": [
             {
@@ -150,5 +151,6 @@
     "X-KDE-ConfigModule": "kdeconnect/kcms/kdeconnect_pausemusic_config",
     "X-KdeConnect-SupportedPacketType": [
         "kdeconnect.telephony"
-    ]
+    ],
+    "X-KdeConnect-OutgoingPacketType": []
 }
