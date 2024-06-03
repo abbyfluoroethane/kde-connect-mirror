@@ -222,10 +222,12 @@ Kirigami.ScrollablePage
 
             // Note: Width calcs to account for scrollbar coming and going
             contentItem: RowLayout {
+                id: contentRow
                 spacing: Kirigami.Units.smallSpacing
                 implicitWidth: view.width - Kirigami.Units.largeSpacing
 
                 Kirigami.Icon {
+                    id: contactIcon
                     source: listItem.decoration
                 }
 
@@ -234,7 +236,7 @@ Kirigami.ScrollablePage
                     title: listItem.text
                     subtitle: listItem.toolTip
                     elide: Text.ElideRight
-                    implicitWidth: view.width - Kirigami.Units.largeSpacing*2
+                    implicitWidth: contentRow.width - contactIcon.width - thumbnailItem.width - Kirigami.Units.largeSpacing
                 }
 
                 Kirigami.Icon {
