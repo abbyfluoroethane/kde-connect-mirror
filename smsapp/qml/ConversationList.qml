@@ -253,9 +253,6 @@ Kirigami.ScrollablePage
                         return listItem.attachmentPreview;
                     }
 
-                    width: Kirigami.Units.iconSizes.small
-                    height: Kirigami.Units.iconSizes.small
-
                     visible: source !== undefined
                 }
             }
