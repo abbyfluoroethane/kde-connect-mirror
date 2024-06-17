@@ -236,7 +236,7 @@ Kirigami.ScrollablePage
                     title: listItem.text
                     subtitle: listItem.toolTip
                     elide: Text.ElideRight
-                    implicitWidth: contentRow.width - contactIcon.width - thumbnailItem.width - Kirigami.Units.largeSpacing
+                    Layout.fillWidth: true
                 }
 
                 Kirigami.Icon {
