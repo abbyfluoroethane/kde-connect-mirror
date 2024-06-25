@@ -43,6 +43,7 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
     if (TARGET KF6::ModemManagerQt)
         add_subdirectory(mmtelephony)
     endif()
+    add_subdirectory(shareinputdevices)
 endif()
 
 if(NOT APPLE)
