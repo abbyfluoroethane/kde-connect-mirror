@@ -172,7 +172,7 @@ int main(int argc, char *argv[])
         QDBusConnection::sessionBus().call(message); // deliberately block until it's done, so we register the name after the app quits
     }
 
-    KDBusService dbusService(KDBusService::Unique);
+    KDBusService dbusService(KDBusService::Unique | KDBusService::Replace);
 
     DesktopDaemon daemon;
 
