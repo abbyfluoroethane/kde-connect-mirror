@@ -65,6 +65,6 @@ private:
     std::unique_ptr<QSocketNotifier> m_eiNotifier;
     std::unique_ptr<OrgFreedesktopPortalSessionInterface> m_session;
     std::unique_ptr<Xkb> m_xkb;
-    ei *m_ei;
+    ei *m_ei = nullptr;
     OrgFreedesktopPortalInputCaptureInterface *m_inputCapturePortal;
 };

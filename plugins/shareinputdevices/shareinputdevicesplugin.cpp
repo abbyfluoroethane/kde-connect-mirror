@@ -72,7 +72,7 @@ ShareInputDevicesPlugin::ShareInputDevicesPlugin(QObject *parent, const QVariant
 {
     connect(m_inputCaptureSession, &InputCaptureSession::started, this, [this](const QLine &barrier, const QPointF &delta) {
         m_activatedBarrier = barrier;
-        NetworkPacket packet(PACKET_TYPE_SHAREINPUTDEVICES_REQUEST, {{u"startEdge"_s, configuredEdge()}, {u"delta"_s, delta}});
+        NetworkPacket packet(PACKET_TYPE_SHAREINPUTDEVICES_REQUEST, {{u"startEdge"_s, configuredEdge()}, {u"deltax"_s, delta.x()}, {u"deltay"_s, delta.y()}});
         sendPacket(packet);
     });
     connect(m_inputCaptureSession, &InputCaptureSession::mouseMove, this, [this](double x, double y) {
@@ -127,8 +127,9 @@ Qt::Edge ShareInputDevicesPlugin::configuredEdge() const
 void ShareInputDevicesPlugin::receivePacket(const NetworkPacket &np)
 {
     if (np.type() == PACKET_TYPE_SHAREINPUTDEVICES) {
-        if (np.has(u"releaseDelta"_s)) {
-            const QPointF releasePosition = m_activatedBarrier.p1() + np.get<QPointF>(u"releaseDelta"_s);
+        if (np.has(u"releaseDeltax"_s)) {
+            const QPointF releaseDelta{np.get<double>(u"releaseDeltax"_s), np.get<double>(u"releaseDeltay"_s)};
+            const QPointF releasePosition = m_activatedBarrier.p1() + releaseDelta;
             m_inputCaptureSession->release(releasePosition);
         }
     }

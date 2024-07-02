@@ -34,8 +34,8 @@ void ShareInputDevicesRemotePlugin::receivePacket(const NetworkPacket &np)
 {
     if (np.type() == PACKET_TYPE_SHAREINPUTDEVICES_REQUEST) {
         if (np.has(u"startEdge"_s)) {
-            const Qt::Edge startEdge = np.get<Qt::Edge>(u"edge"_s);
-            const QPointF delta = np.get<QPointF>(u"delta"_s);
+            const Qt::Edge startEdge = np.get<Qt::Edge>(u"startEdge"_s);
+            const QPointF delta = {np.get<double>(u"deltax"_s), np.get<double>(u"deltay"_s)};
             auto screens = QGuiApplication::screens();
             auto mousePadPlugin = device()->plugin(u"kdeconnect_mousepad"_s);
             if (screens.empty() || !mousePadPlugin) {
@@ -83,22 +83,22 @@ void ShareInputDevicesRemotePlugin::receivePacket(const NetworkPacket &np)
         if (np.has(u"dx"_s) && m_enterScreen) {
             m_currentPosition += QPointF(np.get<double>(u"dx"_s), np.get<double>(u"dy"_s));
             qDebug() << m_currentPosition;
+            auto sendRelease = [this](const QPointF &delta) {
+                NetworkPacket packet(PACKET_TYPE_SHAREINPUTDEVICES, {{u"releaseDeltax"_s, delta.x()}, {u"releaseDeltay"_s, delta.y()}});
+                sendPacket(packet);
+            };
             if (m_enterEdge == Qt::LeftEdge && m_currentPosition.x() < m_enterScreen->geometry().x()) {
                 const QPointF delta = m_currentPosition - m_enterScreen->geometry().topLeft();
-                NetworkPacket packet(PACKET_TYPE_SHAREINPUTDEVICES, {{u"releaseDelta"_s, delta}});
-                sendPacket(packet);
+                sendRelease(delta);
             } else if (m_enterEdge == Qt::RightEdge && m_currentPosition.x() > m_enterScreen->geometry().x() + m_enterScreen->geometry().width()) {
                 const QPointF delta = m_currentPosition - m_enterScreen->geometry().topRight();
-                NetworkPacket packet(PACKET_TYPE_SHAREINPUTDEVICES, {{u"releaseDelta"_s, delta}});
-                sendPacket(packet);
+                sendRelease(delta);
             } else if (m_enterEdge == Qt::TopEdge && m_currentPosition.y() < m_enterScreen->geometry().y()) {
                 const QPointF delta = m_currentPosition - m_enterScreen->geometry().topLeft();
-                NetworkPacket packet(PACKET_TYPE_SHAREINPUTDEVICES, {{u"releaseDelta"_s, delta}});
-                sendPacket(packet);
+                sendRelease(delta);
             } else if (m_enterEdge == Qt::BottomEdge && m_currentPosition.y() > m_enterScreen->geometry().y() + m_enterScreen->geometry().height()) {
                 const QPointF delta = m_currentPosition - m_enterScreen->geometry().bottomLeft();
-                NetworkPacket packet(PACKET_TYPE_SHAREINPUTDEVICES, {{u"releaseDelta"_s, delta}});
-                sendPacket(packet);
+                sendRelease(delta);
             }
         }
     }

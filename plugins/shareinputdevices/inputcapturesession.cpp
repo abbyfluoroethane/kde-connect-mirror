@@ -260,7 +260,9 @@ void InputCaptureSession::setBarrierEdge(Qt::Edge edge)
 {
     if (edge != m_barrierEdge) {
         m_barrierEdge = edge;
-        setUpBarrier();
+        if (m_currentZoneSet != 0) {
+            setUpBarrier();
+        }
     }
 }
 
