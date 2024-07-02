@@ -15,10 +15,9 @@
     "X-KDE-ConfigModule": "kdeconnect/kcms/kdeconnect_shareinputdevices_config",
     "X-KdeConnect-OutgoingPacketType": [
         "kdeconnect.mousepad.request",
-        "kdeconnect.shareinputdevices"
+        "kdeconnect.shareinputdevices.request"
     ],
     "X-KdeConnect-SupportedPacketType": [
-        "kdeconnect.mousepad.request",
         "kdeconnect.shareinputdevices"
     ]
 }

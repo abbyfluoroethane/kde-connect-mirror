@@ -44,6 +44,7 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
         add_subdirectory(mmtelephony)
     endif()
     add_subdirectory(shareinputdevices)
+    add_subdirectory(shareinputdevicesremote)
 endif()
 
 if(NOT APPLE)

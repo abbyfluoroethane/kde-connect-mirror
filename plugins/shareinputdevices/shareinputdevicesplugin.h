@@ -18,8 +18,6 @@ class QScreen;
 class ShareInputDevicesPlugin : public KdeConnectPlugin
 {
     Q_OBJECT
-    Q_CLASSINFO("D-Bus Interface", "org.kde.kdeconnect.device.ping")
-
 public:
     ShareInputDevicesPlugin(QObject *parent, const QVariantList &args);
 
@@ -30,8 +28,4 @@ private:
     Qt::Edge configuredEdge() const;
     InputCaptureSession *m_inputCaptureSession;
     QLine m_activatedBarrier;
-    QScreen *m_enterScreen;
-    Qt::Edge m_enterEdge;
-    QPointF m_enterPosition;
-    QPointF m_currentPosition;
 };
