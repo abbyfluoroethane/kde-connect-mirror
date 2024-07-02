@@ -7,6 +7,7 @@
 #pragma once
 
 #include <QDBusObjectPath>
+#include <QLine>
 #include <QObject>
 
 #include <memory>
@@ -25,9 +26,10 @@ public:
     InputCaptureSession(QObject *parent);
     ~InputCaptureSession();
 
+    void setBarrierEdge(Qt::Edge edge);
     void release(const QPointF &position);
 Q_SIGNALS:
-    void started(const QPointF &position);
+    void started(const QLine &barrier, const QPointF &delta);
     void mouseMove(double dx, double dy);
     void mouseButton(int button, bool pressed);
     void scrollDelta(double dx, double dy);
@@ -36,6 +38,7 @@ Q_SIGNALS:
 
 private:
     void getZones();
+    void setUpBarrier();
     void enable();
 
     void sessionCreated(uint response, const QVariantMap &options);
@@ -51,7 +54,11 @@ private:
     void setupEi(int fd);
     void handleEiEvent(ei_event *event);
 
+    Qt::Edge m_barrierEdge;
+    QLine m_barrier;
+
     uint m_currentZoneSet = 0;
+    QList<QRect> m_currentZones;
     uint m_currentActivationId = 0;
     uint m_currentEisSequence = 0;
     QList<ei_event *> queuedEiEvents;

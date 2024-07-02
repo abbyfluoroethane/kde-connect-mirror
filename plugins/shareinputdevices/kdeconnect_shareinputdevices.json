@@ -6,12 +6,13 @@
                 "Email": "kde@david-redondo.de"
             }
         ],
-        "EnabledByDefault": true,
+        "EnabledByDefault": false,
         "Icon": "dialog-input-devices",
         "License": "GPL",
         "Name": "Share input devices",
         "Description": "Share mouse and keyboard with the remote device"
     },
+    "X-KDE-ConfigModule": "kdeconnect/kcms/kdeconnect_shareinputdevices_config",
     "X-KdeConnect-OutgoingPacketType": [
         "kdeconnect.mousepad.request",
         "kdeconnect.shareinputdevices"

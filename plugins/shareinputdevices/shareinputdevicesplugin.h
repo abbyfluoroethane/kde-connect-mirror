@@ -6,12 +6,14 @@
 
 #pragma once
 
+#include <QLine>
 #include <QObject>
 #include <QPointF>
 
 #include <core/kdeconnectplugin.h>
 
 class InputCaptureSession;
+class QScreen;
 
 class ShareInputDevicesPlugin : public KdeConnectPlugin
 {
@@ -25,7 +27,11 @@ public:
     QString dbusPath() const override;
 
 private:
+    Qt::Edge configuredEdge() const;
     InputCaptureSession *m_inputCaptureSession;
+    QLine m_activatedBarrier;
+    QScreen *m_enterScreen;
+    Qt::Edge m_enterEdge;
     QPointF m_enterPosition;
     QPointF m_currentPosition;
 };

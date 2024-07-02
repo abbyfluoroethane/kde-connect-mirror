@@ -171,7 +171,7 @@ void InputCaptureSession::zonesReceived(uint response, const QVariantMap &result
         return;
     }
     m_currentZoneSet = results[u"zone_set"_s].toUInt();
-    QList<QRect> zones;
+    m_currentZones.clear();
     const QDBusArgument zoneArgument = results[u"zones"_s].value<QDBusArgument>();
     zoneArgument.beginArray();
     while (!zoneArgument.atEnd()) {
@@ -182,27 +182,47 @@ void InputCaptureSession::zonesReceived(uint response, const QVariantMap &result
         zoneArgument.beginStructure();
         zoneArgument >> width >> height >> x >> y;
         zoneArgument.endStructure();
-        zones.push_back(QRect(x, y, width, height));
+        m_currentZones.push_back(QRect(x, y, width, height));
     }
     zoneArgument.endArray();
 
-    // TODO David we need to plug this into configuration
-    std::sort(zones.begin(), zones.end(), [](const QRect &lhs, const QRect &rhs) {
-        if (lhs.topLeft().x() != rhs.topLeft().x()) {
-            return lhs.topLeft().x() < rhs.topLeft().x();
-        }
-        return lhs.topLeft().y() < rhs.topLeft().y();
-    });
-    QList<int> barrier = {zones[0].topLeft().x(), zones[0].topLeft().y(), zones[0].bottomLeft().x(), zones[0].bottomLeft().y()};
+    setUpBarrier();
+}
+
+void InputCaptureSession::setUpBarrier()
+{
+    // Find the left/right/bottom/top-most screen
+    if (m_barrierEdge == Qt::LeftEdge) {
+        std::stable_sort(m_currentZones.begin(), m_currentZones.end(), [](const QRect &lhs, const QRect &rhs) {
+            return lhs.x() < rhs.x();
+        });
+        m_barrier = {m_currentZones.front().topLeft(), m_currentZones.front().bottomLeft()};
+    } else if (m_barrierEdge == Qt::RightEdge) {
+        std::stable_sort(m_currentZones.begin(), m_currentZones.end(), [](const QRect &lhs, const QRect &rhs) {
+            return lhs.x() + lhs.width() > rhs.x() + rhs.width();
+        });
+        m_barrier = {m_currentZones.front().topRight(), m_currentZones.front().bottomRight()};
+    } else if (m_barrierEdge == Qt::TopEdge) {
+        std::stable_sort(m_currentZones.begin(), m_currentZones.end(), [](const QRect &lhs, const QRect &rhs) {
+            return lhs.y() < rhs.y();
+        });
+        m_barrier = {m_currentZones.front().topLeft(), m_currentZones.front().topRight()};
+    } else {
+        std::stable_sort(m_currentZones.begin(), m_currentZones.end(), [](const QRect &lhs, const QRect &rhs) {
+            return lhs.y() + lhs.height() > rhs.y() + rhs.height();
+        });
+        m_barrier = {m_currentZones.front().bottomLeft(), m_currentZones.front().bottomRight()};
+    }
 
     const QString token = u"kdeconnect_shareinputdevices%1"_s.arg(QRandomGenerator::global()->generate());
     auto request = new OrgFreedesktopPortalRequestInterface(portalName(), requestPath(token), QDBusConnection::sessionBus(), this);
     connect(request, &OrgFreedesktopPortalRequestInterface::Response, request, &QObject::deleteLater);
     connect(request, &OrgFreedesktopPortalRequestInterface::Response, this, &InputCaptureSession::barriersSet);
-    auto call = m_inputCapturePortal->SetPointerBarriers(QDBusObjectPath(m_session->path()),
-                                                         {{u"handle_token"_s, token}},
-                                                         {{{u"barrier_id"_s, 1}, {u"position"_s, QVariant::fromValue(barrier)}}},
-                                                         m_currentZoneSet);
+    auto call = m_inputCapturePortal->SetPointerBarriers(
+        QDBusObjectPath(m_session->path()),
+        {{u"handle_token"_s, token}},
+        {{{u"barrier_id"_s, 1}, {u"position"_s, QVariant::fromValue(QList<int>{m_barrier.x1(), m_barrier.y1(), m_barrier.x2(), m_barrier.y2()})}}},
+        m_currentZoneSet);
     connect(new QDBusPendingCallWatcher(call, this), &QDBusPendingCallWatcher::finished, request, [request](QDBusPendingCallWatcher *watcher) {
         watcher->deleteLater();
         if (watcher->isError()) {
@@ -236,8 +256,17 @@ void InputCaptureSession::enable()
     });
 }
 
+void InputCaptureSession::setBarrierEdge(Qt::Edge edge)
+{
+    if (edge != m_barrierEdge) {
+        m_barrierEdge = edge;
+        setUpBarrier();
+    }
+}
+
 void InputCaptureSession::release(const QPointF &position)
 {
+    qDebug() << "releasing with" << position;
     m_inputCapturePortal->Release(QDBusObjectPath(m_session->path()), {{u"cursor_position"_s, position}});
 }
 
@@ -256,7 +285,7 @@ void InputCaptureSession::activated(const QDBusObjectPath &sessionHandle, const 
     m_currentActivationId = options[u"activation_id"_s].toUInt();
     // uint barrier_id = options[u"barrier_id"].toUInt();
     auto cursorPosition = qdbus_cast<QPointF>(options[u"cursor_position"_s].value<QDBusArgument>());
-    Q_EMIT started(cursorPosition);
+    Q_EMIT started(m_barrier, cursorPosition - m_barrier.p1());
     for (const auto &event : queuedEiEvents) {
         handleEiEvent(event);
     }
@@ -269,10 +298,7 @@ void InputCaptureSession::deactivated(const QDBusObjectPath &sessionHandle, cons
         return;
     }
     auto deactivatedId = options[u"activation_id"_s].toUInt();
-    if (m_currentActivationId != deactivatedId) {
-        // TODO David ?????
-    }
-    // TODO David ????
+    Q_UNUSED(deactivatedId)
 }
 
 void InputCaptureSession::disabled(const QDBusObjectPath &sessionHandle, const QVariantMap &options)
@@ -281,10 +307,7 @@ void InputCaptureSession::disabled(const QDBusObjectPath &sessionHandle, const Q
         return;
     }
     auto disabledId = options[u"activation_id"_s].toUInt();
-    if (m_currentActivationId != disabledId) {
-        // TODO David ?????
-    }
-    // TODO David ????
+    Q_UNUSED(disabledId)
 }
 
 void InputCaptureSession::zonesChanged(const QDBusObjectPath &sessionHandle, const QVariantMap &options)
@@ -397,7 +420,7 @@ void InputCaptureSession::handleEiEvent(ei_event *event)
     case EI_EVENT_KEYBOARD_KEY: {
         auto xkbKey = ei_event_keyboard_get_key(event) + 8;
         m_xkb->updateKey(xkbKey, ei_event_keyboard_get_key_is_press(event));
-        // TODO DAvid mouspad only does press
+        // mousepad plugin does press/release in one, trigger on press like remotekeyboard
         if (ei_event_keyboard_get_key_is_press(event)) {
             Qt::KeyboardModifiers modifiers = QXkbCommon::modifiers(m_xkb->currentState());
             auto qtKey = static_cast<Qt::Key>(QXkbCommon::keysymToQtKey(xkb_state_key_get_one_sym(m_xkb->currentState(), xkbKey), modifiers));

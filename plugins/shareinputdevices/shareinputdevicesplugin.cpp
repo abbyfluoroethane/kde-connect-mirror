@@ -15,7 +15,9 @@
 #include <KPluginFactory>
 
 #include <QDBusConnection>
+#include <QGuiApplication>
 #include <QPointF>
+#include <QScreen>
 
 #include <linux/input-event-codes.h>
 
@@ -65,11 +67,11 @@ K_PLUGIN_CLASS_WITH_JSON(ShareInputDevicesPlugin, "kdeconnect_shareinputdevices.
 
 ShareInputDevicesPlugin::ShareInputDevicesPlugin(QObject *parent, const QVariantList &args)
     : KdeConnectPlugin(parent, args)
+    , m_inputCaptureSession(new InputCaptureSession(this))
 {
-    m_inputCaptureSession = new InputCaptureSession(this);
-    connect(m_inputCaptureSession, &InputCaptureSession::started, this, [this](const QPointF &pos) {
-        // TODO plug this into config
-        NetworkPacket packet(PACKET_TYPE_MOUSEPAD_REQUEST, {{u"x"_s, 1920 + std::min(0.0, pos.x())}, {u"y"_s, pos.y()}});
+    connect(m_inputCaptureSession, &InputCaptureSession::started, this, [this](const QLine &barrier, const QPointF &delta) {
+        m_activatedBarrier = barrier;
+        NetworkPacket packet(PACKET_TYPE_SHAREINPUTDEVICES, {{u"startEdge"_s, configuredEdge()}, {u"delta"_s, delta}});
         sendPacket(packet);
     });
     connect(m_inputCaptureSession, &InputCaptureSession::mouseMove, this, [this](double x, double y) {
@@ -109,27 +111,91 @@ ShareInputDevicesPlugin::ShareInputDevicesPlugin(QObject *parent, const QVariant
                              });
         sendPacket(packet);
     });
+
+    m_inputCaptureSession->setBarrierEdge(configuredEdge());
+    connect(config(), &KdeConnectPluginConfig::configChanged, this, [this] {
+        m_inputCaptureSession->setBarrierEdge(configuredEdge());
+    });
+}
+
+Qt::Edge ShareInputDevicesPlugin::configuredEdge() const
+{
+    return static_cast<Qt::Edge>(config()->getInt(u"edge"_s, Qt::LeftEdge));
 }
 
 void ShareInputDevicesPlugin::receivePacket(const NetworkPacket &np)
 {
-    // TODO David we need to plug this properly into configuration as well and do it propertly
-    if (np.type() == PACKET_TYPE_MOUSEPAD_REQUEST) {
-        if (np.has(u"x"_s)) {
-            m_enterPosition = QPointF(np.get<double>(u"x"_s), np.get<double>(u"y"_s));
-            m_currentPosition = m_enterPosition;
-        }
-        if (np.has(u"dx"_s)) {
-            m_currentPosition += QPointF(np.get<double>(u"dx"_s), np.get<double>(u"dy"_s));
-            if (m_currentPosition.x() > 1920) {
-                NetworkPacket packet(PACKET_TYPE_SHAREINPUTDEVICES, {{u"delta"_s, std::min(0.0, m_currentPosition.x() - 1920)}, {u"position"_s, m_currentPosition.y()}});
+    if (np.type() == PACKET_TYPE_SHAREINPUTDEVICES) {
+        if (np.has(u"startEdge"_s)) {
+            const Qt::Edge startEdge = np.get<Qt::Edge>(u"edge"_s);
+            const QPointF delta = np.get<QPointF>(u"delta"_s);
+            auto screens = QGuiApplication::screens();
+            auto mousePadPlugin = device()->plugin(u"kdeconnect_mousepad"_s);
+            if (screens.empty() || !mousePadPlugin) {
+                NetworkPacket packet(PACKET_TYPE_SHAREINPUTDEVICES, {{u"releaseDelta"_s, QPointF(0, 0)}});
                 sendPacket(packet);
+                return;
             }
+            // This is opposite to the sorting in inputcaptureession because here the opposite edge is wanted.
+            // For example if on the source side a left barrier was crossed, this is one is entered from the right.
+            if (startEdge == Qt::LeftEdge) {
+                std::stable_sort(screens.begin(), screens.end(), [](QScreen *lhs, QScreen *rhs) {
+                    return lhs->geometry().x() + lhs->geometry().width() > rhs->geometry().x() + rhs->geometry().width();
+                });
+                m_enterEdge = Qt::RightEdge;
+                m_currentPosition = screens.front()->geometry().topRight() + delta;
+            } else if (startEdge == Qt::RightEdge) {
+                std::stable_sort(screens.begin(), screens.end(), [](QScreen *lhs, QScreen *rhs) {
+                    return lhs->geometry().x() < rhs->geometry().x();
+                });
+                m_enterEdge = Qt::LeftEdge;
+                m_currentPosition = screens.front()->geometry().topLeft() + delta;
+            } else if (startEdge == Qt::TopEdge) {
+                std::stable_sort(screens.begin(), screens.end(), [](QScreen *lhs, QScreen *rhs) {
+                    return lhs->geometry().y() + lhs->geometry().height() > rhs->geometry().y() + rhs->geometry().height();
+                });
+                m_enterEdge = Qt::BottomEdge;
+                m_currentPosition = screens.front()->geometry().bottomLeft() + delta;
+            } else {
+                std::stable_sort(screens.begin(), screens.end(), [](QScreen *lhs, QScreen *rhs) {
+                    return lhs->geometry().y() < rhs->geometry().y();
+                });
+                m_enterEdge = Qt::TopEdge;
+                m_currentPosition = screens.front()->geometry().topLeft() + delta;
+            }
+            m_enterScreen = screens.front();
+            qDebug() << "delta" << delta << "enter" << m_currentPosition;
+            // Send a packet from this local device to the mousepad plugin because the position could only
+            // be calculated here
+            NetworkPacket packet(PACKET_TYPE_MOUSEPAD_REQUEST, {{u"x"_s, m_currentPosition.x()}, {u"y"_s, m_currentPosition.y()}});
+            mousePadPlugin->receivePacket(packet);
+        } else if (np.has(u"releaseDelta"_s)) {
+            const QPointF releasePosition = m_activatedBarrier.p1() + np.get<QPointF>(u"releaseDelta"_s);
+            m_inputCaptureSession->release(releasePosition);
         }
     }
-    if (np.type() == PACKET_TYPE_SHAREINPUTDEVICES) {
-        if (np.has(u"delta"_s)) {
-            m_inputCaptureSession->release({np.get<double>(u"delta"_s), np.get<double>(u"position"_s)});
+
+    if (np.type() == PACKET_TYPE_MOUSEPAD_REQUEST) {
+        if (np.has(u"dx"_s) && m_enterScreen) {
+            m_currentPosition += QPointF(np.get<double>(u"dx"_s), np.get<double>(u"dy"_s));
+            qDebug() << m_currentPosition;
+            if (m_enterEdge == Qt::LeftEdge && m_currentPosition.x() < m_enterScreen->geometry().x()) {
+                const QPointF delta = m_currentPosition - m_enterScreen->geometry().topLeft();
+                NetworkPacket packet(PACKET_TYPE_SHAREINPUTDEVICES, {{u"releaseDelta"_s, delta}});
+                sendPacket(packet);
+            } else if (m_enterEdge == Qt::RightEdge && m_currentPosition.x() > m_enterScreen->geometry().x() + m_enterScreen->geometry().width()) {
+                const QPointF delta = m_currentPosition - m_enterScreen->geometry().topRight();
+                NetworkPacket packet(PACKET_TYPE_SHAREINPUTDEVICES, {{u"releaseDelta"_s, delta}});
+                sendPacket(packet);
+            } else if (m_enterEdge == Qt::TopEdge && m_currentPosition.y() < m_enterScreen->geometry().y()) {
+                const QPointF delta = m_currentPosition - m_enterScreen->geometry().topLeft();
+                NetworkPacket packet(PACKET_TYPE_SHAREINPUTDEVICES, {{u"releaseDelta"_s, delta}});
+                sendPacket(packet);
+            } else if (m_enterEdge == Qt::BottomEdge && m_currentPosition.y() > m_enterScreen->geometry().y() + m_enterScreen->geometry().height()) {
+                const QPointF delta = m_currentPosition - m_enterScreen->geometry().bottomLeft();
+                NetworkPacket packet(PACKET_TYPE_SHAREINPUTDEVICES, {{u"releaseDelta"_s, delta}});
+                sendPacket(packet);
+            }
         }
     }
 }
