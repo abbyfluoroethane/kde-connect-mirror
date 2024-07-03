@@ -68,6 +68,7 @@ public:
     void updateModifiers(uint32_t depressed, uint32_t latched, uint32_t locked, uint32_t group)
     {
         xkb_state_update_mask(m_xkbstate.get(), depressed, latched, locked, 0, 0, group);
+        qDebug() << xkb_state_serialize_mods(m_xkbstate.get(), XKB_STATE_MODS_EFFECTIVE);
     }
 
     void updateKey(uint32_t key, bool pressed)
@@ -434,6 +435,9 @@ void InputCaptureSession::handleEiEvent(ei_event *event)
             Qt::KeyboardModifiers modifiers = QXkbCommon::modifiers(m_xkb->currentState(), sym);
             auto qtKey = static_cast<Qt::Key>(QXkbCommon::keysymToQtKey(sym, modifiers));
             const QString text  = QXkbCommon::lookupStringNoKeysymTransformations(sym);
+            // See the remote keyboard plugin, with ctrl modifer we just get weird
+            qDebug() << xkb_keysym_to_utf32(sym);
+            qDebug() << sym << qtKey << text << modifiers;
             Q_EMIT key(qtKey, modifiers, text);
         }
         break;
