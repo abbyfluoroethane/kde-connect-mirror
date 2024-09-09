@@ -14,6 +14,8 @@
 #include <KPluginMetaData>
 #include <kcmutils_version.h>
 
+#include <QQuickItem>
+
 #include "dbushelpers.h"
 #include "dbusinterfaces.h"
 #include "devicesmodel.h"
@@ -37,7 +39,10 @@ KdeConnectKcm::KdeConnectKcm(QObject *parent, const KPluginMetaData &md, const Q
 
     sortProxyModel = new DevicesSortProxyModel(devicesModel);
 
-    kcmUi.deviceList->setModel(sortProxyModel);
+    // TODO ALBERT
+    kcmUi.list_quick_widget->setSource(QUrl(QStringLiteral("qrc:/kdeconnectkcm/list.qml")));
+    kcmUi.list_quick_widget->rootObject()->setProperty("model", QVariant::fromValue(sortProxyModel));
+    connect(kcmUi.list_quick_widget->rootObject(), SIGNAL(clicked(QString)), this, SLOT(deviceSelected(QString)));
 
     kcmUi.deviceInfo->setVisible(false);
     kcmUi.progressBar->setVisible(false);
@@ -68,7 +73,6 @@ KdeConnectKcm::KdeConnectKcm(QObject *parent, const KPluginMetaData &md, const Q
     setButtons(KCModule::Help | KCModule::NoAdditionalButton);
 
     connect(devicesModel, &QAbstractItemModel::dataChanged, this, &KdeConnectKcm::resetSelection);
-    connect(kcmUi.deviceList->selectionModel(), &QItemSelectionModel::currentChanged, this, &KdeConnectKcm::deviceSelected);
     connect(kcmUi.accept_button, &QAbstractButton::clicked, this, &KdeConnectKcm::acceptPairing);
     connect(kcmUi.reject_button, &QAbstractButton::clicked, this, &KdeConnectKcm::cancelPairing);
     connect(kcmUi.cancel_button, &QAbstractButton::clicked, this, &KdeConnectKcm::cancelPairing);
@@ -91,7 +95,8 @@ KdeConnectKcm::KdeConnectKcm(QObject *parent, const KPluginMetaData &md, const Q
             auto row = devicesModel->rowForDevice(deviceId);
             if (row >= 0) {
                 const QModelIndex idx = sortProxyModel->mapFromSource(devicesModel->index(row));
-                kcmUi.deviceList->selectionModel()->setCurrentIndex(idx, QItemSelectionModel::ClearAndSelect);
+                // TODO ALBERT
+                // kcmUi.deviceList->selectionModel()->setCurrentIndex(idx, QItemSelectionModel::ClearAndSelect);
             }
             if (!pluginCM.isEmpty()) {
                 kcmUi.pluginSelector->showConfiguration(pluginCM);
@@ -141,23 +146,22 @@ void KdeConnectKcm::resetSelection()
     if (!currentDevice) {
         return;
     }
-    kcmUi.deviceList->selectionModel()->setCurrentIndex(sortProxyModel->mapFromSource(currentIndex), QItemSelectionModel::ClearAndSelect);
+    // TODO ALBERT
+    // kcmUi.deviceList->selectionModel()->setCurrentIndex(sortProxyModel->mapFromSource(currentIndex), QItemSelectionModel::ClearAndSelect);
 }
 
-void KdeConnectKcm::deviceSelected(const QModelIndex &current)
+void KdeConnectKcm::deviceSelected(const QString &deviceId)
 {
     if (currentDevice) {
         disconnect(currentDevice, nullptr, this, nullptr);
     }
 
-    if (!current.isValid()) {
+    currentDevice = devicesModel->getDevice(devicesModel->rowForDevice(deviceId));
+    if (!currentDevice) {
         currentDevice = nullptr;
         kcmUi.deviceInfo->setVisible(false);
         return;
     }
-
-    currentIndex = sortProxyModel->mapToSource(current);
-    currentDevice = devicesModel->getDevice(currentIndex.row());
 
     kcmUi.noDevicePlaceholder->setVisible(false);
     bool valid = (currentDevice != nullptr && currentDevice->isValid());

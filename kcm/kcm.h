@@ -30,7 +30,7 @@ private:
     void save() override;
 
 private Q_SLOTS:
-    void deviceSelected(const QModelIndex &current);
+    void deviceSelected(const QString &deviceId);
     void requestPairing();
     void pluginsConfigChanged(bool changed);
     void sendPing();
@@ -53,7 +53,6 @@ private:
     DevicesModel *devicesModel;
     DevicesSortProxyModel *sortProxyModel;
     DeviceDbusInterface *currentDevice;
-    QModelIndex currentIndex;
     QStringList m_oldSupportedPluginNames;
 
 public Q_SLOTS:
