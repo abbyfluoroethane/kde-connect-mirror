@@ -23,8 +23,8 @@
 
 winrt::Windows::UI::ViewManagement::UISettings uiSettings;
 
-IndicatorHelper::IndicatorHelper(const QUrl &indicatorUrl)
-    : m_indicatorUrl(indicatorUrl)
+IndicatorHelper::IndicatorHelper()
+    : m_indicatorUrl(QUrl::fromLocalFile(qApp->applicationDirPath()))
 {
     uiSettings = winrt::Windows::UI::ViewManagement::UISettings();
 }
@@ -39,14 +39,6 @@ IndicatorHelper::~IndicatorHelper()
     this->terminateProcess(processes::kdeconnect_daemon, m_indicatorUrl);
 }
 
-void IndicatorHelper::preInit()
-{
-}
-
-void IndicatorHelper::postInit()
-{
-}
-
 void IndicatorHelper::iconPathHook()
 {
     // FIXME: This doesn't seem to be enough for QIcon::fromTheme to find the icons, so we still have to use the full path when setting the icon
@@ -58,7 +50,7 @@ void IndicatorHelper::iconPathHook()
     }
 }
 
-int IndicatorHelper::daemonHook(QProcess &kdeconnectd)
+int IndicatorHelper::startDaemon()
 {
     kdeconnectd.start(processes::kdeconnect_daemon, QStringList());
     return 0;
