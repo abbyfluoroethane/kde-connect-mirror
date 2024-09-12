@@ -18,27 +18,22 @@
 #include "kdeconnectconfig.h"
 
 #ifdef Q_OS_MAC
+#include <KLocalizedString>
 #include <QRegularExpression>
 #include <QRegularExpressionMatch>
+#include <QStandardPaths>
+#include <QThread>
 #endif
 
 namespace DBusHelper
 {
+
 #ifdef Q_OS_MAC
-class DBusInstancePrivate
-{
-public:
-    DBusInstancePrivate();
-    ~DBusInstancePrivate();
-
-    void launchDBusDaemon();
-    void closeDBusDaemon();
-
-private:
-    QProcess *m_dbusProcess;
-};
-
-static DBusInstancePrivate dbusInstance;
+const QString PrivateDbusAddr = QStringLiteral("unix:tmpdir=/tmp");
+const QString PrivateDBusAddressPath = QStringLiteral("/tmp/private_dbus_address");
+QProcess *m_dbusProcess = nullptr;
+#elif defined(Q_OS_WIN)
+const QString PrivateDbusAddr = QStringLiteral("tcp:host=localhost,port=0");
 #endif
 
 void filterNonExportableCharacters(QString &s)
@@ -48,32 +43,49 @@ void filterNonExportableCharacters(QString &s)
 }
 
 #ifdef Q_OS_MAC
-void launchDBusDaemon()
+
+void setLaunchctlEnv(const QString &env)
 {
-    dbusInstance.launchDBusDaemon();
-    qAddPostRoutine(closeDBusDaemon);
+    QProcess setLaunchdDBusEnv;
+    setLaunchdDBusEnv.setProgram(QStringLiteral("launchctl"));
+    setLaunchdDBusEnv.setArguments({QStringLiteral("setenv"), QStringLiteral("DBUS_LAUNCHD_SESSION_BUS_SOCKET"), env});
+    setLaunchdDBusEnv.start();
+    setLaunchdDBusEnv.waitForFinished();
 }
 
-void closeDBusDaemon()
-{
-    dbusInstance.closeDBusDaemon();
-}
-
-void macosUnsetLaunchctlEnv()
+void unsetLaunchctlEnv()
 {
     // Unset Launchd env
     QProcess unsetLaunchdDBusEnv;
     unsetLaunchdDBusEnv.setProgram(QStringLiteral("launchctl"));
-    unsetLaunchdDBusEnv.setArguments({QStringLiteral("unsetenv"), QStringLiteral(KDECONNECT_SESSION_DBUS_LAUNCHD_ENV)});
+    unsetLaunchdDBusEnv.setArguments({QStringLiteral("unsetenv"), QStringLiteral("DBUS_LAUNCHD_SESSION_BUS_SOCKET")});
     unsetLaunchdDBusEnv.start();
     unsetLaunchdDBusEnv.waitForFinished();
 }
 
-void DBusInstancePrivate::launchDBusDaemon()
+void stopDBusDaemon()
 {
-    // Kill old dbus daemon
-    if (m_dbusProcess != nullptr)
-        closeDBusDaemon();
+    if (m_dbusProcess != nullptr) {
+        m_dbusProcess->terminate();
+        m_dbusProcess->waitForFinished();
+        delete m_dbusProcess;
+        m_dbusProcess = nullptr;
+        unsetLaunchctlEnv();
+    }
+}
+
+int launchDBusDaemon()
+{
+    if (m_dbusProcess) {
+        stopDBusDaemon();
+    }
+
+    // Unset launchctl env and private dbus addr file, avoid block
+    unsetLaunchctlEnv();
+    QFile privateDBusAddressFile(PrivateDBusAddressPath);
+    if (privateDBusAddressFile.exists()) {
+        privateDBusAddressFile.resize(0);
+    }
 
     // Start dbus daemon
     m_dbusProcess = new QProcess();
@@ -91,56 +103,79 @@ void DBusInstancePrivate::launchDBusDaemon()
     m_dbusProcess->setArguments({QStringLiteral("--print-address"),
                                  QStringLiteral("--nofork"),
                                  QStringLiteral("--config-file=") + kdeconnectDBusConfiguration,
-                                 QStringLiteral("--address=") + QStringLiteral(KDECONNECT_PRIVATE_DBUS_ADDR)});
+                                 QStringLiteral("--address=") + PrivateDbusAddr});
     m_dbusProcess->setWorkingDirectory(QCoreApplication::applicationDirPath());
-    m_dbusProcess->setStandardOutputFile(KdeConnectConfig::instance().privateDBusAddressPath());
-    m_dbusProcess->setStandardErrorFile(QProcess::nullDevice());
+    m_dbusProcess->setStandardOutputFile(PrivateDBusAddressPath);
     m_dbusProcess->start();
     m_dbusProcess->waitForStarted(); // Avoid potential racing condition
 
-#ifdef Q_OS_MAC
-    // Set launchctl env
-    QString privateDBusAddress = KdeConnectConfig::instance().privateDBusAddress();
+    QFile dbusAddressFile(PrivateDBusAddressPath);
+
+    if (!dbusAddressFile.open(QFile::ReadOnly | QFile::Text)) {
+        qCCritical(KDECONNECT_CORE) << "Private DBus enabled but error read private dbus address conf";
+        return -1;
+    }
+
+    QTextStream in(&dbusAddressFile);
+
+    qCDebug(KDECONNECT_CORE) << "Waiting for private dbus";
+
+    int retry = 0;
+    QString addr = in.readLine();
+    while (addr.length() == 0 && retry < 100) {
+        qCDebug(KDECONNECT_CORE) << "Retry reading private DBus address after 3s";
+        QThread::msleep(100);
+        retry++;
+        addr = in.readLine(); // Read until first not empty line
+    }
+
+    if (addr.length() == 0) {
+        qCCritical(KDECONNECT_CORE) << "Private DBus enabled but read private dbus address failed";
+        return -2;
+    }
+
+    qCDebug(KDECONNECT_CORE) << "Private dbus address: " << addr;
+
     QRegularExpressionMatch path;
-    if (privateDBusAddress.contains(QRegularExpression(QStringLiteral("path=(?<path>/tmp/dbus-[A-Za-z0-9]+)")), &path)) {
-        qCDebug(KDECONNECT_CORE) << "DBus address: " << path.captured(QStringLiteral("path"));
-        QProcess setLaunchdDBusEnv;
-        setLaunchdDBusEnv.setProgram(QStringLiteral("launchctl"));
-        setLaunchdDBusEnv.setArguments({QStringLiteral("setenv"), QStringLiteral(KDECONNECT_SESSION_DBUS_LAUNCHD_ENV), path.captured(QStringLiteral("path"))});
-        setLaunchdDBusEnv.start();
-        setLaunchdDBusEnv.waitForFinished();
-    } else {
-        qCDebug(KDECONNECT_CORE) << "Cannot get dbus address";
+    if (!addr.contains(QRegularExpression(QStringLiteral("path=(?<path>/tmp/dbus-[A-Za-z0-9]+)")), &path)) {
+        qCCritical(KDECONNECT_CORE) << "Fail to parse dbus address";
+        return -3;
     }
-#endif
-}
 
-void DBusInstancePrivate::closeDBusDaemon()
-{
-    if (m_dbusProcess != nullptr) {
-        m_dbusProcess->terminate();
-        m_dbusProcess->waitForFinished();
-        delete m_dbusProcess;
-        m_dbusProcess = nullptr;
-
-        QFile privateDBusAddressFile(KdeConnectConfig::instance().privateDBusAddressPath());
-
-        if (privateDBusAddressFile.exists())
-            privateDBusAddressFile.resize(0);
-
-        macosUnsetLaunchctlEnv();
+    QString dbusAddress = path.captured(QStringLiteral("path"));
+    if (dbusAddress.isEmpty()) {
+        qCCritical(KDECONNECT_CORE) << "Fail to extract dbus address";
+        return -4;
     }
+
+    qCDebug(KDECONNECT_CORE) << "DBus address: " << dbusAddress;
+
+    QProcess setLaunchdDBusEnv;
+    setLaunchdDBusEnv.setProgram(QStringLiteral("launchctl"));
+    setLaunchdDBusEnv.setArguments({QStringLiteral("setenv"), QStringLiteral("DBUS_LAUNCHD_SESSION_BUS_SOCKET"), dbusAddress});
+    setLaunchdDBusEnv.start();
+    setLaunchdDBusEnv.waitForFinished();
+
+    if (!QDBusConnection::sessionBus().isConnected()) {
+        qCCritical(KDECONNECT_CORE) << "Invalid env:" << dbusAddress;
+        return -5;
+    }
+
+    qCDebug(KDECONNECT_CORE) << "Private D-Bus daemon launched and connected.";
+    return 0;
 }
 
-DBusInstancePrivate::DBusInstancePrivate()
-    : m_dbusProcess(nullptr)
+int ensureDBusDaemon()
 {
+    bool hasUsableSessionBus = QDBusConnection::connectToBus(QDBusConnection::SessionBus, QStringLiteral("kdeconnect-test-client")).isConnected();
+    if (hasUsableSessionBus) {
+        return 0;
+    }
+    qCDebug(KDECONNECT_CORE) << "DBus session bus not detected, will start one.";
+    qAddPostRoutine(stopDBusDaemon);
+    return launchDBusDaemon();
 }
 
-DBusInstancePrivate::~DBusInstancePrivate()
-{
-    closeDBusDaemon();
-}
-#endif
+#endif // Q_OS_MAC
 
-}
+} // namespace DBusHelper

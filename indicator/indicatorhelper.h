@@ -29,22 +29,17 @@ const QString kdeconnect_sms = QStringLiteral("kdeconnect-sms.exe");
 };
 #endif
 
+class DesktopDaemon;
+
 class IndicatorHelper
 {
 public:
-#ifdef Q_OS_WIN
-    IndicatorHelper(const QUrl &indicatorUrl);
-#else
     IndicatorHelper();
-#endif
     ~IndicatorHelper();
-
-    void preInit();
-    void postInit();
 
     void iconPathHook();
 
-    int daemonHook(QProcess &kdeconnectd);
+    int startDaemon();
 
 #ifdef Q_OS_WIN
     void systrayIconHook(QSystemTrayIcon &systray);
@@ -54,7 +49,12 @@ public:
 
 private:
 #ifdef Q_OS_MAC
-    QSplashScreen *m_splashScreen;
+    QProcess dbus;
+    DesktopDaemon *daemon = nullptr;
+#endif
+
+#if defined(Q_OS_WIN) || defined(Q_OS_MAC)
+    QProcess kdeconnectd;
 #endif
 
 #ifdef Q_OS_WIN
