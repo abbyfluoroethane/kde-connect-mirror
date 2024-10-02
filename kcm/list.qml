@@ -10,12 +10,8 @@ import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.kdeconnect
 
-Rectangle {
+ScrollView {
     id: root
-
-    SystemPalette { id: myPalette; colorGroup: Kirigami.Theme.colorGroup }
-
-    color: myPalette.base
 
     focus: true
 
@@ -25,12 +21,14 @@ Rectangle {
 
     property alias model: devices.model
 
+    background: Rectangle {
+        color: palette.base
+    }
+
     ListView {
         id: devices
 
         focus: true
-
-        anchors.fill: parent
 
         section {
             property: "status"
@@ -52,6 +50,7 @@ Rectangle {
         Kirigami.PlaceholderMessage {
             text: i18nd("kdeconnect-kcm", "No devices found")
             anchors.centerIn: parent
+            width: parent.width - (Kirigami.Units.largeSpacing * 4)
             visible: devices.count === 0
         }
 
