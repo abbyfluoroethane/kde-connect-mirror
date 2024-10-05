@@ -21,8 +21,10 @@ ScrollView {
 
     property alias model: devices.model
 
-    background: Rectangle {
-        color: palette.base
+    Component.onCompleted: {
+        if (background) {
+            background.visible = true
+        }
     }
 
     ListView {

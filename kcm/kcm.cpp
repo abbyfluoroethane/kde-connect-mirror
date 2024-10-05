@@ -25,6 +25,21 @@
 
 K_PLUGIN_CLASS_WITH_JSON(KdeConnectKcm, "kcm_kdeconnect.json")
 
+class QQuickWidgetPaleteChangeWatcher : public QObject
+{
+    using QObject::QObject;
+
+    bool eventFilter(QObject *watched, QEvent *event) override
+    {
+        if (event->type() == QEvent::PaletteChange || event->type() == QEvent::ApplicationPaletteChange) {
+            // We know that watched is a QQuickWidget
+            QQuickWidget *w = static_cast<QQuickWidget *>(watched);
+            w->setClearColor(w->palette().color(QPalette::Window));
+        }
+        return QObject::eventFilter(watched, event);
+    }
+};
+
 KdeConnectKcm::KdeConnectKcm(QObject *parent, const KPluginMetaData &md, const QVariantList &args)
     : KCModule(parent, md)
     , daemon(new DaemonDbusInterface(this))
@@ -42,9 +57,12 @@ KdeConnectKcm::KdeConnectKcm(QObject *parent, const KPluginMetaData &md, const Q
 
     kcmUi.list_quick_widget->setMinimumWidth(250 * kcmUi.list_quick_widget->devicePixelRatio());
     kcmUi.list_quick_widget->rootContext()->setContextObject(new KLocalizedContext(kcmUi.list_quick_widget));
+    kcmUi.list_quick_widget->setClearColor(kcmUi.list_quick_widget->palette().color(QPalette::Window));
     kcmUi.list_quick_widget->setSource(QUrl(QStringLiteral("qrc:/kdeconnectkcm/list.qml")));
     kcmUi.list_quick_widget->rootObject()->setProperty("model", QVariant::fromValue(sortProxyModel));
     connect(kcmUi.list_quick_widget->rootObject(), SIGNAL(clicked(QString)), this, SLOT(deviceSelected(QString)));
+
+    kcmUi.list_quick_widget->installEventFilter(new QQuickWidgetPaleteChangeWatcher(kcmUi.list_quick_widget));
 
     kcmUi.deviceInfo->setVisible(false);
     kcmUi.progressBar->setVisible(false);
