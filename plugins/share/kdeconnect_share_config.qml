@@ -7,8 +7,8 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15 as QQC2
 import QtQuick.Layouts 1.15
+import QtQuick.Dialogs
 import org.kde.kirigami 2.20 as Kirigami
-import Qt.labs.platform 1.1
 import org.kde.kdeconnect 1.0
 
 Kirigami.FormLayout {
@@ -26,7 +26,7 @@ Kirigami.FormLayout {
         currentFolder: path.text
 
         onAccepted: {
-            path.text = currentFolder.toString().replace("file://", "")
+            path.text = selectedFolder.toString().replace("file://", "")
         }
     }
 
