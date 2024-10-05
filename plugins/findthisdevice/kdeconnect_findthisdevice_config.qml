@@ -7,9 +7,11 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15 as QQC2
 import QtQuick.Layouts 1.15
+import QtQuick.Dialogs as Dialogs
+import QtMultimedia
 import org.kde.kirigami 2.20 as Kirigami
-import Qt.labs.platform 1.1
 import org.kde.kdeconnect 1.0
+import org.kde.kdeconnect.private.findthisdevice as FindThisDevice
 
 Kirigami.FormLayout {
 
@@ -21,12 +23,12 @@ Kirigami.FormLayout {
         onTriggered: config.set("ringtone", path.text)
     }
 
-    FileDialog {
+    Dialogs.FileDialog {
         id: fileDialog
         currentFile: path.text
 
         onAccepted: {
-            path.text = currentFile.toString().replace("file://", "")
+            path.text = selectedFile.toString().replace("file://", "")
         }
     }
 
@@ -36,7 +38,7 @@ Kirigami.FormLayout {
         pluginName: "kdeconnect_findthisdevice"
 
         onConfigChanged: {
-            path.text = getString("ringtone", StandardPaths.writableLocation(StandardPaths.DownloadsLocation).toString().replace("file://", ""))
+            path.text = getString("ringtone", FindThisDevice.FindThisDeviceHelper.defaultSound())
         }
     }
 
@@ -48,6 +50,8 @@ Kirigami.FormLayout {
         }
 
         QQC2.Button {
+            text: i18nc("@action:button", "Choose file")
+            display: QQC2.Button.IconOnly
             icon.name: "document-open"
             onClicked: fileDialog.open()
         }
