@@ -51,6 +51,11 @@ KdeConnectKcm::KdeConnectKcm(QObject *parent, const KPluginMetaData &md, const Q
     QApplication::setStyle(QStringLiteral("breeze"));
 #endif
 
+    // Default to org.kde.desktop style unless the user forces another style
+    if (qEnvironmentVariableIsEmpty("QT_QUICK_CONTROLS_STYLE")) {
+        QQuickStyle::setStyle(QStringLiteral("org.kde.desktop"));
+    }
+
     kcmUi.setupUi(widget());
 
     sortProxyModel = new DevicesSortProxyModel(devicesModel);
