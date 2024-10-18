@@ -12,8 +12,8 @@
 #include <QDialog>
 #include <QFileDialog>
 #include <QMessageBox>
-#include <QTextStream>
 #include <QQuickStyle>
+#include <QTextStream>
 #include <QUrl>
 
 #include <KAboutData>
