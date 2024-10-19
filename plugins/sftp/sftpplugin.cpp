@@ -120,6 +120,11 @@ void SftpPlugin::receivePacket(const NetworkPacket &np)
         return;
     }
 
+    // if a packet arrives before mounting or after the mount timed out, ignore it
+    if (!m_mounter) {
+        return;
+    }
+
     m_mounter->onPacketReceived(np);
 
     remoteDirectories.clear();
