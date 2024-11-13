@@ -41,6 +41,7 @@ ecm_target_qml_sources(kdeconnect-app SOURCES
     qml/MprisSlider.qml
     qml/PluginSettings.qml
     qml/Settings.qml
+    qml/NoDeviceSelected.qml
 )
 
 target_link_libraries(kdeconnect-app PRIVATE Qt::Quick Qt::QuickControls2 Qt::Widgets KF6::CoreAddons KF6::I18n KF6::KCMUtils KF6::Crash)
