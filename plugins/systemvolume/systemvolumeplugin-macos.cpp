@@ -221,21 +221,17 @@ SystemvolumePlugin::~SystemvolumePlugin()
 
 void SystemvolumePlugin::receivePacket(const NetworkPacket &np)
 {
-    if (np.has(QStringLiteral("requestSinks"))) {
-        sendSinkList();
-    } else {
-        QString name = np.get<QString>(QStringLiteral("name"));
+    QString name = np.get<QString>(QStringLiteral("name"));
 
-        if (m_sinksMap.contains(name)) {
-            if (np.has(QStringLiteral("volume"))) {
-                m_sinksMap[name]->setVolume(np.get<int>(QStringLiteral("volume")) / 100.0);
-            }
-            if (np.has(QStringLiteral("muted"))) {
-                m_sinksMap[name]->setMuted(np.get<bool>(QStringLiteral("muted")));
-            }
-            if (np.has(QStringLiteral("enabled"))) {
-                m_sinksMap[name]->setDefault(np.get<bool>(QStringLiteral("enabled")));
-            }
+    if (m_sinksMap.contains(name)) {
+        if (np.has(QStringLiteral("volume"))) {
+            m_sinksMap[name]->setVolume(np.get<int>(QStringLiteral("volume")) / 100.0);
+        }
+        if (np.has(QStringLiteral("muted"))) {
+            m_sinksMap[name]->setMuted(np.get<bool>(QStringLiteral("muted")));
+        }
+        if (np.has(QStringLiteral("enabled"))) {
+            m_sinksMap[name]->setDefault(np.get<bool>(QStringLiteral("enabled")));
         }
     }
 }

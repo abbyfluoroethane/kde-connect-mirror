@@ -404,38 +404,34 @@ void SystemvolumePlugin::receivePacket(const NetworkPacket &np)
     if (!valid)
         return;
 
-    if (np.has(QStringLiteral("requestSinks"))) {
-        sendSinkList();
-    } else {
-        QString name = np.get<QString>(QStringLiteral("name"));
+    QString name = np.get<QString>(QStringLiteral("name"));
 
-        auto sinkListIterator = this->sinkList.find(name);
-        if (sinkListIterator != this->sinkList.end()) {
-            auto &sink = sinkListIterator.value();
+    auto sinkListIterator = this->sinkList.find(name);
+    if (sinkListIterator != this->sinkList.end()) {
+        auto &sink = sinkListIterator.value();
 
-            if (np.has(QStringLiteral("volume"))) {
-                float requestedVolume = (float)np.get<int>(QStringLiteral("volume"), 100) / 100;
-                sinkList[name].first->SetMasterVolumeLevelScalar(requestedVolume, NULL);
-            }
+        if (np.has(QStringLiteral("volume"))) {
+            float requestedVolume = (float)np.get<int>(QStringLiteral("volume"), 100) / 100;
+            sinkList[name].first->SetMasterVolumeLevelScalar(requestedVolume, NULL);
+        }
 
-            if (np.has(QStringLiteral("muted"))) {
-                BOOL requestedMuteStatus = np.get<bool>(QStringLiteral("muted"), false);
-                sinkList[name].first->SetMute(requestedMuteStatus, NULL);
-            }
+        if (np.has(QStringLiteral("muted"))) {
+            BOOL requestedMuteStatus = np.get<bool>(QStringLiteral("muted"), false);
+            sinkList[name].first->SetMute(requestedMuteStatus, NULL);
+        }
 
-            if (np.has(QStringLiteral("enabled"))) {
-                // get the current default device ID
-                IMMDevice *defaultDevice = nullptr;
-                deviceEnumerator->GetDefaultAudioEndpoint(eRender, eMultimedia, &defaultDevice);
-                LPWSTR defaultId = NULL;
-                defaultDevice->GetId(&defaultId);
-                defaultDevice->Release();
-                // get current sink's device ID
-                QString qDefaultId = QString::fromWCharArray(defaultId);
-                QString currentDeviceId = idToNameMap.key(name);
-                if (qDefaultId != currentDeviceId) {
-                    setDefaultAudioPlaybackDevice(name, np.get<bool>(QStringLiteral("enabled")));
-                }
+        if (np.has(QStringLiteral("enabled"))) {
+            // get the current default device ID
+            IMMDevice *defaultDevice = nullptr;
+            deviceEnumerator->GetDefaultAudioEndpoint(eRender, eMultimedia, &defaultDevice);
+            LPWSTR defaultId = NULL;
+            defaultDevice->GetId(&defaultId);
+            defaultDevice->Release();
+            // get current sink's device ID
+            QString qDefaultId = QString::fromWCharArray(defaultId);
+            QString currentDeviceId = idToNameMap.key(name);
+            if (qDefaultId != currentDeviceId) {
+                setDefaultAudioPlaybackDevice(name, np.get<bool>(QStringLiteral("enabled")));
             }
         }
     }

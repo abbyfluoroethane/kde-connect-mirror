@@ -33,24 +33,20 @@ void SystemvolumePlugin::receivePacket(const NetworkPacket &np)
     if (!PulseAudioQt::Context::instance()->isValid())
         return;
 
-    if (np.has(QStringLiteral("requestSinks"))) {
-        sendSinkList();
-    } else {
-        QString name = np.get<QString>(QStringLiteral("name"));
+    QString name = np.get<QString>(QStringLiteral("name"));
 
-        PulseAudioQt::Sink *sink = sinksMap.value(name);
-        if (sink) {
-            if (np.has(QStringLiteral("volume"))) {
-                int volume = np.get<int>(QStringLiteral("volume"));
-                sink->setVolume(volume);
-                sink->setMuted(false);
-            }
-            if (np.has(QStringLiteral("muted"))) {
-                sink->setMuted(np.get<bool>(QStringLiteral("muted")));
-            }
-            if (np.has(QStringLiteral("enabled"))) {
-                sink->setDefault(np.get<bool>(QStringLiteral("enabled")));
-            }
+    PulseAudioQt::Sink *sink = sinksMap.value(name);
+    if (sink) {
+        if (np.has(QStringLiteral("volume"))) {
+            int volume = np.get<int>(QStringLiteral("volume"));
+            sink->setVolume(volume);
+            sink->setMuted(false);
+        }
+        if (np.has(QStringLiteral("muted"))) {
+            sink->setMuted(np.get<bool>(QStringLiteral("muted")));
+        }
+        if (np.has(QStringLiteral("enabled"))) {
+            sink->setDefault(np.get<bool>(QStringLiteral("enabled")));
         }
     }
 }
