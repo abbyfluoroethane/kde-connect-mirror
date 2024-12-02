@@ -90,6 +90,7 @@ Kirigami.ApplicationWindow {
                 ListView {
                     id: devices
                     Layout.fillWidth: true
+                    clip: true
 
                     section {
                         property: "status"
