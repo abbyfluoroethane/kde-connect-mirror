@@ -71,7 +71,6 @@ Kirigami.ApplicationWindow {
                     }
 
                     QQC2.ToolButton {
-                        // display: QQC2.AbstractButton.IconOnly
                         text: i18nc("@action:button", "Refresh")
                         icon.name: 'view-refresh-symbolic'
 
@@ -144,14 +143,45 @@ Kirigami.ApplicationWindow {
                 Layout.fillWidth: true
             }
 
-            QQC2.ItemDelegate {
-                text: i18n("Settings")
-                icon.name: "settings-configure"
+            QQC2.ToolBar {
                 Layout.fillWidth: true
-                onClicked: pageStack.pushDialogLayer(Qt.resolvedUrl("Settings.qml"), {}, {
-                    title: i18n("Settings")
-                })
+                Layout.preferredHeight: pageStack.globalToolBar.preferredHeight
+                position: QQC2.ToolBar.Footer
+
+                contentItem: RowLayout {
+                    Kirigami.Heading {
+                        text: announcedNameProperty.value
+                        elide: Qt.ElideRight
+
+                        Layout.fillWidth: true
+                        Layout.leftMargin: Kirigami.Units.largeSpacing
+
+                        DBusProperty {
+                            id: announcedNameProperty
+                            object: DaemonDbusInterface
+                            read: "announcedName"
+                            defaultValue: "DeviceName"
+                        }
+                    }
+
+                    QQC2.ToolButton {
+                        text: i18n("Settings")
+                        icon.name: "settings-configure"
+                        display: QQC2.AbstractButton.IconOnly
+
+                        QQC2.ToolTip.text: text
+                        QQC2.ToolTip.delay: Kirigami.Units.toolTipDelay
+                        QQC2.ToolTip.visible: hovered
+
+                        onClicked: pageStack.pushDialogLayer(Qt.resolvedUrl("Settings.qml"), {}, {
+                            title: i18n("Settings")
+                        })
+
+                    }
+
+                }
             }
+
         }
     }
 
