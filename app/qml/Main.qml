@@ -24,6 +24,11 @@ Kirigami.ApplicationWindow {
         configGroupName: "MainWindow"
     }
 
+    Component {
+        id: deviceComp
+        DevicePage {}
+    }
+
     globalDrawer: Kirigami.OverlayDrawer {
         id: drawer
         edge: Qt.application.layoutDirection === Qt.RightToLeft ? Qt.RightEdge : Qt.LeftEdge
@@ -50,7 +55,6 @@ Kirigami.ApplicationWindow {
 
         contentItem: ColumnLayout {
             spacing: 0
-
             QQC2.ToolBar {
                 Layout.fillWidth: true
                 Layout.preferredHeight: pageStack.globalToolBar.preferredHeight
@@ -72,48 +76,55 @@ Kirigami.ApplicationWindow {
                     }
                 }
             }
-
-            QQC2.ItemDelegate {
-                id: findDevicesAction
-                text: i18nd("kdeconnect-app", "Find devices...")
-                icon.name: "list-add"
-                checked: pageStack.currentItem && pageStack.currentItem.objectName == "FindDevices"
+            QQC2.ScrollView {
                 Layout.fillWidth: true
-
-                onClicked: {
-                    root.pageStack.clear()
-                    root.pageStack.push(Qt.resolvedUrl("FindDevicesPage.qml"));
-                }
-            }
-
-            Kirigami.Separator {
-                Layout.fillWidth: true
-            }
-
-            Repeater {
-                model: DevicesSortProxyModel {
-                    sourceModel: DevicesModel {
-                        displayFilter: DevicesModel.Paired | DevicesModel.Reachable
-                    }
-                }
-
-                QQC2.ItemDelegate {
+                ListView {
+                    id: devices
                     Layout.fillWidth: true
-                    contentItem: Kirigami.IconTitleSubtitle {
-                        icon.name: model.iconName
-                        icon.width: Kirigami.Units.iconSizes.smallMedium
-                        title: model.name
-                        subtitle: model.toolTip
-                    }
 
-                    enabled: status & DevicesModel.Reachable
-                    checked: pageStack.currentItem && pageStack.currentItem.currentDevice == device
-                    onClicked: {
-                        root.pageStack.pop(0)
-                        root.pageStack.push(
-                            Qt.resolvedUrl("DevicePage.qml"),
-                            {currentDevice: device}
-                        );
+                    section {
+                        property: "status"
+                        delegate: Kirigami.ListSectionHeader {
+                            width: ListView.view.width
+                            text: switch (parseInt(section)) {
+                            case DevicesModel.Paired:
+                                return i18nd("kdeconnect-app", "Remembered");
+                            case DevicesModel.Reachable:
+                                return i18nd("kdeconnect-app", "Available");
+                            case (DevicesModel.Reachable | DevicesModel.Paired):
+                                return i18nd("kdeconnect-app", "Connected");
+                            }
+                        }
+                    }
+                    Kirigami.PlaceholderMessage {
+                        text: i18nd("kdeconnect-app", "No devices found")
+                        icon.name: 'edit-none-symbolic'
+                        anchors.centerIn: parent
+                        width: parent.width - (Kirigami.Units.largeSpacing * 4)
+                        visible: devices.count === 0
+                    }
+                    model: DevicesSortProxyModel {
+                        sourceModel: DevicesModel {}
+                    }
+                    delegate: QQC2.ItemDelegate {
+                        id: delegate
+                        icon.name: iconName
+                        text: model.name
+                        width: ListView.view.width
+                        highlighted: false
+
+                        contentItem: Kirigami.IconTitleSubtitle {
+                            title: delegate.text
+                            subtitle: toolTip
+                            icon: icon.fromControlsIcon(delegate.icon)
+                        }
+
+                        onClicked: {
+                            pageStack.clear();
+                            pageStack.push(deviceComp, {
+                                currentDevice: device
+                            });
+                        }
                     }
                 }
             }
@@ -128,8 +139,8 @@ Kirigami.ApplicationWindow {
                 icon.name: "settings-configure"
                 Layout.fillWidth: true
                 onClicked: pageStack.pushDialogLayer(Qt.resolvedUrl("Settings.qml"), {}, {
-                    title: i18n("Settings"),
-                });
+                    title: i18n("Settings")
+                })
             }
         }
     }

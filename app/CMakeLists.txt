@@ -35,7 +35,6 @@ ecm_target_qml_sources(kdeconnect-app SOURCES
     qml/presentationRemote.qml
     qml/PluginItem.qml
     qml/DevicePage.qml
-    qml/FindDevicesPage.qml
     qml/runcommand.qml
     qml/volume.qml
     qml/MprisSlider.qml
