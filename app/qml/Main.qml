@@ -59,20 +59,30 @@ Kirigami.ApplicationWindow {
                 Layout.fillWidth: true
                 Layout.preferredHeight: pageStack.globalToolBar.preferredHeight
 
-                leftPadding: Kirigami.Units.largeSpacing
-                rightPadding: Kirigami.Units.largeSpacing
-                topPadding: Kirigami.Units.smallSpacing
-                bottomPadding: Kirigami.Units.smallSpacing
+                contentItem: RowLayout {
+                    spacing: 0
 
-                contentItem: Kirigami.Heading {
-                    text: announcedNameProperty.value
-                    elide: Qt.ElideRight
+                    Kirigami.Heading {
+                        text: i18nd("kdeconnect-app", "Devices")
+                        elide: Qt.ElideRight
 
-                    DBusProperty {
-                        id: announcedNameProperty
-                        object: DaemonDbusInterface
-                        read: "announcedName"
-                        defaultValue: ""
+                        Layout.fillWidth: true
+                        Layout.leftMargin: Kirigami.Units.largeSpacing
+                    }
+
+                    QQC2.ToolButton {
+                        // display: QQC2.AbstractButton.IconOnly
+                        text: i18nc("@action:button", "Refresh")
+                        icon.name: 'view-refresh-symbolic'
+
+                        QQC2.ToolTip.text: text
+                        QQC2.ToolTip.delay: Kirigami.Units.toolTipDelay
+                        QQC2.ToolTip.visible: hovered
+
+                        onClicked: {
+                            //refresh
+                            DaemonDbusInterface.forceOnNetworkChange();
+                        }
                     }
                 }
             }
