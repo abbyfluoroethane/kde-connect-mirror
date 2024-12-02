@@ -149,7 +149,8 @@ Kirigami.ApplicationWindow {
                 position: QQC2.ToolBar.Footer
 
                 contentItem: RowLayout {
-                    Kirigami.Heading {
+                    spacing: Kirigami.Units.smallSpacing
+                    QQC2.Label {
                         text: announcedNameProperty.value
                         elide: Qt.ElideRight
 
@@ -176,12 +177,9 @@ Kirigami.ApplicationWindow {
                         onClicked: pageStack.pushDialogLayer(Qt.resolvedUrl("Settings.qml"), {}, {
                             title: i18n("Settings")
                         })
-
                     }
-
                 }
             }
-
         }
     }
 
