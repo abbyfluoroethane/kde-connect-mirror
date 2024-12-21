@@ -84,45 +84,6 @@ FormCard.FormCardPage {
         }
     }
 
-    FormCard.FormHeader {
-        title: i18nc("@title:context", "KDE Connect Desktop Apps")
-    }
-
-    FormCard.FormCard {
-        FormCard.FormButtonDelegate {
-            text: i18n("Windows (Microsoft Store)")
-            onClicked: Qt.openUrlExternally("https://apps.microsoft.com/detail/9n93mrmsxbf0")
-        }
-
-        FormCard.FormDelegateSeparator {}
-
-        FormCard.FormButtonDelegate {
-            text: i18n("Windows (Offline Installer)")
-            onClicked: Qt.openUrlExternally("https://cdn.kde.org/ci-builds/network/kdeconnect-kde/release-" + root.gearVersion + "/windows/")
-        }
-
-        FormCard.FormDelegateSeparator {}
-
-        FormCard.FormButtonDelegate {
-            text: i18n("macOS (ARM)")
-            onClicked: Qt.openUrlExternally("https://cdn.kde.org/ci-builds/network/kdeconnect-kde/release-" + root.gearVersion + "/macos-arm64/")
-        }
-
-        FormCard.FormDelegateSeparator {}
-
-        FormCard.FormButtonDelegate {
-            text: i18n("macOS (Intel)")
-            onClicked: Qt.openUrlExternally("https://cdn.kde.org/ci-builds/network/kdeconnect-kde/release-" + root.gearVersion + "/macos-x86_64/")
-        }
-
-        FormCard.FormDelegateSeparator {}
-
-        FormCard.FormButtonDelegate {
-            text: i18n("Others")
-            onClicked: Qt.openUrlExternally("https://kdeconnect.kde.org/download.html")
-        }
-    }
-
     FormCard.FormSectionText {
         text: i18n("If you are having problems, visit the <a href=\"https://userbase.kde.org/KDEConnect\"><span style=\" text-decoration: underline;\">KDE Connect Community wiki</span></a> for help.")
     }
