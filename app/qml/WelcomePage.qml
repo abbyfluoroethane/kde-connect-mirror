@@ -13,21 +13,6 @@ import org.kde.kirigamiaddons.formcard as FormCard
 FormCard.FormCardPage {
     id: root
 
-    readonly property string gearVersion: {
-        const now = new Date();
-        const month = now.getMonth();
-        const year = now.getFullYear() - 2000;
-        if (month < 3) {
-            return (year - 1).toString() + '.12';
-        }
-        if (month < 7) {
-            return year.toString() + '.04';
-        }
-        if (month < 11) {
-            return year.toString() + '.08';
-        }
-        return year.toString() + '.12';
-    }
 
     Kirigami.Icon {
         source: "kdeconnect"
