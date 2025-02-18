@@ -1,0 +1,22 @@
+{
+    "$schema": "../kdeconnect.schema.json",
+    "KPlugin": {
+        "Authors": [
+            {
+                "Email": "dev@dshatz.com",
+                "Name": "Daniels Šatcs"
+            }
+        ],
+        "Description": "Retrieve geolocation info from your phone's GPS.",
+        "EnabledByDefault": true,
+        "Icon": "mark-location",
+        "License": "GPL",
+        "Name": "Geolocation"
+    },
+    "X-KdeConnect-OutgoingPacketType": [
+        "kdeconnect.geolocation.request"
+    ],
+    "X-KdeConnect-SupportedPacketType": [
+        "kdeconnect.geolocation.nmea"
+    ]
+}
