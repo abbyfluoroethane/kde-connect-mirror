@@ -103,7 +103,6 @@ public:
     }
 
 private:
-    QString m_id;
     QString m_type;
     QVariantMap m_body;
 
