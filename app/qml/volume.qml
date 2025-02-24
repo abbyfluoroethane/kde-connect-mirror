@@ -21,6 +21,11 @@ Kirigami.Page
         id: sinkList
         anchors.fill: parent
         spacing: Kirigami.Units.largeSpacing
+<<<<<<< Updated upstream
+=======
+        focus: true
+        keyNavigationEnabled: true
+>>>>>>> Stashed changes
 
         model: RemoteSinksModel {
             deviceId: pluginInterface.deviceId
@@ -48,6 +53,20 @@ Kirigami.Page
                     value: volume
                     to: maxVolume
                     onMoved: volume = value
+                    // maxVolume can be a 16bit value that increases by 0.1 on key
+                    // press, go in 1% steps instead.
+                    // setting step size adds unpleasant tickmarks in desktop style
+                    Keys.onPressed: (event) => {
+                        if ((Qt.application.layoutDirection == Qt.LeftToRight && event.key == Qt.Key_Left) ||
+                            (Qt.application.layoutDirection == Qt.RightToLeft && event.key == Qt.Key_Right)) {
+                            volume -= (volume >= (maxVolume/100)) ? (maxVolume/100) : volume
+                            event.accepted = true
+                        } else if ((Qt.application.layoutDirection == Qt.LeftToRight && event.key == Qt.Key_Right) ||
+                            (Qt.application.layoutDirection == Qt.RightToLeft && event.key == Qt.Key_Left)) {
+                            volume += (volume <= maxVolume - (maxVolume/100)) ? (maxVolume/100) : (maxVolume - volume)
+                            event.accepted = true
+                        }
+                    }
                 }
             }
         }
