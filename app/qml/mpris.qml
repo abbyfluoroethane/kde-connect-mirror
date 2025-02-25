@@ -165,6 +165,19 @@ Kirigami.Page
                     volumeUnmuted = value
                     root.pluginInterface.volume = value
                 }
+                // default step size is 0.1 per key press, go in 1% steps instead
+                // setting step size adds unpleasant tickmarks in desktop style
+                Keys.onPressed: (event) => {
+                    if ((Qt.application.layoutDirection == Qt.LeftToRight && event.key == Qt.Key_Left) ||
+                        (Qt.application.layoutDirection == Qt.RightToLeft && event.key == Qt.Key_Right)) {
+                        volume -= (volume>0) ? 1 : 0
+                        event.accepted = true
+                    } else if ((Qt.application.layoutDirection == Qt.LeftToRight && event.key == Qt.Key_Right) ||
+                            (Qt.application.layoutDirection == Qt.RightToLeft && event.key == Qt.Key_Left)) {
+                        volume += (volume <99) ? 1 : 0
+                        event.accepted = true
+                    }
+                }
             }
         }
         Item { Layout.fillHeight: true }
