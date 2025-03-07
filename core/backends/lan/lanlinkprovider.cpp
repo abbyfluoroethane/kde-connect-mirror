@@ -40,7 +40,7 @@
 static const int MAX_UNPAIRED_CONNECTIONS = 42;
 static const int MAX_REMEMBERED_IDENTITY_PACKETS = 42;
 
-static const long MILLIS_DELAY_BETWEEN_CONNECTIONS_TO_SAME_DEVICE = 500;
+static const long MILLIS_DELAY_BETWEEN_CONNECTIONS_TO_SAME_DEVICE = 1500;
 
 LanLinkProvider::LanLinkProvider(bool testMode, bool isDisabled)
     : m_server(new Server(this))
