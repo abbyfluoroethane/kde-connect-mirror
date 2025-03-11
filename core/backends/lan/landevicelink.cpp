@@ -20,7 +20,20 @@ LanDeviceLink::LanDeviceLink(const DeviceInfo &deviceInfo, LanLinkProvider *pare
     , m_socket(nullptr)
     , m_deviceInfo(deviceInfo)
 {
+    qCDebug(KDECONNECT_CORE) << "LanDeviceLink created for device:" << deviceInfo.id;
+
+    connect(socket, &QAbstractSocket::disconnected, this, [this] {
+        qCDebug(KDECONNECT_CORE) << "LanDeviceLink - socket disconnected for" << deviceId();
+        deleteLater();
+    });
+
     reset(socket);
+}
+
+LanDeviceLink::~LanDeviceLink()
+{
+    qCDebug(KDECONNECT_CORE) << "LanDeviceLink destroyed for device:" << deviceId()
+                             << "- reason:" << (m_socket ? "socket still exists" : "socket already gone");
 }
 
 void LanDeviceLink::reset(QSslSocket *socket)

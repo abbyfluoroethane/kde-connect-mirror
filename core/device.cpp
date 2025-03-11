@@ -150,7 +150,12 @@ QStringList Device::loadedPlugins() const
 
 void Device::reloadPlugins()
 {
-    qCDebug(KDECONNECT_CORE) << name() << "- reload plugins";
+    qCDebug(KDECONNECT_CORE) << "Device::reloadPlugins for" << name() << "- starting plugin loading sequence";
+
+    // Log existing plugins
+    if (!d->m_plugins.isEmpty()) {
+        qCDebug(KDECONNECT_CORE) << "Current plugins before reload for" << name() << ":" << d->m_plugins.keys();
+    }
 
     QHash<QString, KdeConnectPlugin *> newPluginMap, oldPluginMap = d->m_plugins;
     QMultiMap<QString, KdeConnectPlugin *> newPluginsByIncomingCapability;
@@ -206,6 +211,9 @@ void Device::reloadPlugins()
     if (differentPlugins) {
         Q_EMIT pluginsChanged();
     }
+
+    // Log when complete
+    qCDebug(KDECONNECT_CORE) << "Device::reloadPlugins for" << name() << "- completed loading" << d->m_plugins.size() << "plugins";
 }
 
 QString Device::pluginsConfigFile() const
