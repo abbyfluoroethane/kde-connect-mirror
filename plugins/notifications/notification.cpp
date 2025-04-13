@@ -104,7 +104,6 @@ void Notification::createKNotification(const NetworkPacket &np)
 
     m_notification->setHint(QStringLiteral("x-kde-origin-name"), m_device->name());
 
-    m_notification->setReplyAction({});
     if (!m_requestReplyId.isEmpty()) {
         auto replyAction = std::make_unique<KNotificationReplyAction>(i18nc("@action:button", "Reply"));
         replyAction->setPlaceholderText(i18nc("@info:placeholder", "Reply to %1...", m_appName));
@@ -112,6 +111,8 @@ void Notification::createKNotification(const NetworkPacket &np)
         QObject::connect(replyAction.get(), &KNotificationReplyAction::replied, this, &Notification::replied);
         QObject::connect(replyAction.get(), &KNotificationReplyAction::activated, this, &Notification::reply);
         m_notification->setReplyAction(std::move(replyAction));
+    } else {
+        m_notification->setReplyAction({});
     }
 
     m_notification->clearActions();
