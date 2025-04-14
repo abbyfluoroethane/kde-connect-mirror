@@ -39,20 +39,20 @@ void MultiplexChannel::disconnect()
     }
 }
 
-qsizetype MultiplexChannel::bytesAvailable() const
+qint64 MultiplexChannel::bytesAvailable() const
 {
     return state->read_buffer.size() + QIODevice::bytesAvailable();
 }
 
-qsizetype MultiplexChannel::bytesToWrite() const
+qint64 MultiplexChannel::bytesToWrite() const
 {
     return state->write_buffer.size() + QIODevice::bytesToWrite();
 }
 
-qsizetype MultiplexChannel::readData(char *data, qsizetype maxlen)
+qint64 MultiplexChannel::readData(char *data, qint64 maxlen)
 {
     if (maxlen <= state->read_buffer.size() || state->read_buffer.size() > 0) {
-        const qsizetype num_to_read = std::min(maxlen, state->read_buffer.size());
+        const auto num_to_read = std::min(maxlen, state->read_buffer.size());
         std::memcpy(data, state->read_buffer.data(), num_to_read);
         state->read_buffer.remove(0, num_to_read);
         Q_EMIT state->readAvailable();
@@ -71,7 +71,7 @@ qsizetype MultiplexChannel::readData(char *data, qsizetype maxlen)
     }
 }
 
-qsizetype MultiplexChannel::writeData(const char *data, qsizetype len)
+qint64 MultiplexChannel::writeData(const char *data, qint64 len)
 {
     state->write_buffer.append(data, len);
     Q_EMIT state->writeAvailable();

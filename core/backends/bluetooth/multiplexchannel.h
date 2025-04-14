@@ -36,14 +36,14 @@ public:
 
     bool canReadLine() const override;
     bool atEnd() const override;
-    qsizetype bytesAvailable() const override;
-    qsizetype bytesToWrite() const override;
+    qint64 bytesAvailable() const override;
+    qint64 bytesToWrite() const override;
 
     bool isSequential() const override;
 
 protected:
-    qsizetype readData(char *data, qsizetype maxlen) override;
-    qsizetype writeData(const char *data, qsizetype len) override;
+    qint64 readData(char *data, qint64 maxlen) override;
+    qint64 writeData(const char *data, qint64 len) override;
 
 private:
     QSharedPointer<MultiplexChannelState> state;
