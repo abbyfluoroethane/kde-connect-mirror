@@ -22,7 +22,6 @@
 #endif
 
 #include <KAboutData>
-#include <KCMultiDialog>
 #include <KColorSchemeManager>
 #include <KCrash>
 #include <KDBusService>
@@ -93,25 +92,18 @@ int main(int argc, char **argv)
     proxyModel.setSourceModel(&model);
     QMenu *menu = new QMenu;
 
-    QPointer<KCMultiDialog> dialog;
-
     DaemonDbusInterface iface;
 
-    auto refreshMenu = [&iface, &proxyModel, &menu, &dialog]() {
+    auto launchApp = []() {
+        const QString kdeconnectAppExecutable = QStandardPaths::findExecutable(QStringLiteral("kdeconnect-app"), {QCoreApplication::applicationDirPath()});
+        if (!kdeconnectAppExecutable.isEmpty()) {
+            QProcess::startDetached(kdeconnectAppExecutable, {});
+        }
+    };
+    auto refreshMenu = [&iface, &proxyModel, &menu]() {
         menu->clear();
         auto configure = menu->addAction(QIcon::fromTheme(QStringLiteral("configure")), i18n("Configure..."));
-        QObject::connect(configure, &QAction::triggered, configure, [&dialog]() {
-            if (dialog == nullptr) {
-                dialog = new KCMultiDialog;
-                dialog->addModule(KPluginMetaData(QStringLiteral("plasma/kcms/systemsettings_qwidgets/kcm_kdeconnect")));
-                dialog->setAttribute(Qt::WA_DeleteOnClose);
-                dialog->show();
-                dialog->raise();
-            } else {
-                dialog->raise();
-                dialog->activateWindow();
-            }
-        });
+        QObject::connect(configure, &QAction::triggered, configure, launchApp);
         for (int i = 0, count = proxyModel.rowCount(); i < count; ++i) {
             QObject *deviceObject = proxyModel.data(proxyModel.index(i, 0), DevicesModel::DeviceRole).value<QObject *>();
             DeviceDbusInterface *device = qobject_cast<DeviceDbusInterface *>(deviceObject);
@@ -168,10 +160,7 @@ int main(int argc, char **argv)
     });
     QObject::connect(&systray, &QSystemTrayIcon::activated, [](QSystemTrayIcon::ActivationReason reason) {
         if (reason == QSystemTrayIcon::Trigger) {
-            const QString kdeconnectAppExecutable = QStandardPaths::findExecutable(QStringLiteral("kdeconnect-app"), {QCoreApplication::applicationDirPath()});
-            if (!kdeconnectAppExecutable.isEmpty()) {
-                QProcess::startDetached(kdeconnectAppExecutable, {});
-            }
+            launchApp();
         }
     });
 

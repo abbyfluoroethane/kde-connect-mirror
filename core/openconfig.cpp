@@ -22,18 +22,17 @@ void OpenConfig::openConfiguration(const QString &deviceId, const QString &plugi
     QString argument;
 
     if (!deviceId.isEmpty()) {
-        args << QStringLiteral("--args");
-        argument = deviceId;
+        args << QStringLiteral("--device");
+        args << deviceId;
 
         if (!pluginId.isEmpty()) {
-            argument += QLatin1Char(':') + pluginId;
+            args << "--plugin-config";
+            args << pluginId;
         }
-
-        args << argument;
     }
 
-    auto job = new KIO::CommandLauncherJob(QStringLiteral("kdeconnect-settings"), args);
-    job->setDesktopName(QStringLiteral("org.kde.kdeconnect-settings"));
+    auto job = new KIO::CommandLauncherJob(QStringLiteral("kdeconnect-app"), args);
+    job->setDesktopName(QStringLiteral("org.kde.kdeconnect.app"));
     job->setStartupId(m_currentToken.toUtf8());
     job->start();
 
