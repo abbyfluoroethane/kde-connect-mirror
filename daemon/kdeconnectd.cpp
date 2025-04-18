@@ -10,6 +10,7 @@
 #include <QDBusMessage>
 #include <QIcon>
 #include <QProcess>
+#include <QQuickStyle>
 #include <QSessionManager>
 #include <QStandardPaths>
 #include <QTimer>
@@ -19,6 +20,7 @@
 #endif
 
 #include <KAboutData>
+#include <KColorSchemeManager>
 #include <KCrash>
 #include <KDBusService>
 #include <KLocalizedString>
@@ -73,6 +75,15 @@ int main(int argc, char *argv[])
                          i18n("(c) 2015-2025, KDE Connect Team"));
     KAboutData::setApplicationData(aboutData);
     app.setQuitOnLastWindowClosed(false);
+
+#ifdef Q_OS_WIN
+    KColorSchemeManager::instance();
+#endif
+
+    // Default to org.kde.desktop style unless the user forces another style
+    if (qEnvironmentVariableIsEmpty("QT_QUICK_CONTROLS_STYLE")) {
+        QQuickStyle::setStyle(QStringLiteral("org.kde.desktop"));
+    }
 
     KCrash::initialize();
 

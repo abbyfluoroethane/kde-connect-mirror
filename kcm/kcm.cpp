@@ -61,7 +61,6 @@ KdeConnectKcm::KdeConnectKcm(QObject *parent, const KPluginMetaData &md, const Q
 {
 #ifdef Q_OS_WIN
     KColorSchemeManager::instance();
-    QApplication::setStyle(QStringLiteral("breeze"));
 #endif
 
     // Default to org.kde.desktop style unless the user forces another style

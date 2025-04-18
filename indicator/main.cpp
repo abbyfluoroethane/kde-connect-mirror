@@ -47,8 +47,6 @@ int main(int argc, char **argv)
     }
 #endif
 
-    QIcon::setFallbackThemeName(QStringLiteral("breeze"));
-
     QApplication app(argc, argv);
 
     IndicatorHelper helper;
@@ -65,17 +63,16 @@ int main(int argc, char **argv)
     aboutData.setProgramLogo(QIcon::fromTheme(QStringLiteral("kdeconnect")));
     KAboutData::setApplicationData(aboutData);
 
-    KCrash::initialize();
-
 #ifdef Q_OS_WIN
     KColorSchemeManager::instance();
-    QApplication::setStyle(QStringLiteral("breeze"));
 #endif
 
     // Default to org.kde.desktop style unless the user forces another style
     if (qEnvironmentVariableIsEmpty("QT_QUICK_CONTROLS_STYLE")) {
         QQuickStyle::setStyle(QStringLiteral("org.kde.desktop"));
     }
+
+    KCrash::initialize();
 
     KDBusService dbusService(KDBusService::Unique);
 

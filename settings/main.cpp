@@ -6,12 +6,13 @@
 
 #include <QApplication>
 #include <QCommandLineParser>
+#include <QQuickStyle>
 #include <QStandardPaths>
-#include <QStyle>
 
 #include "kdeconnect-version.h"
 #include <KAboutData>
 #include <KCMultiDialog>
+#include <KColorSchemeManager>
 #include <KCrash>
 #include <KDBusService>
 #include <KLocalizedString>
@@ -19,8 +20,6 @@
 
 int main(int argc, char **argv)
 {
-    QIcon::setFallbackThemeName(QStringLiteral("breeze"));
-
     QApplication app(argc, argv);
     app.setWindowIcon(QIcon::fromTheme(QStringLiteral("kdeconnect")));
     KAboutData aboutData(QStringLiteral("kdeconnect-settings"),
@@ -31,6 +30,15 @@ int main(int argc, char **argv)
                          i18n("(c) 2018-2025, KDE Connect Team"));
     aboutData.addAuthor(i18n("Nicolas Fella"), {}, QStringLiteral("nicolas.fella@gmx.de"));
     KAboutData::setApplicationData(aboutData);
+
+#ifdef Q_OS_WIN
+    KColorSchemeManager::instance();
+#endif
+
+    // Default to org.kde.desktop style unless the user forces another style
+    if (qEnvironmentVariableIsEmpty("QT_QUICK_CONTROLS_STYLE")) {
+        QQuickStyle::setStyle(QStringLiteral("org.kde.desktop"));
+    }
 
     KCrash::initialize();
 

@@ -41,8 +41,6 @@ public:
 
 int main(int argc, char *argv[])
 {
-    QIcon::setFallbackThemeName(QStringLiteral("breeze"));
-
     QApplication app(argc, argv);
     KLocalizedString::setApplicationDomain("kdeconnect-sms");
     app.setWindowIcon(QIcon::fromTheme(QStringLiteral("kdeconnect")));
@@ -58,17 +56,16 @@ int main(int argc, char *argv[])
     aboutData.setBugAddress(QStringLiteral("https://bugs.kde.org/enter_bug.cgi?product=kdeconnect&component=messaging-application").toUtf8());
     KAboutData::setApplicationData(aboutData);
 
-    KCrash::initialize();
-
 #ifdef Q_OS_WIN
     KColorSchemeManager::instance();
-    QApplication::setStyle(QStringLiteral("breeze"));
 #endif
 
     // Default to org.kde.desktop style unless the user forces another style
     if (qEnvironmentVariableIsEmpty("QT_QUICK_CONTROLS_STYLE")) {
         QQuickStyle::setStyle(QStringLiteral("org.kde.desktop"));
     }
+
+    KCrash::initialize();
 
     AppData data;
 
