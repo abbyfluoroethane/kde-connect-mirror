@@ -106,8 +106,11 @@ int main(int argc, char *argv[])
         }
     }
 
-    KDBusService service(KDBusService::Unique | (replace ? KDBusService::Replace : KDBusService::StartupOption(0)));
-
+    KDBusService::StartupOptions flags = KDBusService::Unique;
+    if (replace) {
+        flags |= KDBusService::Replace;
+    }
+    KDBusService dbusService(flags);
     QQmlApplicationEngine engine;
     engine.rootContext()->setContextObject(new KLocalizedContext(&engine));
     engine.loadFromModule("org.kde.kdeconnect.app", "Main");
