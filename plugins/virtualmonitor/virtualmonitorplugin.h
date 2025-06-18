@@ -20,7 +20,7 @@ class VirtualMonitorPlugin : public KdeConnectPlugin
 {
     Q_OBJECT
     Q_CLASSINFO("D-Bus Interface", "org.kde.kdeconnect.device.virtualmonitor")
-    Q_PROPERTY(bool hasRemoteVncClient READ hasRemoteVncClient CONSTANT)
+    Q_PROPERTY(QString lastError READ lastError)
     Q_PROPERTY(bool isVirtualMonitorAvailable READ isVirtualMonitorAvailable CONSTANT)
 
 public:
@@ -28,15 +28,19 @@ public:
     ~VirtualMonitorPlugin() override;
 
     Q_SCRIPTABLE bool requestVirtualMonitor();
+    QString lastError() const
+    {
+        return m_lastError;
+    }
 
     void connected() override;
     QString dbusPath() const override;
     void receivePacket(const NetworkPacket &np) override;
 
     // The remote device has a VNC client installed
-    bool hasRemoteVncClient() const
+    bool hasRemoteClient() const
     {
-        return m_capabilitiesRemote.vncClient;
+        return m_capabilitiesRemote.vncClient || m_capabilitiesRemote.rdpClient;
     }
 
     // krfb is installed on local device, virtual monitors is supported
@@ -65,6 +69,7 @@ private:
     QProcess *m_process = nullptr;
     QJsonObject m_remoteResolution;
     uint m_retries = 0;
+    QString m_lastError;
 
     static uint s_port;
 };
