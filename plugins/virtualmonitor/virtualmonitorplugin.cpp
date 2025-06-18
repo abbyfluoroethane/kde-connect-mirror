@@ -7,6 +7,7 @@
 
 #include "virtualmonitorplugin.h"
 
+#include <KLocalizedString>
 #include <KPluginFactory>
 
 #include "plugin_virtualmonitor_debug.h"
@@ -151,8 +152,24 @@ QString VirtualMonitorPlugin::dbusPath() const
 bool VirtualMonitorPlugin::requestVirtualMonitor()
 {
     stop();
+    m_lastError.clear();
+    auto addError = [&](QStringView error) {
+        if (!m_lastError.isEmpty()) {
+            m_lastError.append(u"\n\n");
+        }
+        m_lastError.append(error);
+    };
+
+    if (!hasRemoteClient()) {
+        addError(i18n("Remote device does not have a VNC or RDP client (eg. krdc) installed."));
+    }
+    if (!isVirtualMonitorAvailable()) {
+        addError(i18n("The krfb package is required on the local device."));
+    }
     if (m_remoteResolution.isEmpty()) {
-        qCWarning(KDECONNECT_PLUGIN_VIRTUALMONITOR) << "Cannot start a request without a resolution";
+        addError(i18n("Cannot start a request without a resolution"));
+    }
+    if (!m_lastError.isEmpty()) {
         return false;
     }
 
@@ -201,6 +218,7 @@ bool VirtualMonitorPlugin::requestVnc()
 
     if (!m_process->waitForStarted()) {
         qCWarning(KDECONNECT_PLUGIN_VIRTUALMONITOR) << "Failed to start krfb-virtualmonitor" << m_process->error() << m_process->errorString();
+        m_lastError = m_process->errorString();
         return false;
     }
 
@@ -250,6 +268,7 @@ bool VirtualMonitorPlugin::requestRdp()
 
     if (!m_process->waitForStarted()) {
         qCWarning(KDECONNECT_PLUGIN_VIRTUALMONITOR) << "Failed to start krfb-virtualmonitor" << m_process->error() << m_process->errorString();
+        m_lastError = m_process->errorString();
         return false;
     }
 
