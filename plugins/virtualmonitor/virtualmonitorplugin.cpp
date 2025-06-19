@@ -110,11 +110,7 @@ void VirtualMonitorPlugin::receivePacket(const NetworkPacket &received)
         }
 
         QUrl url;
-        if (m_capabilitiesRemote.rdpClient) {
-            url.setScheme(received.get<QString>(QS("protocol"), QS("rdp")));
-        } else {
-            url.setScheme(received.get<QString>(QS("protocol"), QS("vnc")));
-        }
+        url.setScheme(received.get<QString>(QS("protocol"), QS("rdp")));
         url.setUserName(received.get<QString>(QS("username"), QS("user")));
         url.setPassword(received.get<QString>(QS("password")));
         url.setPort(received.get<int>(QS("port"), DEFAULT_PORT));
@@ -240,9 +236,9 @@ bool VirtualMonitorPlugin::requestRdp()
 
     m_process = new QProcess(this);
     m_process->setProgram(QS("krdpserver"));
-    const QString scale = m_remoteResolution.value(QLatin1String("scale")).toString();
+    const double scale = m_remoteResolution.value(QLatin1String("scale")).toDouble();
     QStringList args = {QS("--virtual-monitor"),
-                        m_remoteResolution.value(QLatin1String("resolution")).toString() + u'@' + scale,
+                        m_remoteResolution.value(QLatin1String("resolution")).toString() + u'@' + QString::number(scale),
                         QS("--username"),
                         QS("user"),
                         QS("--password"),
