@@ -22,12 +22,17 @@ class VirtualMonitorPlugin : public KdeConnectPlugin
     Q_CLASSINFO("D-Bus Interface", "org.kde.kdeconnect.device.virtualmonitor")
     Q_PROPERTY(QString lastError READ lastError)
     Q_PROPERTY(bool isVirtualMonitorAvailable READ isVirtualMonitorAvailable CONSTANT)
+    Q_PROPERTY(bool active READ active NOTIFY activeChanged)
 
 public:
     using KdeConnectPlugin::KdeConnectPlugin;
     ~VirtualMonitorPlugin() override;
 
     Q_SCRIPTABLE bool requestVirtualMonitor();
+
+    /// stops the active session
+    Q_SCRIPTABLE void stop();
+
     QString lastError() const
     {
         return m_lastError;
@@ -49,8 +54,13 @@ public:
         return m_capabilitiesLocal.virtualMonitor;
     }
 
+    /// Returns true if there's a running virtual monitor
+    bool active() const;
+
+Q_SIGNALS:
+    Q_SCRIPTABLE void activeChanged();
+
 private:
-    void stop();
     bool checkVncClient() const;
     bool checkRdpClient() const;
     bool checkDefaultSchemeHandler(const QString &scheme) const;

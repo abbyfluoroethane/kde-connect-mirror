@@ -191,10 +191,18 @@ PlasmaComponents.ItemDelegate {
                 icon.name: "krdc"
                 visible: virtualmonitor.available
                 text: i18n("Virtual Display")
+                checked: visible && virtualmonitor.plugin.active
+                checkable: true
+
                 onClicked: {
-                    virtualmonitor.plugin.requestVirtualMonitor();
-                    prompt.subtitle = virtualmonitor.plugin.lastError;
-                    prompt.visible = prompt.subtitle.length > 0;
+                    if (virtualmonitor.plugin.active) {
+                        virtualmonitor.plugin.stop();
+                        prompt.visible = false;
+                    } else {
+                        virtualmonitor.plugin.requestVirtualMonitor();
+                        prompt.subtitle = virtualmonitor.plugin.lastError;
+                        prompt.visible = prompt.subtitle.length > 0;
+                    }
                 }
             }
 
