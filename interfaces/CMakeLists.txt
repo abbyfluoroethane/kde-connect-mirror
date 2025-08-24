@@ -39,6 +39,8 @@ set(interfaces_SRC
     devicespluginfilterproxymodel.cpp
     pluginmodel.cpp
     commandsmodel.cpp
+    mobilevolumedbusinterface.cpp
+    mobilevolumedbusinterface.h
 )
 
 # KDE Connect interfaces
@@ -62,6 +64,7 @@ geninterface(${PROJECT_SOURCE_DIR}/plugins/remotesystemvolume/remotesystemvolume
 geninterface(${PROJECT_SOURCE_DIR}/plugins/bigscreen/bigscreenplugin.h generated/bigscreeninterface)
 geninterface(${PROJECT_SOURCE_DIR}/plugins/virtualmonitor/virtualmonitorplugin.h generated/virtualmonitorinterface)
 geninterface(${PROJECT_SOURCE_DIR}/plugins/clipboard/clipboardplugin.h generated/deviceclipboardinterface)
+geninterface(${PROJECT_SOURCE_DIR}/plugins/mobilevolume/mobilevolumeplugin.h generated/mobilevolumeinterface)
 
 # System dbus interfaces
 if (UNIX AND NOT APPLE)
