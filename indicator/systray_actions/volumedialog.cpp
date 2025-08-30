@@ -27,7 +27,7 @@ VolumeDialog::VolumeDialog(const QString &deviceId, QWidget *parent)
     setWindowTitle(i18n("Mobile Volume Control"));
     setAttribute(Qt::WA_DeleteOnClose);
 
-    setFixedSize(400, 500);
+    setFixedSize(400, 400);
     setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
 
     // setMinimumSize(400, 500);
@@ -145,13 +145,9 @@ void VolumeDialog::updateSlider(int stream, int value)
 
 QString VolumeDialog::getStreamName(int stream)
 {
-    static QMap<int, QString> streamNames = {{0, i18n("Voice Call")},
-                                             {1, i18n("System")},
-                                             {2, i18n("Ringtone")},
-                                             {3, i18n("Media")},
-                                             {4, i18n("Alarm")},
-                                             {5, i18n("Notification")},
-                                             {8, i18n("DTMF")},
-                                             {10, i18n("Accessibility")}};
+    static QMap<int, QString> streamNames =
+        {{0, i18n("Voice Call")}, {1, i18n("System")}, {2, i18n("Ringtone")}, {3, i18n("Media")}, {4, i18n("Alarm")}, {5, i18n("Notification")}};
+    // {8, i18n("DTMF")},
+    // {10, i18n("Accessibility")}};
     return streamNames.value(stream, i18n("Unknown Stream"));
 }

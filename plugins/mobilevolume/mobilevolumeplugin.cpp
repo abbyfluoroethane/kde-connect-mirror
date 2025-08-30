@@ -26,8 +26,8 @@ MobileVolumePlugin::MobileVolumePlugin(QObject *parent, QVariantList args)
     streamNames[3] = QStringLiteral("Media"); // STREAM_MUSIC
     streamNames[4] = QStringLiteral("Alarm"); // STREAM_ALARM
     streamNames[5] = QStringLiteral("Notification"); // STREAM_NOTIFICATION
-    streamNames[8] = QStringLiteral("DTMF"); // STREAM_DTMF
-    streamNames[10] = QStringLiteral("Accessibility"); // STREAM_ACCESSIBILITY
+    // streamNames[8] = QStringLiteral("DTMF"); // STREAM_DTMF
+    // streamNames[10] = QStringLiteral("Accessibility"); // STREAM_ACCESSIBILITY
 
     QString path = dbusPath();
     bool registered =
