@@ -22,6 +22,10 @@ public Q_SLOTS:
     void sendVolumeChange(int stream, int value);
     void sendVolumeRequest();
 
+private Q_SLOTS:
+    void onVolumeChanged(int stream, int volume);
+    void onStreamsInfoReceived(const QString &streamsJson);
+
 Q_SIGNALS:
     void volumeChanged(int stream, int volume);
     void streamsInfoReceived(const QString &streamsJson);

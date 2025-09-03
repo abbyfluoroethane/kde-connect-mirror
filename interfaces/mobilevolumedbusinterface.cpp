@@ -5,6 +5,7 @@
  */
 
 #include "mobilevolumedbusinterface.h"
+
 #include <KLocalizedString>
 #include <QDBusConnection>
 #include <QDebug>
@@ -17,6 +18,28 @@ MobileVolumeDbusInterface::MobileVolumeDbusInterface(const QString &deviceId, QO
                              parent)
 {
     qDebug() << "MobileVolumeDbusInterface created for device:" << deviceId;
+
+    bool connected = QDBusConnection::sessionBus().connect(QStringLiteral("org.kde.kdeconnect"),
+                                                           QStringLiteral("/modules/kdeconnect/devices/") + deviceId + QStringLiteral("/mobilevolume"),
+                                                           QStringLiteral("org.kde.kdeconnect.device.mobilevolume"),
+                                                           QStringLiteral("volumeChanged"),
+                                                           this,
+                                                           SLOT(onVolumeChanged(int, int)));
+
+    if (!connected) {
+        qWarning() << "Failed to connect to volumeChanged signal";
+    }
+
+    connected = QDBusConnection::sessionBus().connect(QStringLiteral("org.kde.kdeconnect"),
+                                                      QStringLiteral("/modules/kdeconnect/devices/") + deviceId + QStringLiteral("/mobilevolume"),
+                                                      QStringLiteral("org.kde.kdeconnect.device.mobilevolume"),
+                                                      QStringLiteral("streamsInfoReceived"),
+                                                      this,
+                                                      SLOT(onStreamsInfoReceived(QString)));
+
+    if (!connected) {
+        qWarning() << "Failed to connect to streamsInfoReceived signal";
+    }
 }
 
 void MobileVolumeDbusInterface::sendVolumeChange(int stream, int value)
@@ -43,4 +66,16 @@ void MobileVolumeDbusInterface::sendVolumeRequest()
     } else {
         qDebug() << "Volume request sent successfully";
     }
+}
+
+void MobileVolumeDbusInterface::onVolumeChanged(int stream, int volume)
+{
+    // qDebug() << "Received volumeChanged signal from DBus:" << stream << volume;
+    Q_EMIT volumeChanged(stream, volume);
+}
+
+void MobileVolumeDbusInterface::onStreamsInfoReceived(const QString &streamsJson)
+{
+    // qDebug() << "Received streamsInfoReceived signal from DBus:" << streamsJson;
+    Q_EMIT streamsInfoReceived(streamsJson);
 }
