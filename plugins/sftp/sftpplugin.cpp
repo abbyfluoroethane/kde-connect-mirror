@@ -17,6 +17,7 @@
 #include <KNotificationJobUiDelegate>
 #include <KPluginFactory>
 
+#include "daemon.h"
 #include "mounter.h"
 #include "plugin_sftp_debug.h"
 
@@ -112,10 +113,16 @@ bool SftpPlugin::startBrowsing()
 
 void SftpPlugin::receivePacket(const NetworkPacket &np)
 {
-    static const QSet<QString> fields_c{QStringLiteral("user"), QStringLiteral("port"), QStringLiteral("path")};
-    const QStringList keysList = np.body().keys();
-    const auto keys = QSet(keysList.begin(), keysList.end());
-    if (!(fields_c - keys).isEmpty() && !np.has(QStringLiteral("errorMessage"))) {
+    if (np.has(QStringLiteral("errorMessage"))) {
+        onFailed(np.get<QString>(QStringLiteral("errorMessage")));
+        return;
+    }
+
+    // Note: for Windows, a password field is also expected. See the expectedFields definition in sftpplugin-win.cpp
+    static const QSet<QString> expectedFields{QStringLiteral("user"), QStringLiteral("port"), QStringLiteral("path"), QStringLiteral("password")};
+    const QStringList receivedFieldsList = np.body().keys();
+    const QSet<QString> receivedFields(receivedFieldsList.begin(), receivedFieldsList.end());
+    if (!(expectedFields - receivedFields).isEmpty()) {
         qCWarning(KDECONNECT_PLUGIN_SFTP) << "Invalid sftp packet received";
         return;
     }
@@ -170,8 +177,7 @@ void SftpPlugin::onUnmounted()
 void SftpPlugin::onFailed(const QString &message)
 {
     mountError = message;
-    KNotification::event(KNotification::Error, device()->name(), message);
-
+    Daemon::instance()->reportError(device()->name(), message);
     unmount();
 
     Q_EMIT unmounted();

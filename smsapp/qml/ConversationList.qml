@@ -78,6 +78,7 @@ Kirigami.ScrollablePage
 
     header: Kirigami.InlineMessage {
         Layout.fillWidth: true
+        position: Kirigami.InlineMessage.Header
         visible: page.initialMessage.length > 0
         text: i18nd("kdeconnect-sms", "Choose recipient")
 
@@ -104,6 +105,7 @@ Kirigami.ScrollablePage
             id: filter
             Layout.fillWidth: true
             placeholderText: i18nd("kdeconnect-sms", "Search or start a conversation")
+            enabled: deviceConnected
             onTextChanged: {
                 currentSearchText = filter.text;
                 if (filter.text !== "") {

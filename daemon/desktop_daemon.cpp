@@ -54,10 +54,10 @@ void DesktopDaemon::askPairingConfirmation(Device *device)
     notification->sendEvent();
 }
 
-void DesktopDaemon::reportError(const QString &title, const QString &description)
+void DesktopDaemon::reportError(const QString &title, const QString &text)
 {
-    qWarning() << title << ":" << description;
-    KNotification::event(KNotification::Error, title, description);
+    qWarning() << title << ":" << text;
+    sendSimpleNotification(QStringLiteral("error"), title, text, QStringLiteral("dialog-error"));
 }
 
 KJobTrackerInterface *DesktopDaemon::jobTracker()
@@ -65,9 +65,10 @@ KJobTrackerInterface *DesktopDaemon::jobTracker()
     return KIO::getJobTracker();
 }
 
+// NOTE: eventId must match a notificatiion event id defined in plugins/kdeconnect.notifyrc
 Q_SCRIPTABLE void DesktopDaemon::sendSimpleNotification(const QString &eventId, const QString &title, const QString &text, const QString &iconName)
 {
-    KNotification *notification = new KNotification(eventId); // KNotification::Persistent
+    KNotification *notification = new KNotification(eventId);
     notification->setIconName(iconName);
     notification->setComponentName(QStringLiteral("kdeconnect"));
     notification->setTitle(title);

@@ -15,6 +15,7 @@
 #include <KLocalizedString>
 #include <KPluginFactory>
 
+#include "daemon.h"
 #include "plugin_sftp_debug.h"
 
 K_PLUGIN_CLASS_WITH_JSON(SftpPlugin, "kdeconnect_sftp.json")
@@ -34,17 +35,18 @@ bool SftpPlugin::startBrowsing()
 
 void SftpPlugin::receivePacket(const NetworkPacket &np)
 {
-    QStringList receivedFieldsList = np.body().keys();
-    QSet<QString> receivedFields(receivedFieldsList.begin(), receivedFieldsList.end());
-    if (!(expectedFields - receivedFields).isEmpty()) {
-        qCWarning(KDECONNECT_PLUGIN_SFTP) << "Invalid packet received.";
-        for (QString missingField : (expectedFields - receivedFields)) {
-            qCWarning(KDECONNECT_PLUGIN_SFTP) << "Field" << missingField << "missing from packet.";
-        }
+    if (np.has(QStringLiteral("errorMessage"))) {
+        QString message = np.get<QString>(QStringLiteral("errorMessage"));
+        qCWarning(KDECONNECT_PLUGIN_SFTP) << message;
+        Daemon::instance()->reportError(device()->name(), message);
         return;
     }
-    if (np.has(QStringLiteral("errorMessage"))) {
-        qCWarning(KDECONNECT_PLUGIN_SFTP) << np.get<QString>(QStringLiteral("errorMessage"));
+
+    static const QSet<QString> expectedFields{QStringLiteral("user"), QStringLiteral("port"), QStringLiteral("path"), QStringLiteral("password")};
+    const QStringList receivedFieldsList = np.body().keys();
+    const QSet<QString> receivedFields(receivedFieldsList.begin(), receivedFieldsList.end());
+    if (!(expectedFields - receivedFields).isEmpty()) {
+        qCWarning(KDECONNECT_PLUGIN_SFTP) << "Invalid packet received.";
         return;
     }
 
@@ -63,12 +65,24 @@ void SftpPlugin::receivePacket(const NetworkPacket &np)
         path += QChar::fromLatin1('/');
     }
 
+    QHostAddress addr = device()->getLocalIpAddress();
+    if (addr == QHostAddress::Null) {
+        qCDebug(KDECONNECT_PLUGIN_SFTP) << "Device doesn't have a LanDeviceLink, unable to get IP address";
+        return;
+    }
+    QString ip = addr.toString();
+    if (addr.protocol() == QAbstractSocket::IPv6Protocol) {
+        ip.prepend(QLatin1Char('['));
+        ip.append(QLatin1Char(']'));
+    }
+    // clang-format off
     QString url_string = QStringLiteral("sftp://%1:%2@%3:%4%5")
                              .arg(np.get<QString>(QStringLiteral("user")),
                                   np.get<QString>(QStringLiteral("password")),
-                                  np.get<QString>(QStringLiteral("ip")),
+                                  ip,
                                   np.get<QString>(QStringLiteral("port")),
                                   path);
+    // clang-format on
     static QRegularExpression uriRegex(QStringLiteral("^sftp://kdeconnect:\\w+@\\d+.\\d+.\\d+.\\d+:17[3-6][0-9]/$"));
     if (!uriRegex.match(url_string).hasMatch()) {
         qCWarning(KDECONNECT_PLUGIN_SFTP) << "Invalid URL invoked. If the problem persists, contact the developers.";
