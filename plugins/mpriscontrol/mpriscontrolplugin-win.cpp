@@ -84,12 +84,13 @@ QString MprisControlPlugin::randomUrl()
     return QStringLiteral("file://") + fileUrl;
 }
 
-void MprisControlPlugin::sendMediaProperties(const std::variant<NetworkPacket, QString> &packetOrName, const GlobalSystemMediaTransportControlsSession &player)
+void MprisControlPlugin::sendPlaybackInfo(const std::variant<NetworkPacket, QString> &packetOrName, const GlobalSystemMediaTransportControlsSession &player)
 {
     NetworkPacket np = packetOrName.index() == 0 ? std::get<0>(packetOrName) : NetworkPacket(PACKET_TYPE_MPRIS);
     if (packetOrName.index() == 1)
         np.set(QStringLiteral("player"), std::get<1>(packetOrName));
 
+    /** Media info **/
     QString title = i18n("N/A");
     QString artist = i18n("N/A");
     QString album = i18n("N/A");
@@ -111,20 +112,8 @@ void MprisControlPlugin::sendMediaProperties(const std::variant<NetworkPacket, Q
     np.set(QStringLiteral("albumArtUrl"), randomUrl());
 
     np.set(QStringLiteral("url"), QString());
-    sendTimelineProperties(np, player, true); // "length"
 
-    if (packetOrName.index() == 1)
-        sendPacket(np);
-}
-
-void MprisControlPlugin::sendPlaybackInfo(const std::variant<NetworkPacket, QString> &packetOrName, const GlobalSystemMediaTransportControlsSession &player)
-{
-    NetworkPacket np = packetOrName.index() == 0 ? std::get<0>(packetOrName) : NetworkPacket(PACKET_TYPE_MPRIS);
-    if (packetOrName.index() == 1)
-        np.set(QStringLiteral("player"), std::get<1>(packetOrName));
-
-    sendMediaProperties(np, player);
-
+    /** Playback info & controls **/
     auto playbackInfo = player.GetPlaybackInfo();
     auto playbackControls = playbackInfo.Controls();
 
@@ -135,14 +124,13 @@ void MprisControlPlugin::sendPlaybackInfo(const std::variant<NetworkPacket, QStr
     np.set(QStringLiteral("canGoPrevious"), playbackControls.IsPreviousEnabled());
     np.set(QStringLiteral("canSeek"), playbackControls.IsPlaybackPositionEnabled());
 
-    if (playbackInfo.IsShuffleActive()) {
-        const bool shuffleStatus = playbackInfo.IsShuffleActive().Value();
-        np.set(QStringLiteral("shuffle"), shuffleStatus);
+    if (auto shuffleStatus = playbackInfo.IsShuffleActive()) {
+        np.set(QStringLiteral("shuffle"), shuffleStatus.Value());
     }
 
-    if (playbackInfo.AutoRepeatMode()) {
+    if (auto repeatMode = playbackInfo.AutoRepeatMode()) {
         QString loopStatus;
-        switch (playbackInfo.AutoRepeatMode().Value()) {
+        switch (repeatMode.Value()) {
         case Windows::Media::MediaPlaybackAutoRepeatMode::List: {
             loopStatus = QStringLiteral("Playlist");
             break;
@@ -159,29 +147,10 @@ void MprisControlPlugin::sendPlaybackInfo(const std::variant<NetworkPacket, QStr
         np.set(QStringLiteral("loopStatus"), loopStatus);
     }
 
-    sendTimelineProperties(np, player);
-
-    if (packetOrName.index() == 1)
-        sendPacket(np);
-}
-
-void MprisControlPlugin::sendTimelineProperties(const std::variant<NetworkPacket, QString> &packetOrName,
-                                                const GlobalSystemMediaTransportControlsSession &player,
-                                                bool lengthOnly)
-{
-    NetworkPacket np = packetOrName.index() == 0 ? std::get<0>(packetOrName) : NetworkPacket(PACKET_TYPE_MPRIS);
-    if (packetOrName.index() == 1)
-        np.set(QStringLiteral("player"), std::get<1>(packetOrName));
-
+    /** Timeline properties **/
     auto timelineProperties = player.GetTimelineProperties();
-
-    if (!lengthOnly) {
-        const auto playbackInfo = player.GetPlaybackInfo();
-        const auto playbackControls = playbackInfo.Controls();
-        np.set(QStringLiteral("canSeek"), playbackControls.IsPlaybackPositionEnabled());
-        np.set(QStringLiteral("pos"),
-               std::chrono::duration_cast<std::chrono::milliseconds>(timelineProperties.Position() - timelineProperties.StartTime()).count());
-    }
+    np.set(QStringLiteral("pos"),
+           std::chrono::duration_cast<std::chrono::milliseconds>(timelineProperties.Position() - timelineProperties.StartTime()).count());
     np.set(QStringLiteral("length"),
            std::chrono::duration_cast<std::chrono::milliseconds>(timelineProperties.EndTime() - timelineProperties.StartTime()).count());
 
@@ -244,7 +213,7 @@ void MprisControlPlugin::updatePlayerList()
                 .MediaPropertiesChanged(auto_revoke,
                                         [this](GlobalSystemMediaTransportControlsSession player, MediaPropertiesChangedEventArgs args) {
                                             if (auto name = getPlayerName(player))
-                                                this->sendMediaProperties(name.value(), player);
+                                                this->sendPlaybackInfo(name.value(), player);
                                         })
                 .swap(mediaPropertiesChangedHandlers[i]);
             concurrency::create_task([this, player] {
@@ -252,14 +221,14 @@ void MprisControlPlugin::updatePlayerList()
                 std::this_thread::sleep_for(timespan);
 
                 if (auto name = getPlayerName(player))
-                    this->sendMediaProperties(name.value(), player);
+                    this->sendPlaybackInfo(name.value(), player);
             });
 
             player
                 .TimelinePropertiesChanged(auto_revoke,
                                            [this](GlobalSystemMediaTransportControlsSession player, TimelinePropertiesChangedEventArgs args) {
                                                if (auto name = getPlayerName(player))
-                                                   this->sendTimelineProperties(name.value(), player);
+                                                   this->sendPlaybackInfo(name.value(), player);
                                            })
                 .swap(timelinePropertiesChangedHandlers[i]);
             concurrency::create_task([this, player] {
@@ -267,7 +236,7 @@ void MprisControlPlugin::updatePlayerList()
                 std::this_thread::sleep_for(timespan);
 
                 if (auto name = getPlayerName(player))
-                    this->sendTimelineProperties(name.value(), player);
+                    this->sendPlaybackInfo(name.value(), player);
             });
         }
     } catch (winrt::hresult_error e) {
