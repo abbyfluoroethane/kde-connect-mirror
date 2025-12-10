@@ -20,6 +20,7 @@
 #include "interfaces/commandsmodel.h"
 #include "interfaces/devicesmodel.h"
 #include "interfaces/devicessortproxymodel.h"
+#include "interfaces/mobilevolumedbusinterface.h"
 #include "interfaces/notificationsmodel.h"
 #include "openconfig.h"
 #include "pointerlocker.h"
@@ -130,6 +131,7 @@ void KdeConnectDeclarativePlugin::registerTypes(const char *uri)
     registerFactory<ShareDbusInterface>(uri, "ShareDbusInterfaceFactory");
     registerFactory<RemoteSystemVolumeDbusInterface>(uri, "RemoteSystemVolumeDbusInterfaceFactory");
     registerFactory<VirtualmonitorDbusInterface>(uri, "VirtualmonitorDbusInterfaceFactory");
+    registerFactory<MobileVolumeDbusInterface>(uri, "MobileVolumeDbusInterfaceFactory");
 }
 
 void KdeConnectDeclarativePlugin::initializeEngine(QQmlEngine *engine, const char *uri)

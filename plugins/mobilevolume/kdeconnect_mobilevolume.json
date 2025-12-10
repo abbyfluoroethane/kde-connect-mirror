@@ -1,0 +1,30 @@
+{
+    "$schema": "../kdeconnect.schema.json",
+    "KPlugin": {
+        "Authors": [
+            {
+                "Email": "dhanajayan99@gmail.com",
+                "Name": "Dhanajayan Krishnamoorthi"
+            }
+        ],
+        "Description": "Control mobile device volume levels",
+        "EnabledByDefault": true,
+        "Icon": "multimedia-volume-control",
+        "License": "GPL-2.0-only OR GPL-3.0-only OR LicenseRef-KDE-Accepted-GPL",
+        "Name": "Mobile Volume"
+    },
+    "X-KdeConnect-SupportedPacketType": [
+        "kdeconnect.mobilevolume",
+        "kdeconnect.mobilevolume.request",
+        "kdeconnect.mobilevolume.response",
+        "kdeconnect.mobilevolume.streams",
+        "kdeconnect.mobilevolume.change"
+    ],
+    "X-KdeConnect-OutgoingPacketType": [
+        "kdeconnect.mobilevolume",
+        "kdeconnect.mobilevolume.request",
+        "kdeconnect.mobilevolume.response",
+        "kdeconnect.mobilevolume.streams",
+        "kdeconnect.mobilevolume.change"
+    ]
+}

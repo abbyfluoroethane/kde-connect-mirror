@@ -8,6 +8,9 @@ set(indicator_SRCS
     ${kdeconnect_custom_icons_SRCS}
     ${CMAKE_CURRENT_SOURCE_DIR}/systray_actions/battery_action.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/systray_actions/connectivity_action.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/systray_actions/volumedialog.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/systray_actions/volumedialog.h
+
 )
 
 include(ECMAddAppIcon)

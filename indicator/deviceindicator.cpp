@@ -7,15 +7,21 @@
 
 #include "deviceindicator.h"
 #include <KLocalizedString>
+#include <QDBusConnection>
+#include <QDBusInterface>
 #include <QDateTime>
+#include <QDebug>
 #include <QFileDialog>
 #include <QStandardPaths>
 
 #include "interfaces/dbusinterfaces.h"
+#include "systray_actions/volumedialog.h"
 
 #include <dbushelper.h>
 #include <dbushelpers.h>
 #include <systray_actions.h>
+
+#include "plugins/mobilevolume/mobilevolumeplugin.h"
 
 DeviceIndicator::DeviceIndicator(DeviceDbusInterface *device)
     : QMenu(device->name(), nullptr)
@@ -154,6 +160,59 @@ DeviceIndicator::DeviceIndicator(DeviceDbusInterface *device)
             }
         },
         this);
+
+    // Open mobile volume control
+    auto volumeControl = addAction(QIcon::fromTheme(QStringLiteral("audio-volume-high")), i18n("Volume Control"));
+    connect(volumeControl, &QAction::triggered, this, &DeviceIndicator::showVolumeDialog);
+
+    setWhenAvailable(
+        device->hasPlugin(QStringLiteral("kdeconnect_mobilevolume")),
+        [volumeControl](bool error, bool available) {
+            volumeControl->setVisible(available && !error);
+        },
+        this);
+}
+
+void DeviceIndicator::showVolumeDialog()
+{
+    qDebug() << "=== DEBUG: Checking MobileVolume Plugin ===";
+    qDebug() << "Device name:" << m_device->name();
+    qDebug() << "Device ID:" << m_device->id();
+
+    // Check all loaded plugins
+    QStringList plugins = m_device->loadedPlugins();
+    qDebug() << "All loaded plugins:" << plugins;
+
+    // Check if mobilevolume is available
+    bool hasPlugin = m_device->hasPlugin(QStringLiteral("kdeconnect_mobilevolume"));
+    qDebug() << "Has mobilevolume plugin:" << hasPlugin;
+
+    if (!hasPlugin) {
+        qWarning() << "MobileVolume plugin not found! Available plugins:" << plugins;
+        return;
+    }
+
+    // Check if the DBus service is available
+    QString dbusPath = QStringLiteral("/modules/kdeconnect/devices/") + m_device->id() + QStringLiteral("/mobilevolume");
+    QDBusConnection sessionBus = QDBusConnection::sessionBus();
+
+    if (!sessionBus.interface()->isServiceRegistered(QStringLiteral("org.kde.kdeconnect"))) {
+        qWarning() << "KDE Connect DBus service not available";
+        return;
+    }
+
+    // Create or show the volume dialog
+    if (!m_volumeDialog) {
+        m_volumeDialog = new VolumeDialog(m_device->id(), nullptr);
+        // Connect destroyed signal to reset pointer
+        connect(m_volumeDialog, &QObject::destroyed, this, [this]() {
+            m_volumeDialog = nullptr;
+        });
+    }
+
+    m_volumeDialog->show();
+    m_volumeDialog->raise();
+    m_volumeDialog->activateWindow();
 }
 
 #include "moc_deviceindicator.cpp"

@@ -1,0 +1,85 @@
+# Mobile Volume Plugin for KDE Connect
+
+## Overview
+
+The Mobile Volume Plugin allows you to control your Android device's audio volume levels directly from your KDE Connect desktop. It provides a graphical interface to adjust individual audio stream volumes (Media, Ringtone, Alarm, etc.) on your mobile device.
+
+## Features
+
+- **Volume Control**: Adjust individual audio stream volumes
+- **Real-time Updates**: Volume changes are reflected in real-time
+- **Multiple Stream Support**: Control various audio streams including:
+  - Voice Call
+  - System
+  - Ringtone/Notification
+  - Media
+  - Alarm
+  - Accessibility
+- **DBus Integration**: Full DBus interface for integration with other applications
+
+## Supported Packet Types
+
+- `kdeconnect.mobilevolume.request` - Request current volume status
+- `kdeconnect.mobilevolume.response` - Volume status response
+- `kdeconnect.mobilevolume.streams` - Detailed stream information
+- `kdeconnect.mobilevolume.change` - Volume change requests
+
+1. Enable the plugin in KDE Connect settings on both desktop and mobile
+
+## Usage
+
+1. **Open Volume Control**: Click on your device in the KDE Connect systray menu and select "Volume Control"
+2. **Adjust Volumes**: Use the sliders to adjust individual audio stream volumes
+3. **Real-time Feedback**: Volume changes are immediately applied to your mobile device
+
+## Architecture
+
+### Components
+
+1. **MobileVolumePlugin** (Desktop): Main plugin that handles packet communication
+2. **VolumeDialog** (Desktop): GUI for volume control
+3. **MobileVolumeDbusInterface** (Desktop): DBus interface for the plugin
+4. **Android Plugin**: Handles volume changes on the mobile device
+
+### Communication Flow
+
+1. Desktop requests volume information via `kdeconnect.mobilevolume.request`
+2. Android responds with detailed stream information via `kdeconnect.mobilevolume.streams`
+3. User adjusts volumes using sliders in VolumeDialog
+4. Desktop sends volume change requests via `kdeconnect.mobilevolume.change`
+5. Android applies volume changes and sends updated status
+
+## DBus Interface
+
+The plugin exposes the following DBus methods:
+
+- `sendVolumeChange(int stream, int value)` - Change volume for specific stream
+- `sendVolumeRequest()` - Request current volume status
+- `emitCurrentVolumes()` - Emit current volume values
+- `getStreamsInfo()` - Get detailed stream information
+
+## Signals
+
+- `volumeChanged(int stream, int volume)` - Emitted when volume changes
+- `streamsInfoReceived(const QString &streamsJson)` - Emitted when stream info is received
+
+### Adding New Stream Types
+
+1. Update the stream mapping in `mobilevolumeplugin.cpp`:
+   ```cpp
+   streamNames[STREAM_ID] = QStringLiteral("Stream Name");
+   ```
+2. Update the Android plugin to handle the new stream type
+3. Add UI controls in `VolumeDialog::createVolumeControls()`
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Plugin not loading**: Check if the plugin is enabled in KDE Connect settings
+2. **Volume changes not applied**: Verify both desktop and mobile plugins are enabled
+3. **UI not updating**: Check DBus connection and signal/slot connections
+
+## Authors
+
+- Dhanajayan Krishnamoorthi <dhanajayan99@gmail.com>

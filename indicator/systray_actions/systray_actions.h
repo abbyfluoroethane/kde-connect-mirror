@@ -8,4 +8,5 @@
 #define SYSTRAY_ACTIONS_H
 #include <battery_action.h>
 #include <connectivity_action.h>
+#include <volumedialog.h>
 #endif // SYSTRAY_ACTIONS_H

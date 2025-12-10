@@ -7,6 +7,7 @@
 #ifndef DEVICEINDICATOR_H
 #define DEVICEINDICATOR_H
 
+#include "systray_actions/volumedialog.h"
 #include <QMenu>
 
 class DeviceDbusInterface;
@@ -17,6 +18,7 @@ class DeviceIndicator : public QMenu
     Q_OBJECT
 public:
     DeviceIndicator(DeviceDbusInterface *device);
+    void showVolumeDialog();
 
 public Q_SLOTS:
     void setText(const QString &text)
@@ -27,6 +29,7 @@ public Q_SLOTS:
 private:
     DeviceDbusInterface *m_device;
     RemoteCommandsDbusInterface *m_remoteCommandsInterface;
+    VolumeDialog *m_volumeDialog = nullptr;
 };
 
 #endif // DEVICEINDICATOR_H
