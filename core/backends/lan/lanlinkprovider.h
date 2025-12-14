@@ -18,8 +18,10 @@
 #include "kdeconnectcore_export.h"
 #include "landevicelink.h"
 #include "server.h"
-#ifdef KDECONNECT_MDNS
-#include "mdnsdiscovery.h"
+#ifdef KDECONNECT_USE_AVAHI
+#include "avahidiscovery.h"
+#else
+#include "mdnshdiscovery.h"
 #endif
 
 class KDECONNECTCORE_EXPORT LanLinkProvider : public LinkProvider
@@ -103,8 +105,10 @@ private:
 
     bool m_disabled;
 
-#ifdef KDECONNECT_MDNS
-    MdnsDiscovery m_mdnsDiscovery;
+#ifdef KDECONNECT_USE_AVAHI
+    AvahiDiscovery m_mdnsDiscovery;
+#else
+    MdnshDiscovery m_mdnsDiscovery;
 #endif
 };
 
