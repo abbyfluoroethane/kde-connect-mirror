@@ -166,7 +166,7 @@ QStringList Daemon::linkProviders() const
     for (LinkProvider *a : std::as_const(d->m_linkProviders)) {
         QString line(a->displayName());
 
-        if (disabledLinkProviders.contains(a->name())) {
+        if (disabledLinkProviders.contains(a->displayName())) {
             line += QStringLiteral("|disabled");
         } else {
             line += QStringLiteral("|enabled");
