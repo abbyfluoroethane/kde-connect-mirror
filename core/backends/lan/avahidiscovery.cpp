@@ -15,6 +15,30 @@ const QString kAvahiDbusService = QStringLiteral("org.freedesktop.Avahi");
 
 const QString kKdeConnectServiceType = QStringLiteral("_kdeconnect._udp");
 
+void AvahiServiceBrowserDeleter::operator()(OrgFreedesktopAvahiServiceBrowserInterface *ptr) const
+{
+    if (ptr) {
+        auto freeReply = ptr->Free();
+        freeReply.waitForFinished();
+        if (freeReply.isError()) {
+            qCWarning(KDECONNECT_CORE) << "Avahi: Could not free browser:" << freeReply.error();
+        }
+        delete ptr;
+    }
+}
+
+void AvahiEntryGroupDeleter::operator()(OrgFreedesktopAvahiEntryGroupInterface *ptr) const
+{
+    if (ptr) {
+        auto freeReply = ptr->Free();
+        freeReply.waitForFinished();
+        if (freeReply.isError()) {
+            qCWarning(KDECONNECT_CORE) << "Avahi: Could not free entry group:" << freeReply.error();
+        }
+        delete ptr;
+    }
+}
+
 enum {
     AVAHI_SERVER_INVALID,
     AVAHI_SERVER_REGISTERING,
@@ -85,16 +109,15 @@ void AvahiDiscovery::startAnnouncing()
         qCWarning(KDECONNECT_CORE) << "Avahi: Could not create entry group:" << pathReply.error();
         return;
     }
-    m_entryGroupInterface = new OrgFreedesktopAvahiEntryGroupInterface(kAvahiDbusService, pathReply.value().path(), QDBusConnection::systemBus());
+    m_entryGroupInterface.reset(new OrgFreedesktopAvahiEntryGroupInterface(kAvahiDbusService, pathReply.value().path(), QDBusConnection::systemBus()));
 
     if (!m_entryGroupInterface->isValid()) {
         qCWarning(KDECONNECT_CORE) << "Avahi: Could not connect to entity group" << m_entryGroupInterface->lastError();
-        delete m_entryGroupInterface;
-        m_entryGroupInterface = nullptr;
+        m_entryGroupInterface.reset();
         return;
     }
 
-    connect(m_entryGroupInterface, &OrgFreedesktopAvahiEntryGroupInterface::StateChanged, this, [](int state, const QString &error) {
+    connect(m_entryGroupInterface.get(), &OrgFreedesktopAvahiEntryGroupInterface::StateChanged, this, [](int state, const QString &error) {
         if (state == AVAHI_ENTRY_GROUP_COLLISION) {
             qCWarning(KDECONNECT_CORE) << "Avahi: entry group collision" << error;
         } else if (state == AVAHI_ENTRY_GROUP_FAILURE) {
@@ -122,18 +145,14 @@ void AvahiDiscovery::startAnnouncing()
     addServiceReply.waitForFinished();
     if (addServiceReply.isError()) {
         qCWarning(KDECONNECT_CORE) << "Avahi: Could not add service:" << addServiceReply.error();
-        m_entryGroupInterface->Free();
-        delete m_entryGroupInterface;
-        m_entryGroupInterface = nullptr;
+        m_entryGroupInterface.reset();
         return;
     }
     auto commitReply = m_entryGroupInterface->Commit();
     commitReply.waitForFinished();
     if (commitReply.isError()) {
         qCWarning(KDECONNECT_CORE) << "Avahi: Could not commit service:" << commitReply.error();
-        m_entryGroupInterface->Free();
-        delete m_entryGroupInterface;
-        m_entryGroupInterface = nullptr;
+        m_entryGroupInterface.reset();
         return;
     }
     qCDebug(KDECONNECT_CORE) << "Avahi: Started announcing for device" << config.deviceId();
@@ -146,13 +165,7 @@ void AvahiDiscovery::stopAnnouncing()
         return;
     }
 
-    auto freeReply = m_entryGroupInterface->Free();
-    freeReply.waitForFinished();
-    if (freeReply.isError()) {
-        qCWarning(KDECONNECT_CORE) << "Avahi: Could not free entry group:" << freeReply.error();
-    }
-    delete m_entryGroupInterface;
-    m_entryGroupInterface = nullptr;
+    m_entryGroupInterface.reset();
     qCDebug(KDECONNECT_CORE) << "Avahi: Stopped announcing";
 }
 
@@ -180,16 +193,15 @@ void AvahiDiscovery::startDiscovering()
         return;
     }
 
-    m_serviceBrowserInterface = new OrgFreedesktopAvahiServiceBrowserInterface(kAvahiDbusService, pathReply.value().path(), QDBusConnection::systemBus());
+    m_serviceBrowserInterface.reset(new OrgFreedesktopAvahiServiceBrowserInterface(kAvahiDbusService, pathReply.value().path(), QDBusConnection::systemBus()));
 
     if (!m_serviceBrowserInterface->isValid()) {
         qCWarning(KDECONNECT_CORE) << "Avahi: Could not connect to browser interface" << m_serviceBrowserInterface->lastError();
-        delete m_serviceBrowserInterface;
-        m_serviceBrowserInterface = nullptr;
+        m_serviceBrowserInterface.reset();
         return;
     }
 
-    connect(m_serviceBrowserInterface,
+    connect(m_serviceBrowserInterface.get(),
             &OrgFreedesktopAvahiServiceBrowserInterface::ItemNew,
             this,
             [this](int interface, int protocol, const QString &name, const QString &type, const QString &domain) {
@@ -219,10 +231,10 @@ void AvahiDiscovery::startDiscovering()
                         qCDebug(KDECONNECT_CORE) << "Avahi: Discovered" << name << "at" << address;
                         lanLinkProvider->sendUdpIdentityPacket(QList<QHostAddress>{QHostAddress(address)});
                     },
-                    m_serviceBrowserInterface);
+                    m_serviceBrowserInterface.get());
             });
 
-    connect(m_serviceBrowserInterface, &OrgFreedesktopAvahiServiceBrowserInterface::Failure, this, [](const QString &error) {
+    connect(m_serviceBrowserInterface.get(), &OrgFreedesktopAvahiServiceBrowserInterface::Failure, this, [](const QString &error) {
         qCWarning(KDECONNECT_CORE) << "Avahi: discovery failure" << error;
     });
 
@@ -230,9 +242,7 @@ void AvahiDiscovery::startDiscovering()
     startReply.waitForFinished();
     if (startReply.isError()) {
         qCWarning(KDECONNECT_CORE) << "Avahi: could not start discovering" << startReply.error();
-        m_serviceBrowserInterface->Free();
-        delete m_serviceBrowserInterface;
-        m_serviceBrowserInterface = nullptr;
+        m_serviceBrowserInterface.reset();
         return;
     }
     qCDebug(KDECONNECT_CORE) << "Avahi: Started discovering";
@@ -245,13 +255,7 @@ void AvahiDiscovery::stopDiscovering()
         return;
     }
 
-    auto freeReply = m_serviceBrowserInterface->Free();
-    freeReply.waitForFinished();
-    if (freeReply.isError()) {
-        qCWarning(KDECONNECT_CORE) << "Avahi: Could not free browser:" << freeReply.error();
-    }
-    delete m_serviceBrowserInterface;
-    m_serviceBrowserInterface = nullptr;
+    m_serviceBrowserInterface.reset();
     qCDebug(KDECONNECT_CORE) << "Avahi: Stopped discovery";
 }
 

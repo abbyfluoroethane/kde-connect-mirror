@@ -7,6 +7,7 @@
 #pragma once
 
 #include <QObject>
+#include <memory>
 
 #include "kdeconnectcore_export.h"
 
@@ -15,6 +16,14 @@
 #include "generated/systeminterfaces/avahiservicerbrowser.h"
 
 class LanLinkProvider;
+
+struct AvahiServiceBrowserDeleter {
+    void operator()(OrgFreedesktopAvahiServiceBrowserInterface *ptr) const;
+};
+
+struct AvahiEntryGroupDeleter {
+    void operator()(OrgFreedesktopAvahiEntryGroupInterface *ptr) const;
+};
 
 class KDECONNECTCORE_EXPORT AvahiDiscovery : public QObject
 {
@@ -37,7 +46,7 @@ private:
     void stopDiscovering();
 
     OrgFreedesktopAvahiServer2Interface m_avahiServerInterface;
-    OrgFreedesktopAvahiServiceBrowserInterface *m_serviceBrowserInterface = nullptr;
-    OrgFreedesktopAvahiEntryGroupInterface *m_entryGroupInterface = nullptr;
+    std::unique_ptr<OrgFreedesktopAvahiServiceBrowserInterface, AvahiServiceBrowserDeleter> m_serviceBrowserInterface;
+    std::unique_ptr<OrgFreedesktopAvahiEntryGroupInterface, AvahiEntryGroupDeleter> m_entryGroupInterface;
     LanLinkProvider *lanLinkProvider;
 };
