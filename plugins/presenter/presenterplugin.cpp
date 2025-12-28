@@ -26,7 +26,8 @@ K_PLUGIN_CLASS_WITH_JSON(PresenterPlugin, "kdeconnect_presenter.json")
 class PresenterView : public QQuickView
 {
 public:
-    PresenterView()
+    PresenterView(const QString &filename)
+        : m_current(filename)
     {
         Qt::WindowFlags windowFlags = Qt::WindowFlags(Qt::WindowDoesNotAcceptFocus | Qt::WindowFullScreen | Qt::WindowStaysOnTopHint | Qt::FramelessWindowHint
                                                       | Qt::Tool | (int)(Qt::WA_TranslucentBackground));
@@ -37,13 +38,21 @@ public:
         setColor(QColor(Qt::transparent));
 
         setResizeMode(QQuickView::SizeViewToRootObject);
-        setSource(QUrl(QStringLiteral("qrc:/presenter/Presenter.qml")));
+        setSource(QUrl(QStringLiteral("qrc:/presenter/%1").arg(filename)));
 
         const auto ourErrors = errors();
         for (const auto &error : ourErrors) {
             qCWarning(KDECONNECT_PLUGIN_PRESENTER) << "error" << error.description() << error.url() << error.line() << error.column();
         }
     }
+
+    QString current() const
+    {
+        return m_current;
+    }
+
+private:
+    QString m_current;
 };
 
 PresenterPlugin::PresenterPlugin(QObject *parent, const QVariantList &args)
@@ -63,8 +72,13 @@ void PresenterPlugin::receivePacket(const NetworkPacket &np)
         return;
     }
 
+    const auto current = config()->getString(QStringLiteral("current"), QStringLiteral("PresenterRedDot.qml"));
+    if (m_view && m_view->current() != current) {
+        delete m_view;
+    }
+
     if (!m_view) {
-        m_view = new PresenterView;
+        m_view = new PresenterView(current);
         m_xPos = 0.5f;
         m_yPos = 0.5f;
         m_view->showFullScreen();

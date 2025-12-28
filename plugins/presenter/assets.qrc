@@ -2,6 +2,7 @@
 
 <RCC version="1.0">
 <qresource prefix="/presenter">
-    <file>Presenter.qml</file>
+    <file>PresenterRedDot.qml</file>
+    <file>PresenterElectric.qml</file>
 </qresource>
 </RCC>
