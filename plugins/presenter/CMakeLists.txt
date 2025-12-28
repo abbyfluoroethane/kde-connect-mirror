@@ -8,3 +8,5 @@ target_link_libraries(kdeconnect_presenter
     Qt::Quick
     KF6::I18n
 )
+
+install(FILES "kdeconnect_presenter_config.qml" DESTINATION ${KDE_INSTALL_DATADIR}/kdeconnect)
