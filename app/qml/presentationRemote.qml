@@ -36,7 +36,7 @@ Kirigami.Page
                 focus: true
                 Layout.fillWidth: true
                 icon.name: "media-skip-backward"
-                Accessible.name: "Previous Slide"
+                Accessible.name: i18nc("@action:button accessible", "Previous Slide")
                 onClicked: mousepad.pluginInterface.sendKeyPress("p");
                 KeyNavigation.right: forwardButton
             }
@@ -44,7 +44,7 @@ Kirigami.Page
                 id: forwardButton
                 Layout.fillWidth: true
                 icon.name: "media-skip-forward"
-                Accessible.name: "Next Slide"
+                Accessible.name: i18nc("@action:button accessible", "Next Slide")
                 onClicked: mousepad.pluginInterface.sendKeyPress("n");
             }
         }
