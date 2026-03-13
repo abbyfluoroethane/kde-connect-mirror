@@ -26,6 +26,7 @@ QtObject {
 
     readonly property bool charging: battery?.isCharging ?? false
     readonly property int charge: battery?.charge ?? -1
+    readonly property string iconName: battery?.iconName ?? "battery-missing-symbolic"
 
     readonly property string displayString: {
         if (available && charge > -1) {
@@ -40,35 +41,6 @@ QtObject {
     }
 
     property KDEConnect.BatteryDbusInterface battery
-
-    /**
-     * Suggests an icon name to use for the current battery level
-     */
-    readonly property string iconName: {
-        if (charge < 0) {
-            return "battery-missing-symbolic";
-        } else if (charge < 10) {
-            return charging
-                ? "battery-empty-charging-symbolic"
-                : "battery-empty-symbolic";
-        } else if (charge < 25) {
-            return charging
-                ? "battery-caution-charging-symbolic"
-                : "battery-caution-symbolic";
-        } else if (charge < 50) {
-            return charging
-                ? "battery-low-charging-symbolic"
-                : "battery-low-symbolic";
-        } else if (charge < 75) {
-            return charging
-                ? "battery-good-charging-symbolic"
-                : "battery-good-symbolic";
-        } else {
-            return charging
-                ? "battery-full-charging-symbolic"
-                : "battery-full-symbolic";
-        }
-    }
 
     onAvailableChanged: {
         if (available) {
