@@ -1,7 +1,6 @@
 {
     "KDE-KIO-Protocols": {
         "kdeconnect": {
-            "Class": ":local",
             "Icon": "kdeconnect",
             "copyFromFile": false,
             "copyToFile": false,
