@@ -22,6 +22,41 @@ class KIOPluginForMetaData : public QObject
     Q_PLUGIN_METADATA(IID "org.kde.kio.slave.kdeconnect" FILE "kdeconnect.json")
 };
 
+class KdeConnectUrl : public QUrl
+{
+public:
+    KdeConnectUrl(const QUrl &url)
+        : QUrl(url)
+    {
+    }
+
+    QString deviceId() const
+    {
+        return host();
+    }
+
+    QString storageDirectory() const
+    {
+        QString storageDir = path().section(QLatin1Char('/'), 0, 1).mid(1);
+        if (storageDir != QLatin1Char('/')) {
+            return storageDir;
+        } else {
+            return QString();
+        }
+    }
+
+    QString relativePath() const
+    {
+        QString relativePath = path();
+        const int secondSlashIdx = relativePath.indexOf(QLatin1Char('/'), 1);
+        if (secondSlashIdx != -1) {
+            return relativePath.mid(secondSlashIdx + 1);
+        } else {
+            return QString();
+        }
+    }
+};
+
 extern "C" int Q_DECL_EXPORT kdemain(int argc, char **argv)
 {
     QCoreApplication app(argc, argv);
@@ -65,9 +100,44 @@ KIO::WorkerResult handleDBusError(QDBusReply<T> &reply)
 }
 
 KioKdeconnect::KioKdeconnect(const QByteArray &pool, const QByteArray &app)
-    : WorkerBase("kdeconnect", pool, app)
+    : ForwardingWorkerBase("kdeconnect", pool, app)
     , m_dbusInterface(new DaemonDbusInterface(this))
 {
+}
+
+bool KioKdeconnect::rewriteUrl(const QUrl &url, QUrl &newUrl)
+{
+    const KdeConnectUrl kurl(url);
+    if (kurl.deviceId().isEmpty()) {
+        return false;
+    }
+
+    SftpDbusInterface interface(kurl.deviceId());
+
+    const auto directoriesReply = interface.getDirectories();
+    if (directoriesReply.isValid()) {
+        qCDebug(KDECONNECT_KIO) << "Error in DBus request:" << directoriesReply.error();
+        return false;
+    }
+
+    const auto directories = directoriesReply.value();
+    const QString storageDirectory = kurl.storageDirectory();
+
+    QString dirPath;
+    for (auto it = directories.begin(); it != directories.end(); ++it) {
+        // TODO Are storage names unique?
+        if (it.value().toString() == storageDirectory) {
+            dirPath = it.key();
+            break;
+        }
+    }
+
+    if (dirPath.isEmpty()) {
+        return false;
+    }
+
+    newUrl = QUrl::fromLocalFile(dirPath + QLatin1Char('/')).resolved(QUrl(kurl.relativePath()));
+    return true;
 }
 
 KIO::WorkerResult KioKdeconnect::listAllDevices()
@@ -179,8 +249,6 @@ KIO::WorkerResult KioKdeconnect::listDevice(const QString &device)
         entry.fastInsert(KIO::UDSEntry::UDS_ACCESS,
                          QFileDevice::ReadOwner | QFileDevice::ExeOwner | QFileDevice::ReadGroup | QFileDevice::ExeGroup | QFileDevice::ReadOther
                              | QFileDevice::ExeOther);
-        entry.fastInsert(KIO::UDSEntry::UDS_MIME_TYPE, QLatin1String(""));
-        entry.fastInsert(KIO::UDSEntry::UDS_URL, QUrl::fromLocalFile(path).toString());
         listEntry(entry);
     }
 
@@ -208,49 +276,74 @@ KIO::WorkerResult KioKdeconnect::listDir(const QUrl &url)
         return KIO::WorkerResult::fail(KIO::Error::ERR_WORKER_DEFINED, i18n("Could not contact background service."));
     }
 
-    QString currentDevice = url.host();
+    const KdeConnectUrl kurl(url);
 
-    if (currentDevice.isEmpty()) {
+    if (kurl.deviceId().isEmpty()) {
         return listAllDevices();
-    } else {
-        return listDevice(currentDevice);
     }
+
+    if (kurl.storageDirectory().isEmpty()) {
+        return listDevice(kurl.deviceId());
+    }
+
+    return KIO::ForwardingWorkerBase::listDir(url);
 }
 
 KIO::WorkerResult KioKdeconnect::stat(const QUrl &url)
 {
-    qCDebug(KDECONNECT_KIO) << "Stat: " << url;
+    qCDebug(KDECONNECT_KIO) << "Stat:" << url;
 
-    KIO::UDSEntry entry;
-    entry.fastInsert(KIO::UDSEntry::UDS_FILE_TYPE, QT_STAT_DIR);
+    const KdeConnectUrl kurl(url);
+    const QString currentDevice = kurl.deviceId();
 
-    QString currentDevice = url.host();
-    if (!currentDevice.isEmpty()) {
-        SftpDbusInterface interface(currentDevice);
+    KIO::UDSEntry dirEntry;
+    dirEntry.fastInsert(KIO::UDSEntry::UDS_FILE_TYPE, QT_STAT_DIR);
 
-        if (interface.isValid()) {
-            const QDBusReply<QString> mountPoint = interface.mountPoint();
-
-            if (!mountPoint.isValid()) {
-                return KIO::WorkerResult::fail(KIO::ERR_WORKER_DEFINED, i18n("Failed to get mount point: %1", mountPoint.error().message()));
-            } else {
-                entry.fastInsert(KIO::UDSEntry::UDS_LOCAL_PATH, mountPoint.value());
-            }
-
-            if (!interface.isMounted()) {
-                interface.mount();
-            }
-        }
+    if (currentDevice.isEmpty()) {
+        dirEntry.fastInsert(KIO::UDSEntry::UDS_DISPLAY_NAME, i18n("KDE Connect"));
+        dirEntry.fastInsert(KIO::UDSEntry::UDS_ICON_NAME, QStringLiteral("kdeconnect"));
+        statEntry(dirEntry);
+        return KIO::WorkerResult::pass();
     }
 
-    statEntry(entry);
+    SftpDbusInterface interface(currentDevice);
 
-    return KIO::WorkerResult::pass();
+    const QDBusReply<QString> mountPointReply = interface.mountPoint();
+    if (!mountPointReply.isValid()) {
+        return KIO::WorkerResult::fail(KIO::ERR_WORKER_DEFINED, i18n("Failed to get mount point: %1", mountPointReply.error().message()));
+    }
+
+    if (!interface.isMounted()) {
+        interface.mount();
+    }
+
+    if (kurl.storageDirectory().isEmpty()) {
+        DeviceDbusInterface interface(kurl.deviceId());
+        if (const QString deviceName = interface.name(); !deviceName.isEmpty()) {
+            dirEntry.fastInsert(KIO::UDSEntry::UDS_DISPLAY_NAME, deviceName);
+        }
+        dirEntry.fastInsert(KIO::UDSEntry::UDS_ICON_NAME, QStringLiteral("kdeconnect"));
+        statEntry(dirEntry);
+        return KIO::WorkerResult::pass();
+    }
+
+    if (kurl.relativePath().isEmpty()) {
+        statEntry(dirEntry);
+        return KIO::WorkerResult::pass();
+    }
+
+    return KIO::ForwardingWorkerBase::stat(url);
 }
 
 KIO::WorkerResult KioKdeconnect::get(const QUrl &url)
 {
-    qCDebug(KDECONNECT_KIO) << "Get: " << url;
+    qCDebug(KDECONNECT_KIO) << "Get:" << url;
+
+    const KdeConnectUrl kurl(url);
+    if (!kurl.deviceId().isEmpty() && !kurl.storageDirectory().isEmpty()) {
+        return KIO::ForwardingWorkerBase::get(url);
+    }
+
     mimeType(QLatin1String(""));
     return KIO::WorkerResult::pass();
 }

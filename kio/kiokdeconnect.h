@@ -9,16 +9,18 @@
 
 #include <QObject>
 
-#include <KIO/WorkerBase>
+#include <KIO/ForwardingWorkerBase>
 
 #include "dbusinterfaces.h"
 
-class KioKdeconnect : public QObject, public KIO::WorkerBase
+class KioKdeconnect : public KIO::ForwardingWorkerBase
 {
     Q_OBJECT
 
 public:
     KioKdeconnect(const QByteArray &pool, const QByteArray &app);
+
+    bool rewriteUrl(const QUrl &url, QUrl &newUrl) override;
 
     KIO::WorkerResult get(const QUrl &url) override;
     KIO::WorkerResult listDir(const QUrl &url) override;
