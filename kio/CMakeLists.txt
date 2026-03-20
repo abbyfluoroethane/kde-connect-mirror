@@ -18,3 +18,5 @@ target_link_libraries(kio_kdeconnect
     KF6::KIOCore
     KF6::I18n
 )
+
+install(FILES kdeconnect-network.desktop  DESTINATION ${KDE_INSTALL_DATADIR}/remoteview)
