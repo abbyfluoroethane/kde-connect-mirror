@@ -234,9 +234,17 @@ KIO::WorkerResult KioKdeconnect::listDevice(const QString &device)
         return result;
     }
 
-    QVariantMap urls = urlreply.value();
+    const QVariantMap urls = urlreply.value();
 
-    for (QVariantMap::iterator it = urls.begin(); it != urls.end(); ++it) {
+    // If there is only a single storage location, redirect into it.
+    if (urls.size() == 1) {
+        const QUrl storageUrl(QStringLiteral("kdeconnect://%1/%2/").arg(device, urls.begin().value().toString()));
+        qCDebug(KDECONNECT_KIO) << "Single storage found on" << device << "redirecting to" << storageUrl;
+        redirection(storageUrl);
+        return KIO::WorkerResult::pass();
+    }
+
+    for (auto it = urls.begin(); it != urls.end(); ++it) {
         const QString path = it.key();
         const QString name = it.value().toString();
         const QString icon = QStringLiteral("folder");
