@@ -20,3 +20,4 @@ target_link_libraries(kio_kdeconnect
 )
 
 install(FILES kdeconnect-network.desktop  DESTINATION ${KDE_INSTALL_DATADIR}/remoteview)
+install(FILES solid_kdeconnect.desktop DESTINATION ${KDE_INSTALL_DATADIR}/solid/actions)

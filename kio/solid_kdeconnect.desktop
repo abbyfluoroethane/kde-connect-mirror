@@ -1,0 +1,9 @@
+[Desktop Entry]
+X-KDE-Solid-Predicate=PortableMediaPlayer.supportedProtocols == 'kdeconnect'
+Type=Service
+Actions=open;
+
+[Desktop Action open]
+Exec=kioclient exec kdeconnect://%j/
+Icon=system-file-manager
+Name=Browse Files with File Manager
