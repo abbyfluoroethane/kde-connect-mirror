@@ -97,6 +97,9 @@ int main(int argc, char *argv[])
         QQuickStyle::setStyle(QStringLiteral("org.kde.desktop"));
     }
 
+    // Don't have Solid backend talk to ourself.
+    qputenv("SOLID_DISABLE_KDECONNECT", "1");
+
     KCrash::initialize();
 
     QCommandLineParser parser;
