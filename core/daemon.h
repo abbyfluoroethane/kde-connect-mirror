@@ -50,6 +50,7 @@ public:
     void setCustomDevices(const QStringList &addresses);
 
     Q_SCRIPTABLE QString selfId() const;
+
 public Q_SLOTS:
     Q_SCRIPTABLE void forceOnNetworkChange();
 
