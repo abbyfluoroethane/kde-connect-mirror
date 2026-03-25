@@ -6,6 +6,8 @@
 
 #include "batteryplugin.h"
 
+#include <QCoreApplication>
+
 #include <KLocalizedString>
 #include <KPluginFactory>
 
@@ -138,6 +140,12 @@ void BatteryPlugin::receivePacket(const NetworkPacket &np)
     Q_EMIT refreshed(m_isCharging, m_charge);
 
     if (thresholdEvent == ThresholdBatteryLow && !m_isCharging) {
+        static const bool s_plasma = QStringView(qEnvironmentVariable("XDG_CURRENT_DESKTOP")).split(QLatin1Char(';')).contains(QLatin1String("KDE"));
+        // Disabled because Solid takes care of showing a similar notification already
+        if (s_plasma && QCoreApplication::instance()->property("_kde_solid_has_kdeconnect_backend").toBool()) {
+            return;
+        }
+
         Daemon::instance()->sendSimpleNotification(QStringLiteral("batteryLow"),
                                                    i18nc("device name: low battery", "%1: Low Battery", device()->name()),
                                                    i18n("Battery at %1%", m_charge),

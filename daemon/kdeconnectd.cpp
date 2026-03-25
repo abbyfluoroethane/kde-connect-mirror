@@ -68,6 +68,9 @@ int main(int argc, char *argv[])
     // kdeconnectd is autostarted, so disable session management to speed up startup
     QCoreApplication::setAttribute(Qt::AA_DisableSessionManager);
 
+    // Don't have Solid backend talk to ourself.
+    qputenv("SOLID_DISABLE_KDECONNECT", "1");
+
     QApplication app(argc, argv);
     KAboutData aboutData(QStringLiteral("kdeconnect.daemon"),
                          i18n("KDE Connect Daemon"),
@@ -96,9 +99,6 @@ int main(int argc, char *argv[])
     if (qEnvironmentVariableIsEmpty("QT_QUICK_CONTROLS_STYLE")) {
         QQuickStyle::setStyle(QStringLiteral("org.kde.desktop"));
     }
-
-    // Don't have Solid backend talk to ourself.
-    qputenv("SOLID_DISABLE_KDECONNECT", "1");
 
     KCrash::initialize();
 
