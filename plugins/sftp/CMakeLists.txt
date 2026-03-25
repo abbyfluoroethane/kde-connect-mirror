@@ -22,4 +22,5 @@ target_link_libraries(kdeconnect_sftp
     KF6::KIOFileWidgets
     KF6::KIOWidgets
     KF6::Notifications
+    KF6::Solid
 )
