@@ -42,6 +42,19 @@ void SftpPlugin::addToDolphin()
 {
     removeFromDolphin();
 
+    static bool s_hasSolidBackend = [] {
+        // Iniitalize solid.
+        const auto notifier = Solid::DeviceNotifier::instance();
+        Q_UNUSED(notifier);
+
+        return QCoreApplication::instance()->property("_kde_solid_has_kdeconnect_backend").toBool();
+    }();
+
+    if (s_hasSolidBackend) {
+        qCDebug(KDECONNECT_PLUGIN_SFTP) << "not adding to dolphin, Solid KDE Connect backend available";
+        return;
+    }
+
     QUrl kioUrl(QStringLiteral("kdeconnect://") + deviceId + QStringLiteral("/"));
     m_placesModel.addPlace(device()->name(), kioUrl, QStringLiteral("kdeconnect"));
     qCDebug(KDECONNECT_PLUGIN_SFTP) << "add to dolphin";
