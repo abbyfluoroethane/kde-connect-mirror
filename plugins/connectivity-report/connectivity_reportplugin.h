@@ -52,7 +52,7 @@ public:
      * Suggests an icon name to use for the current signal level.
      *
      * Returns names which correspond to Plasma Framework's network.svg:
-     * https://invent.kde.org/frameworks/plasma-framework/-/blob/master/src/desktoptheme/breeze/icons/network.svg
+     * https://invent.kde.org/plasma/libplasma/-/blob/master/src/desktoptheme/breeze/icons/network.svg
      */
     QString iconName() const;
 
