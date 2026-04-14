@@ -98,7 +98,8 @@ int main(int argc, char **argv)
     auto refreshMenu = [&iface, &proxyModel, &menu]() {
         menu->clear();
         // Note: This is needed on macOS since a single click on the icon doesn't open the app like on other platforms.
-        menu->addAction(i18n("Open app"), []() {
+        auto *openAction = menu->addAction(i18n("Open app"));
+        QObject::connect(openAction, &QAction::triggered, nullptr, []() {
             OpenConfig oc;
             oc.openConfiguration();
         });
@@ -156,7 +157,7 @@ int main(int argc, char **argv)
     QObject::connect(&model, &DevicesModel::rowsChanged, &model, [&systray, &model]() {
         systray.setToolTip(i18np("%1 device connected", "%1 devices connected", model.rowCount()));
     });
-    QObject::connect(&systray, &QSystemTrayIcon::activated, [](QSystemTrayIcon::ActivationReason reason) {
+    QObject::connect(&systray, &QSystemTrayIcon::activated, &systray, [](QSystemTrayIcon::ActivationReason reason) {
         if (reason == QSystemTrayIcon::Trigger) {
             OpenConfig oc;
             oc.openConfiguration();
