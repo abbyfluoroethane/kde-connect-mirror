@@ -216,7 +216,7 @@ int Discoverer::listenForQueryResponses()
     // Start listening on all sockets
     for (int socket : std::as_const(sockets)) {
         QSocketNotifier *socketNotifier = new QSocketNotifier(socket, QSocketNotifier::Read);
-        QObject::connect(socketNotifier, &QSocketNotifier::activated, [this](QSocketDescriptor socket) {
+        QObject::connect(socketNotifier, &QSocketNotifier::activated, this, [this](QSocketDescriptor socket) {
             MdnsService discoveredService;
 
             static char buffer[2048];
@@ -609,7 +609,7 @@ int Announcer::listenForQueries()
         int socket = mdns_socket_open_ipv4(&sock_addr);
         if (socket >= 0) {
             socketNotifier = new QSocketNotifier(socket, QSocketNotifier::Read);
-            QObject::connect(socketNotifier, &QSocketNotifier::activated, callback);
+            QObject::connect(socketNotifier, &QSocketNotifier::activated, this, callback);
             numSockets++;
         }
     }
@@ -626,7 +626,7 @@ int Announcer::listenForQueries()
         int socket = mdns_socket_open_ipv6(&sock_addr);
         if (socket >= 0) {
             socketNotifierV6 = new QSocketNotifier(socket, QSocketNotifier::Read);
-            QObject::connect(socketNotifierV6, &QSocketNotifier::activated, callback);
+            QObject::connect(socketNotifierV6, &QSocketNotifier::activated, this, callback);
             numSockets++;
         }
     }

@@ -247,7 +247,7 @@ void RemoteDesktopSession::handleXdpSessionStarted(uint code, const QVariantMap 
     KConfigGroup stateConfig = KSharedConfig::openStateConfig()->group(QStringLiteral("mousepad"));
     stateConfig.writeEntry(QStringLiteral("RestoreToken"), results[QStringLiteral("restore_token")].toString());
     auto call = iface->ConnectToEIS(m_xdpPath, {});
-    connect(new QDBusPendingCallWatcher(call), &QDBusPendingCallWatcher::finished, [this](QDBusPendingCallWatcher *watcher) {
+    connect(new QDBusPendingCallWatcher(call), &QDBusPendingCallWatcher::finished, this, [this](QDBusPendingCallWatcher *watcher) {
         watcher->deleteLater();
         QDBusReply<QDBusUnixFileDescriptor> reply = *watcher;
         if (!reply.isValid()) {
