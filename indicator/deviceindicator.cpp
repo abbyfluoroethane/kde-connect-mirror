@@ -148,7 +148,7 @@ DeviceIndicator::DeviceIndicator(DeviceDbusInterface *device)
                 const QJsonObject cont = it->toObject();
                 QString key = it.key();
                 QAction *action = remoteCommandsMenu->addAction(cont.value(QStringLiteral("name")).toString());
-                connect(action, &QAction::triggered, [this, key] {
+                connect(action, &QAction::triggered, this, [this, key] {
                     m_remoteCommandsInterface->triggerCommand(key);
                 });
             }

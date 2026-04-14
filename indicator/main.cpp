@@ -98,7 +98,7 @@ int main(int argc, char **argv)
     auto refreshMenu = [&iface, &proxyModel, &menu]() {
         menu->clear();
         // Note: This is needed on macOS since a single click on the icon doesn't open the app like on other platforms.
-        menu->addAction(i18n("Open app"), []() {
+        menu->addAction(i18n("Open app"), nullptr, []() {
             OpenConfig oc;
             oc.openConfiguration();
         });
@@ -126,7 +126,7 @@ int main(int argc, char **argv)
         }
         // Add quit menu
 #if defined(Q_OS_MAC)
-        menu->addAction(i18n("Quit"), []() {
+        menu->addAction(i18n("Quit"), qApp, []() {
             auto message = QDBusMessage::createMethodCall(QStringLiteral("org.kde.kdeconnect.daemon"),
                                                           QStringLiteral("/MainApplication"),
                                                           QStringLiteral("org.qtproject.Qt.QCoreApplication"),
@@ -135,9 +135,7 @@ int main(int argc, char **argv)
             qApp->quit();
         });
 #elif defined(Q_OS_WIN)
-        menu->addAction(QIcon::fromTheme(QStringLiteral("application-exit")), i18n("Quit"), []() {
-            qApp->quit();
-        });
+        menu->addAction(QIcon::fromTheme(QStringLiteral("application-exit")), i18n("Quit"), qApp, &QApplication::quit);
 #endif
     };
 
@@ -156,7 +154,7 @@ int main(int argc, char **argv)
     QObject::connect(&model, &DevicesModel::rowsChanged, &model, [&systray, &model]() {
         systray.setToolTip(i18np("%1 device connected", "%1 devices connected", model.rowCount()));
     });
-    QObject::connect(&systray, &QSystemTrayIcon::activated, [](QSystemTrayIcon::ActivationReason reason) {
+    QObject::connect(&systray, &QSystemTrayIcon::activated, &systray, [](QSystemTrayIcon::ActivationReason reason) {
         if (reason == QSystemTrayIcon::Trigger) {
             OpenConfig oc;
             oc.openConfiguration();

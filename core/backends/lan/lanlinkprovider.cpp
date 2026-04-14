@@ -81,7 +81,7 @@ LanLinkProvider::LanLinkProvider(bool testMode, bool isDisabled)
 
     m_udpSocket.setProxy(QNetworkProxy::NoProxy);
 
-    connect(&m_udpSocket, &QAbstractSocket::errorOccurred, [](QAbstractSocket::SocketError socketError) {
+    connect(&m_udpSocket, &QAbstractSocket::errorOccurred, nullptr, [](QAbstractSocket::SocketError socketError) {
         qWarning() << "Error sending UDP packet:" << socketError;
     });
 
@@ -562,7 +562,7 @@ void LanLinkProvider::tcpPacketReceived()
 
     qCDebug(KDECONNECT_CORE) << "Starting client ssl (but I'm the server TCP socket)";
 
-    connect(socket, &QSslSocket::encrypted, [this, socket, np]() {
+    connect(socket, &QSslSocket::encrypted, this, [this, socket, np]() {
         encrypted(socket, np);
     });
 

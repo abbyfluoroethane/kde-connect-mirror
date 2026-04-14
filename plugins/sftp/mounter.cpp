@@ -190,7 +190,7 @@ void Mounter::unmount(bool finished)
 
             auto proc = m_proc;
             m_proc = nullptr;
-            connect(proc, &QProcess::finished, [proc]() {
+            connect(proc, &QProcess::finished, proc, [proc]() {
                 qCDebug(KDECONNECT_PLUGIN_SFTP) << "Free" << proc;
                 proc->deleteLater();
             });
