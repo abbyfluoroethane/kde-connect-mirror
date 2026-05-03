@@ -87,9 +87,10 @@ LanLinkProvider::LanLinkProvider(bool testMode, bool isDisabled)
 
     const auto checkNetworkChange = [this]() {
         if (QNetworkInformation::instance()->reachability() == QNetworkInformation::Reachability::Disconnected) {
-            disable();
+            for (LanDeviceLink *dl : m_links.values()) {
+                dl->deleteLater();
+            }
         } else {
-            enable();
             onNetworkChange();
         }
     };
