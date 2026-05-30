@@ -10,6 +10,7 @@
 #include <QHostAddress>
 #include <QObject>
 #include <QString>
+#include <qtmetamacros.h>
 
 #include "backends/devicelink.h"
 #include "deviceinfo.h"
@@ -108,6 +109,9 @@ public Q_SLOTS:
     /// virtual for testing purposes.
     virtual bool sendPacket(NetworkPacket &np);
 
+    // reacts to ACK packets.
+    void onAckReceived(const NetworkPacket &np);
+
     // Dbus operations
 public Q_SLOTS:
     Q_SCRIPTABLE void requestPairing();
@@ -116,6 +120,7 @@ public Q_SLOTS:
 
     Q_SCRIPTABLE void acceptPairing();
     Q_SCRIPTABLE void cancelPairing();
+    Q_SCRIPTABLE bool acknowledge();
 
     Q_SCRIPTABLE QString pluginIconName(const QString &pluginName);
 private Q_SLOTS:
@@ -136,6 +141,8 @@ Q_SIGNALS:
     Q_SCRIPTABLE void nameChanged(const QString &name);
     Q_SCRIPTABLE void typeChanged(const QString &type);
     Q_SCRIPTABLE void statusIconNameChanged();
+    Q_SCRIPTABLE void ackReceived(const NetworkPacket &np);
+    Q_SCRIPTABLE void acknowledged(); // Emitted when an ACK packet is received with the acknowledged flag set to true.
 
 private:
     void init();

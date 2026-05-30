@@ -50,6 +50,7 @@ public:
     QMultiMap<QString, KdeConnectPlugin *> m_pluginsByIncomingCapability;
     QSet<QString> m_supportedPlugins;
     PairingHandler *m_pairingHandler;
+    QTimer m_ackTimer;
 };
 
 Device::Device(QObject *parent, const QString &id)
@@ -81,10 +82,22 @@ void Device::init()
     connect(this, &Device::pairStateChanged, this, &Device::statusIconNameChanged);
     connect(this, &Device::typeChanged, this, &Device::statusIconNameChanged);
 
+    connect(this, &Device::ackReceived, this, &Device::onAckReceived);
+    connect(&d->m_ackTimer, &QTimer::timeout, this, [this]() {
+        qCDebug(KDECONNECT_CORE) << "ACK timed out, device" << name() << "is unreachable";
+        for (DeviceLink *dl : std::as_const(d->m_deviceLinks)) {
+            removeLink(dl);
+        }
+    });
+
     connect(d->m_pairingHandler, &PairingHandler::incomingPairRequest, this, &Device::pairingHandler_incomingPairRequest);
     connect(d->m_pairingHandler, &PairingHandler::pairingFailed, this, &Device::pairingHandler_pairingFailed);
     connect(d->m_pairingHandler, &PairingHandler::pairingSuccessful, this, &Device::pairingHandler_pairingSuccessful);
     connect(d->m_pairingHandler, &PairingHandler::unpaired, this, &Device::pairingHandler_unpaired);
+
+    d->m_ackTimer.setParent(this);
+    d->m_ackTimer.setInterval(3000);
+    d->m_ackTimer.setSingleShot(true);
 }
 
 Device::~Device()
@@ -371,10 +384,29 @@ bool Device::sendPacket(NetworkPacket &np)
     return false;
 }
 
+bool Device::acknowledge()
+{
+    if (d->m_ackTimer.isActive()) {
+        return true; // Already waiting for an ACK.
+    }
+
+    NetworkPacket np(PACKET_TYPE_ACK, {{QStringLiteral("acknowledging"), true}});
+
+    if (sendPacket(np)) {
+        d->m_ackTimer.start();
+        return true;
+    }
+
+    return false; // So the caller (e.g. the plugin) can know that acknowledging is not supported.
+}
+
 void Device::privateReceivedPacket(const NetworkPacket &np)
 {
     if (np.type() == PACKET_TYPE_PAIR) {
         d->m_pairingHandler->packetReceived(np);
+    } else if (np.type() == PACKET_TYPE_ACK) {
+        qCDebug(KDECONNECT_CORE) << "Received ACK from" << name();
+        Q_EMIT ackReceived(np);
     } else if (isPaired()) {
         const QList<KdeConnectPlugin *> plugins = d->m_pluginsByIncomingCapability.values(np.type());
         if (plugins.isEmpty()) {
@@ -391,6 +423,19 @@ void Device::privateReceivedPacket(const NetworkPacket &np)
     } else {
         qCDebug(KDECONNECT_CORE) << "device" << name() << "not paired, ignoring packet" << np.type();
         unpair();
+    }
+}
+
+void Device::onAckReceived(const NetworkPacket &np)
+{
+    if (np.get<bool>(QStringLiteral("acknowledging"))) {
+        NetworkPacket reply(PACKET_TYPE_ACK, {{QStringLiteral("acknowledged"), true}});
+        sendPacket(reply);
+    } else if (np.get<bool>(QStringLiteral("acknowledged"))) {
+        d->m_ackTimer.stop();
+        Q_EMIT acknowledged(); // Any plugin can ACK the device, use Qt::SingleShotConnection to avoid reacting to other plugins ACKs.
+    } else {
+        qCDebug(KDECONNECT_CORE) << "Received invalid ACK packet from" << name();
     }
 }
 
