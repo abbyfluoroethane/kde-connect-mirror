@@ -64,6 +64,11 @@ bool KdeConnectPlugin::sendPacket(NetworkPacket &np) const
     return d->m_device->sendPacket(np);
 }
 
+bool KdeConnectPlugin::ackDevice() const
+{
+    return d->m_device->acknowledge();
+}
+
 QString KdeConnectPlugin::dbusPath() const
 {
     return {};
