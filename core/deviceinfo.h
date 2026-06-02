@@ -118,6 +118,8 @@ struct DeviceInfo {
         , incomingCapabilities(incomingCapabilities)
         , outgoingCapabilities(outgoingCapabilities)
     {
+        this->incomingCapabilities += internalCapabilities();
+        this->outgoingCapabilities += internalCapabilities();
     }
 
     NetworkPacket toIdentityPacket()
@@ -127,8 +129,8 @@ struct DeviceInfo {
         np.set(QStringLiteral("deviceName"), name);
         np.set(QStringLiteral("deviceType"), type.toString());
         np.set(QStringLiteral("protocolVersion"), protocolVersion);
-        np.set(QStringLiteral("incomingCapabilities"), incomingCapabilities.unite(internalCapabilities()).values());
-        np.set(QStringLiteral("outgoingCapabilities"), outgoingCapabilities.unite(internalCapabilities()).values());
+        np.set(QStringLiteral("incomingCapabilities"), incomingCapabilities.values());
+        np.set(QStringLiteral("outgoingCapabilities"), outgoingCapabilities.values());
         return np;
     }
 
