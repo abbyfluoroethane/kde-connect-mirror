@@ -127,8 +127,8 @@ struct DeviceInfo {
         np.set(QStringLiteral("deviceName"), name);
         np.set(QStringLiteral("deviceType"), type.toString());
         np.set(QStringLiteral("protocolVersion"), protocolVersion);
-        np.set(QStringLiteral("incomingCapabilities"), incomingCapabilities.values());
-        np.set(QStringLiteral("outgoingCapabilities"), outgoingCapabilities.values());
+        np.set(QStringLiteral("incomingCapabilities"), incomingCapabilities.unite(internalCapabilities()).values());
+        np.set(QStringLiteral("outgoingCapabilities"), outgoingCapabilities.unite(internalCapabilities()).values());
         return np;
     }
 
@@ -163,6 +163,17 @@ struct DeviceInfo {
     {
         static const QRegularExpression DEVICE_ID_REGEX(QStringLiteral("^[a-zA-Z0-9_-]{32,38}$"));
         return DEVICE_ID_REGEX.match(deviceId).hasMatch();
+    }
+
+    // Capabilities that will be added to the incoming/outgoing capabilities but don't belong to any plugin.
+    static QSet<QString> internalCapabilities()
+    {
+        return {PACKET_TYPE_ACK};
+    }
+
+    static bool isInternalPacket(const QString &type)
+    {
+        return internalCapabilities().contains(type);
     }
 };
 

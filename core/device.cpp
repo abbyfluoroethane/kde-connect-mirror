@@ -21,6 +21,7 @@
 #include "core_debug.h"
 #include "daemon.h"
 #include "dbushelper.h"
+#include "deviceinfo.h"
 #include "kdeconnectconfig.h"
 #include "kdeconnectplugin.h"
 #include "networkpacket.h"
@@ -370,7 +371,7 @@ bool Device::sendPacket(NetworkPacket &np)
 {
     Q_ASSERT(isPaired() || np.type() == PACKET_TYPE_PAIR);
 
-    if (!(np.isProtocolPacket() || d->m_deviceInfo.incomingCapabilities.contains(np.type()))) {
+    if (!(np.isProtocolPacket() || DeviceInfo::isInternalPacket(np.type()) || d->m_deviceInfo.incomingCapabilities.contains(np.type()))) {
         qCDebug(KDECONNECT_CORE) << metaObject()->className() << "Tried to send an unsupported packet type" << np.type() << "to:" << d->m_deviceInfo.name;
         return false;
     }
