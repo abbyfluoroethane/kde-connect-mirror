@@ -296,6 +296,10 @@ void RemoteDesktopSession::handleEiEvents()
             auto device = ei_event_get_device(event);
             if (ei_device_has_capability(device, EI_DEVICE_CAP_KEYBOARD) && !m_keyboard) {
                 auto keymap = ei_device_keyboard_get_keymap(device);
+                if (!keymap) {
+                    qCWarning(KDECONNECT_PLUGIN_MOUSEPAD) << "No keymap from EIS server, skipping keyboard";
+                    break;
+                }
                 if (ei_keymap_get_type(keymap) != EI_KEYMAP_TYPE_XKB) {
                     break;
                 }
@@ -325,7 +329,12 @@ void RemoteDesktopSession::handleEiEvents()
         case EI_EVENT_DEVICE_PAUSED:
             break;
         case EI_EVENT_DEVICE_RESUMED:
+        case EI_EVENT_DEVICE_START_EMULATING:
+            m_eiEmulating = true;
             ei_device_start_emulating(ei_event_get_device(event), 0);
+            break;
+        case EI_EVENT_DEVICE_STOP_EMULATING:
+            m_eiEmulating = false;
             break;
 
         case EI_EVENT_FRAME:
@@ -338,8 +347,6 @@ void RemoteDesktopSession::handleEiEvents()
         case EI_EVENT_SCROLL_CANCEL:
         case EI_EVENT_KEYBOARD_MODIFIERS:
         case EI_EVENT_KEYBOARD_KEY:
-        case EI_EVENT_DEVICE_START_EMULATING:
-        case EI_EVENT_DEVICE_STOP_EMULATING:
         case EI_EVENT_TOUCH_DOWN:
         case EI_EVENT_TOUCH_MOTION:
         case EI_EVENT_TOUCH_UP:
@@ -354,6 +361,7 @@ void RemoteDesktopSession::handleXdpSessionFinished(uint /*code*/, const QVarian
 {
     m_xdpPath = {};
     m_eiNotifier.setEnabled(false);
+    m_eiEmulating = false;
     ei_unref(m_ei);
     m_pointer = nullptr;
     m_keyboard = nullptr;

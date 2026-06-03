@@ -50,6 +50,7 @@ private:
     QSocketNotifier m_eiNotifier;
     std::unique_ptr<Xkb> m_xkb;
     ei *m_ei = nullptr;
+    bool m_eiEmulating = false;
     ei_device *m_keyboard = nullptr;
     ei_device *m_pointer = nullptr;
     ei_device *m_absolutePointer = nullptr;
