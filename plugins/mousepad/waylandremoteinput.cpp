@@ -128,8 +128,8 @@ RemoteDesktopSession::RemoteDesktopSession()
 
 void RemoteDesktopSession::createSession()
 {
-    if (isValid()) {
-        qCDebug(KDECONNECT_PLUGIN_MOUSEPAD) << "pass, already created";
+    if (isValid() || m_connecting) {
+        qCDebug(KDECONNECT_PLUGIN_MOUSEPAD) << "pass, already created or connecting";
         return;
     }
 
@@ -242,20 +242,17 @@ void RemoteDesktopSession::handleXdpSessionConfigured(uint code, const QVariantM
 
 void RemoteDesktopSession::handleXdpSessionStarted(uint code, const QVariantMap &results)
 {
-    Q_UNUSED(code);
+    Q_UNUSED(results);
+    if (code != 0) {
+        qCWarning(KDECONNECT_PLUGIN_MOUSEPAD) << "Failed to start session with code" << code;
+        m_connecting = false;
+        return;
+    }
 
-    KConfigGroup stateConfig = KSharedConfig::openStateConfig()->group(QStringLiteral("mousepad"));
-    stateConfig.writeEntry(QStringLiteral("RestoreToken"), results[QStringLiteral("restore_token")].toString());
-    auto call = iface->ConnectToEIS(m_xdpPath, {});
-    connect(new QDBusPendingCallWatcher(call), &QDBusPendingCallWatcher::finished, this, [this](QDBusPendingCallWatcher *watcher) {
-        watcher->deleteLater();
-        QDBusReply<QDBusUnixFileDescriptor> reply = *watcher;
-        if (!reply.isValid()) {
-            qCWarning(KDECONNECT_PLUGIN_MOUSEPAD) << "Error connecting to eis" << reply.error();
-            return;
-        }
-        connectToEi(reply.value().takeFileDescriptor());
-    });
+    // Use D-Bus Notify* calls for input injection instead of ConnectToEIS.
+    // After ConnectToEIS, the frontend portal sets uses_eis=true, which causes
+    // check_notify() to reject all subsequent D-Bus NotifyPointer* calls.
+    m_connecting = false;
 }
 
 void RemoteDesktopSession::connectToEi(int fd)
@@ -362,68 +359,35 @@ void RemoteDesktopSession::handleXdpSessionFinished(uint /*code*/, const QVarian
 
 void RemoteDesktopSession::pointerButton(int button, bool down)
 {
-    if (m_ei && m_pointer) {
-        ei_device_button_button(m_pointer, button, down);
-        ei_device_frame(m_pointer, ei_now(m_ei));
-    } else {
+    Q_UNUSED(button);
+    {
         iface->NotifyPointerButton(m_xdpPath, {}, BTN_LEFT, down);
     }
 }
 
 void RemoteDesktopSession::pointerAxis(double dx, double dy)
 {
-    if (m_ei && m_pointer) {
-        // Qt/Kdeconnect use inverted vertical scroll direction compared to libei
-        ei_device_scroll_delta(m_pointer, dx, dy * -1);
-        ei_device_frame(m_pointer, ei_now(m_ei));
-    } else {
-        iface->NotifyPointerAxis(m_xdpPath, {}, dx, dy);
-    }
+    iface->NotifyPointerAxis(m_xdpPath, {}, dx, dy);
 }
 
 void RemoteDesktopSession::pointerMotion(double dx, double dy)
 {
-    if (m_ei && m_pointer) {
-        ei_device_pointer_motion(m_pointer, dx, dy);
-        ei_device_frame(m_pointer, ei_now(m_ei));
-    } else {
-        iface->NotifyPointerMotion(m_xdpPath, {}, dx, dy);
-    }
+    iface->NotifyPointerMotion(m_xdpPath, {}, dx, dy);
 }
 
 void RemoteDesktopSession::pointerMotionAbsolute(double x, double y)
 {
-    if (m_ei && m_absolutePointer) {
-        qDebug() << x << y;
-        ei_device_pointer_motion_absolute(m_absolutePointer, x, y);
-        ei_device_frame(m_absolutePointer, ei_now(m_ei));
-    } else {
-        iface->NotifyPointerMotionAbsolute(m_xdpPath, {}, 0, x, y);
-    }
+    iface->NotifyPointerMotionAbsolute(m_xdpPath, {}, 0, x, y);
 }
 
 void RemoteDesktopSession::keyboardKeycode(int key, bool press)
 {
-    if (m_ei && m_keyboard) {
-        ei_device_keyboard_key(m_keyboard, key, press);
-        ei_device_frame(m_keyboard, ei_now(m_ei));
-    } else {
-        iface->NotifyKeyboardKeycode(m_xdpPath, {}, key, press);
-    }
+    iface->NotifyKeyboardKeycode(m_xdpPath, {}, key, press);
 }
 
 void RemoteDesktopSession::keyboardKeysym(int sym, bool press)
 {
-    if (m_ei && m_keyboard) {
-        if (auto code = m_xkb->keycodeFromKeysym(sym)) {
-            ei_device_keyboard_key(m_keyboard, *code, press);
-            ei_device_frame(m_keyboard, ei_now(m_ei));
-        } else {
-            qCWarning(KDECONNECT_PLUGIN_MOUSEPAD) << "failed to convert keysym" << sym;
-        }
-    } else {
-        iface->NotifyKeyboardKeysym(m_xdpPath, {}, sym, press).waitForFinished();
-    }
+    iface->NotifyKeyboardKeysym(m_xdpPath, {}, sym, press).waitForFinished();
 }
 
 WaylandRemoteInput::WaylandRemoteInput(QObject *parent)
