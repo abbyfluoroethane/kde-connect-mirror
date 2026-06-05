@@ -335,6 +335,7 @@ void RemoteDesktopSession::handleEiEvents()
             break;
         case EI_EVENT_DEVICE_STOP_EMULATING:
             m_eiEmulating = false;
+            ei_device_stop_emulating(ei_event_get_device(event));
             break;
 
         case EI_EVENT_FRAME:
