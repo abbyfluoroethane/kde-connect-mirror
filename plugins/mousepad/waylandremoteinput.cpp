@@ -330,11 +330,9 @@ void RemoteDesktopSession::handleEiEvents()
             break;
         case EI_EVENT_DEVICE_RESUMED:
         case EI_EVENT_DEVICE_START_EMULATING:
-            m_eiEmulating = true;
             ei_device_start_emulating(ei_event_get_device(event), 0);
             break;
         case EI_EVENT_DEVICE_STOP_EMULATING:
-            m_eiEmulating = false;
             ei_device_stop_emulating(ei_event_get_device(event));
             break;
 
@@ -362,7 +360,6 @@ void RemoteDesktopSession::handleXdpSessionFinished(uint /*code*/, const QVarian
 {
     m_xdpPath = {};
     m_eiNotifier.setEnabled(false);
-    m_eiEmulating = false;
     ei_unref(m_ei);
     m_pointer = nullptr;
     m_keyboard = nullptr;
