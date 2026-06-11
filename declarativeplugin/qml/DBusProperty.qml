@@ -22,14 +22,31 @@ QtObject {
         get();
     }
 
-    onChangeChanged: {
-        if (object) {
+    property var _connectedSignal: null
+
+    onChangeChanged: setupConnection()
+    onObjectChanged: setupConnection()
+
+    function setupConnection() {
+        if (_connectedSignal) {
+            try { _connectedSignal.disconnect(valueReceived); } catch (e) {}
+            _connectedSignal = null;
+        }
+        if (object && change) {
             const signal = object[change];
             if (signal) {
                 signal.connect(valueReceived);
+                _connectedSignal = signal;
             } else {
                 console.warn(`couldn't find signal ${change} for ${object}`);
             }
+        }
+    }
+
+    Component.onDestruction: {
+        if (_connectedSignal) {
+            try { _connectedSignal.disconnect(valueReceived); } catch (e) {}
+            _connectedSignal = null;
         }
     }
 
