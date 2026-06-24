@@ -27,6 +27,8 @@
 #include "networkpacket.h"
 #include "pluginloader.h"
 
+#define ACK_TIMEOUT 3000
+
 class Device::DevicePrivate
 {
 public:
@@ -97,7 +99,7 @@ void Device::init()
     connect(d->m_pairingHandler, &PairingHandler::unpaired, this, &Device::pairingHandler_unpaired);
 
     d->m_ackTimer.setParent(this);
-    d->m_ackTimer.setInterval(3000);
+    d->m_ackTimer.setInterval(ACK_TIMEOUT);
     d->m_ackTimer.setSingleShot(true);
 }
 
