@@ -27,7 +27,7 @@
 #include "networkpacket.h"
 #include "pluginloader.h"
 
-#define ACK_TIMEOUT 3000
+constexpr int ACK_TIMEOUT = 3000;
 
 class Device::DevicePrivate
 {
