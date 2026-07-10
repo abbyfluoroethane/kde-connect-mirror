@@ -463,6 +463,7 @@ bool VirtualMonitorPlugin::startRdpSession(const SessionRequest &request)
     m_serverReady = false;
     m_clientConnected = false;
     m_lastError.clear();
+    m_serverErrors.clear();
 
     if (m_port == 0) {
         m_lastError = i18n("No local TCP port is available for the RDP server.");
@@ -495,8 +496,22 @@ bool VirtualMonitorPlugin::startRdpSession(const SessionRequest &request)
 
     process->setArguments(arguments);
     process->setProcessChannelMode(QProcess::SeparateChannels);
+    connect(process, &QProcess::readyReadStandardError, this, [this, process]() {
+        const QByteArray output = process->readAllStandardError();
+        if (output.isEmpty()) {
+            return;
+        }
+        m_serverErrors.append(output);
+        constexpr qsizetype maximumBufferedOutput = 64 * 1024;
+        if (m_serverErrors.size() > maximumBufferedOutput) {
+            m_serverErrors.remove(0, m_serverErrors.size() - maximumBufferedOutput);
+        }
+        qCInfo(KDECONNECT_PLUGIN_VIRTUALMONITOR).noquote() << "KRdp:" << QString::fromLocal8Bit(output).trimmed();
+    });
     connect(process, &QProcess::finished, this, [this, process, generation](int exitCode, QProcess::ExitStatus exitStatus) {
-        const QByteArray errors = process->readAllStandardError();
+        const QByteArray remainingErrors = process->readAllStandardError();
+        m_serverErrors.append(remainingErrors);
+        const QByteArray errors = m_serverErrors;
         qCWarning(KDECONNECT_PLUGIN_VIRTUALMONITOR) << "KRdp server stopped with" << exitCode << exitStatus << errors;
 
         if (m_process == process) {

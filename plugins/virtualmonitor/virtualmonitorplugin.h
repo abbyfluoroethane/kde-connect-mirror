@@ -8,6 +8,7 @@
 #pragma once
 
 #include "plugin_virtualmonitor_debug.h"
+#include <QByteArray>
 #include <QJsonObject>
 #include <core/kdeconnectplugin.h>
 
@@ -115,4 +116,5 @@ private:
     bool m_stopping = false;
     bool m_deviceLifecycleConnected = false;
     QString m_lastError;
+    QByteArray m_serverErrors;
 };
