@@ -219,7 +219,8 @@ void VirtualMonitorPlugin::connected()
                               {QStringLiteral("graphicsPipeline"), true},
                               {QStringLiteral("h264"), true},
                               {QStringLiteral("progressive"), true},
-                              {QStringLiteral("nla"), true},
+                              {QStringLiteral("nla"), false},
+                              {QStringLiteral("tls"), true},
                               {QStringLiteral("tlsFingerprint"), true},
                           }},
                      });
@@ -651,13 +652,15 @@ void VirtualMonitorPlugin::sendConnectionInfo()
                          {QStringLiteral("port"), int(m_port)},
                          {QStringLiteral("certificateFingerprint"), m_certificateFingerprint},
                          {QStringLiteral("certificateHash"), QStringLiteral("sha256")},
-                         {QStringLiteral("security"), QStringLiteral("nla+tls")},
+                         {QStringLiteral("security"), QStringLiteral("tls")},
                          {QStringLiteral("status"), QStringLiteral("ready")},
                          {QStringLiteral("rdpFeatures"),
                           QJsonObject{
                               {QStringLiteral("graphicsPipeline"), true},
                               {QStringLiteral("h264"), true},
                               {QStringLiteral("progressive"), true},
+                              {QStringLiteral("nla"), false},
+                              {QStringLiteral("tls"), true},
                           }},
                      });
     sendPacket(np);

@@ -42,8 +42,8 @@ An `action: capabilities` packet advertises the legacy `supports_rdp` and
 - `supports_remote_desktop`: whether this peer can export an RDP desktop;
 - `sessionModes`: any of `monitor`, `workspace`, and `virtualMonitor`;
 - `monitors`: index, name, physical width/height, scale, and primary state;
-- `rdpFeatures`: RDPGFX, H.264, progressive graphics, NLA, and TLS-fingerprint
-  support.
+- `rdpFeatures`: RDPGFX, H.264, progressive graphics, supported security
+  layers, and TLS-fingerprint support.
 
 ### Lifecycle
 
@@ -78,11 +78,14 @@ end of the session.
 
 ## Security and media profile
 
-RDP uses TLS plus NLA with a random per-session password. The certificate is
-generated per session and its SHA-256 fingerprint is sent inside KDE Connect's
-already authenticated channel. The packet never supplies a network host; this
-prevents a paired device from turning KDE Connect into an arbitrary RDP
-launcher.
+RDP uses a random per-session password over TLS. KRdp 6.6 does not offer NLA,
+so the exporter advertises `security: tls` and `nla: false` instead of forcing
+an unsupported security layer. The certificate is generated per session and
+its SHA-256 fingerprint is sent inside KDE Connect's already authenticated
+channel. Android pins that fingerprint and never trusts a host supplied by the
+packet. This prevents both certificate substitution and turning KDE Connect
+into an arbitrary RDP launcher. Exporters that support NLA can advertise
+`security: nla` in a future-compatible way.
 
 The preferred graphics profile is RDPGFX with AVC420/H.264 and progressive
 graphics. Audio and clipboard redirection are intentionally disabled in the
