@@ -11,10 +11,13 @@
 #include <QJsonObject>
 #include <core/kdeconnectplugin.h>
 
+#include <memory>
+
 #define PACKET_TYPE_VIRTUALMONITOR QStringLiteral("kdeconnect.virtualmonitor")
 #define PACKET_TYPE_VIRTUALMONITOR_REQUEST QStringLiteral("kdeconnect.virtualmonitor.request")
 
 class QProcess;
+class QTemporaryDir;
 
 class VirtualMonitorPlugin : public KdeConnectPlugin
 {
@@ -48,7 +51,7 @@ public:
         return m_capabilitiesRemote.rdpClient;
     }
 
-    // krfb is installed on local device, virtual monitors is supported
+    // krdpserver is installed on the local device and can export a desktop
     bool isVirtualMonitorAvailable() const
     {
         return m_capabilitiesLocal.virtualMonitor;
@@ -61,12 +64,37 @@ Q_SIGNALS:
     Q_SCRIPTABLE void activeChanged();
 
 private:
+    enum class SessionMode {
+        VirtualMonitor,
+        Monitor,
+        Workspace,
+    };
+
+    struct SessionRequest {
+        QString sessionId;
+        SessionMode mode = SessionMode::VirtualMonitor;
+        QString resolution;
+        double scale = 1.0;
+        int monitorIndex = 0;
+        int quality = 70;
+    };
+
     bool checkRdpClient() const;
     bool checkDefaultSchemeHandler(const QString &scheme) const;
-    bool requestRdp();
+    bool startRdpSession(const SessionRequest &request);
+    void stopSession(bool notifyRemote);
+    void handleSessionRequest(const NetworkPacket &np);
+    void openRdpClient(const NetworkPacket &np);
+    void probeServerReady(quint64 generation, int attemptsRemaining);
+    void sendConnectionInfo();
+    void sendStatus(const QString &status, const QString &message = {});
+    void sendStatusForSession(const QString &sessionId, const QString &status, const QString &message = {});
+    bool prepareTlsCredentials();
+    quint16 findAvailablePort() const;
 
     struct Capabilities {
         bool virtualMonitor = false;
+        bool remoteDesktop = false;
         bool rdpClient = false;
     };
 
@@ -74,7 +102,17 @@ private:
     Capabilities m_capabilitiesRemote;
 
     QProcess *m_process = nullptr;
+    std::unique_ptr<QTemporaryDir> m_tlsDirectory;
     QJsonObject m_remoteResolution;
-    uint m_retries = 0;
+    SessionRequest m_currentRequest;
+    QString m_username;
+    QString m_password;
+    QString m_certificateFingerprint;
+    quint16 m_port = 0;
+    quint64 m_sessionGeneration = 0;
+    bool m_serverReady = false;
+    bool m_clientConnected = false;
+    bool m_stopping = false;
+    bool m_deviceLifecycleConnected = false;
     QString m_lastError;
 };
