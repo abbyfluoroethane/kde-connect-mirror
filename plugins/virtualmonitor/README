@@ -61,6 +61,16 @@ An `action: capabilities` packet advertises the legacy `supports_rdp` and
 5. Either peer can send `action: stop`; the exporter replies with
    `status: stopped`. Errors use `status: failed` and an optional `message`.
 
+### Diagnostics
+
+An Android peer can explicitly send an `action: diagnostic` packet over the
+authenticated KDE Connect link. It contains at most 50 bounded, sanitized
+event strings and an optional session identifier. The desktop writes the
+entries to the `kdeconnect.plugin.virtualmonitor` logging category together
+with the paired device context. Diagnostic logs are never sent automatically,
+and credentials, private keys, and complete certificate fingerprints must not
+be included.
+
 The exporter stops an unclaimed server after 45 seconds. It also stops the
 server immediately when the paired device becomes unreachable or loses its LAN
 link. Process termination is bounded and all credentials are discarded at the

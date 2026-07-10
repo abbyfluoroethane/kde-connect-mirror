@@ -53,11 +53,14 @@ constexpr quint16 KdeConnectMaxPort = 1764;
 constexpr int ServerProbeAttempts = 50;
 constexpr int ServerProbeIntervalMs = 100;
 constexpr int ClientConnectionTimeoutMs = 45'000;
+constexpr int MaxRemoteDiagnosticEntries = 50;
+constexpr int MaxRemoteDiagnosticEntryLength = 500;
 
 const auto ActionCapabilities = QStringLiteral("capabilities");
 const auto ActionRequest = QStringLiteral("request");
 const auto ActionConnect = QStringLiteral("connect");
 const auto ActionClientConnected = QStringLiteral("clientConnected");
+const auto ActionDiagnostic = QStringLiteral("diagnostic");
 const auto ActionStop = QStringLiteral("stop");
 const auto ActionStatus = QStringLiteral("status");
 
@@ -253,6 +256,24 @@ void VirtualMonitorPlugin::receivePacket(const NetworkPacket &received)
     }
 
     const QString action = received.get<QString>(QStringLiteral("action"));
+    if (action == ActionDiagnostic) {
+        const QJsonArray entries = received.get<QJsonArray>(QStringLiteral("entries"));
+        const QString sessionId = received.get<QString>(QStringLiteral("sessionId")).left(8);
+        const qsizetype entryCount = std::min<qsizetype>(entries.size(), MaxRemoteDiagnosticEntries);
+        qCInfo(KDECONNECT_PLUGIN_VIRTUALMONITOR) << "Remote desktop diagnostics received from" << device()->name() << device()->id()
+                                                 << "session" << (sessionId.isEmpty() ? QStringLiteral("none") : sessionId) << "entries" << entryCount;
+        for (qsizetype index = 0; index < entryCount; ++index) {
+            if (!entries.at(index).isString()) {
+                continue;
+            }
+            QString entry = entries.at(index).toString().left(MaxRemoteDiagnosticEntryLength);
+            entry.replace(u'\n', u' ');
+            entry.replace(u'\r', u' ');
+            qCInfo(KDECONNECT_PLUGIN_VIRTUALMONITOR).noquote() << "Android RDP diagnostic" << device()->name() << sessionId << entry;
+        }
+        return;
+    }
+
     if (received.has(QStringLiteral("resolutions"))) {
         const QJsonArray resolutions = received.get<QJsonArray>(QStringLiteral("resolutions"));
         if (!resolutions.isEmpty()) {
