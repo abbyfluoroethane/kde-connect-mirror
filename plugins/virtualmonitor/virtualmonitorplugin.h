@@ -88,6 +88,10 @@ private:
 
     bool checkRdpClient() const;
     bool checkDefaultSchemeHandler(const QString &scheme) const;
+    QString remoteDesktopPreflightError() const;
+    void updateLocalRemoteDesktopCapabilities();
+    void sendLocalCapabilities();
+    bool usePlasmaRdpSession() const;
     bool remoteDesktopPermissionGranted() const;
     QString pairedDeviceCertificateFingerprint() const;
     void requestRemoteDesktopPermission(const SessionRequest &request);
@@ -129,6 +133,7 @@ private:
     bool m_clientConnected = false;
     bool m_stopping = false;
     bool m_deviceLifecycleConnected = false;
+    QString m_remoteDesktopUnavailableReason;
     QString m_lastError;
     QByteArray m_serverErrors;
 };

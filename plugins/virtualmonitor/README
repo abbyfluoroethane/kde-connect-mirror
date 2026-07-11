@@ -14,7 +14,14 @@ kept for protocol-v1 peers.
 
 ## Runtime requirements
 
-- `krdpserver` must be installed on a device that exports its desktop.
+- `krdpserver` from KRdp 6.6 or newer must be installed on a device that
+  exports its desktop. Distribution packages that ship this plugin must add
+  `krdp` as a runtime dependency; executable dependencies cannot be inferred
+  from the KDE Connect ELF metadata.
+- A Wayland graphical session, a working session D-Bus and either KRdp's
+  Plasma session support or functional ScreenCast and RemoteDesktop desktop
+  portals are required. The portal path also requires the corresponding
+  PipeWire runtime supplied by the desktop.
 - An RDP client (for example KRDC) must be installed on a desktop that consumes
   a session. KDE Connect for Android embeds FreeRDP.
 - Peers must have a direct authenticated LAN link. RDP is never exposed for a
@@ -44,6 +51,17 @@ An `action: capabilities` packet advertises the legacy `supports_rdp` and
 - `monitors`: index, name, physical width/height, scale, and primary state;
 - `rdpFeatures`: RDPGFX, H.264, progressive graphics, supported security
   layers, and TLS-fingerprint support.
+
+The exporter reports `supports_remote_desktop: true` only after a
+side-effect-free runtime preflight. The check executes `krdpserver --help`
+with a timeout to validate its loader and required command-line API, then
+checks Wayland, the graphical session, session D-Bus, Plasma/portal support,
+and port availability. It does not open a listener or request screen capture.
+The client can send `action: requestCapabilities` on
+`kdeconnect.virtualmonitor.request` to rerun the preflight. When unavailable,
+`remoteDesktopUnavailableReason` contains a bounded user-facing explanation.
+The same preflight runs immediately before every server start to avoid using
+stale capability state.
 
 ### Lifecycle
 

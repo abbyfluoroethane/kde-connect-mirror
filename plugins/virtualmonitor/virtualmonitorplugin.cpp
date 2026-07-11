@@ -14,6 +14,8 @@
 
 #include "plugin_virtualmonitor_debug.h"
 #include <QCryptographicHash>
+#include <QDBusConnection>
+#include <QDBusInterface>
 #include <QDesktopServices>
 #include <QDir>
 #include <QFile>
@@ -55,12 +57,14 @@ constexpr int ServerProbeAttempts = 50;
 constexpr int ServerProbeIntervalMs = 100;
 constexpr int ClientConnectionTimeoutMs = 45'000;
 constexpr int PermissionRequestTimeoutMs = 30'000;
+constexpr int RdpPreflightTimeoutMs = 3'000;
 constexpr int MaxRemoteDiagnosticEntries = 50;
 constexpr int MaxRemoteDiagnosticEntryLength = 500;
 
 const auto RemoteDesktopPermissionCertificateKey = QStringLiteral("remoteDesktopAccessCertificateSha256");
 
 const auto ActionCapabilities = QStringLiteral("capabilities");
+const auto ActionRequestCapabilities = QStringLiteral("requestCapabilities");
 const auto ActionRequest = QStringLiteral("request");
 const auto ActionConnect = QStringLiteral("connect");
 const auto ActionClientConnected = QStringLiteral("clientConnected");
@@ -71,6 +75,18 @@ const auto ActionStatus = QStringLiteral("status");
 const auto ModeVirtualMonitor = QStringLiteral("virtualMonitor");
 const auto ModeMonitor = QStringLiteral("monitor");
 const auto ModeWorkspace = QStringLiteral("workspace");
+
+const QStringList RequiredKrdpOptions{
+    QStringLiteral("--username"),
+    QStringLiteral("--password"),
+    QStringLiteral("--address"),
+    QStringLiteral("--port"),
+    QStringLiteral("--certificate"),
+    QStringLiteral("--certificate-key"),
+    QStringLiteral("--monitor"),
+    QStringLiteral("--virtual-monitor"),
+    QStringLiteral("--quality"),
+};
 }
 
 class EmitActive
@@ -137,6 +153,101 @@ VirtualMonitorPlugin::~VirtualMonitorPlugin()
 bool VirtualMonitorPlugin::active() const
 {
     return m_process && m_process->state() != QProcess::NotRunning;
+}
+
+bool VirtualMonitorPlugin::usePlasmaRdpSession() const
+{
+    if (!QGuiApplication::platformName().contains(QLatin1String("wayland"), Qt::CaseInsensitive)) {
+        return false;
+    }
+
+    const QStringList desktops = QString::fromLocal8Bit(qgetenv("XDG_CURRENT_DESKTOP")).split(u':', Qt::SkipEmptyParts);
+    return std::ranges::any_of(desktops, [](const QString &desktop) {
+        return desktop.compare(QLatin1String("KDE"), Qt::CaseInsensitive) == 0 || desktop.compare(QLatin1String("Plasma"), Qt::CaseInsensitive) == 0;
+    });
+}
+
+QString VirtualMonitorPlugin::remoteDesktopPreflightError() const
+{
+#if !defined(Q_OS_LINUX)
+    return i18n("Remote desktop export is currently supported only on Linux.");
+#else
+    const QString executable = QStandardPaths::findExecutable(QStringLiteral("krdpserver"));
+    if (executable.isEmpty()) {
+        return i18n("The krdp package is required on the local device.");
+    }
+    if (!QDBusConnection::sessionBus().isConnected()) {
+        return i18n("Remote desktop requires a working desktop session bus.");
+    }
+    if (!QGuiApplication::platformName().contains(QLatin1String("wayland"), Qt::CaseInsensitive)) {
+        return i18n("Remote desktop requires a Wayland desktop session.");
+    }
+    if (QGuiApplication::screens().isEmpty()) {
+        return i18n("Remote desktop requires an active graphical session with at least one screen.");
+    }
+
+    // Asking QCommandLineParser for help exercises the executable and its
+    // dynamic dependencies without starting a listener or capture session.
+    QProcess helpProcess;
+    helpProcess.setProgram(executable);
+    helpProcess.setArguments({QStringLiteral("--help")});
+    helpProcess.setProcessChannelMode(QProcess::MergedChannels);
+    helpProcess.start();
+    if (!helpProcess.waitForStarted(RdpPreflightTimeoutMs)) {
+        return i18n("The KRdp server could not be started: %1", helpProcess.errorString());
+    }
+    if (!helpProcess.waitForFinished(RdpPreflightTimeoutMs)) {
+        helpProcess.kill();
+        helpProcess.waitForFinished();
+        return i18n("The KRdp server compatibility check timed out.");
+    }
+    const QString help = QString::fromLocal8Bit(helpProcess.readAll());
+    if (helpProcess.exitStatus() != QProcess::NormalExit || helpProcess.exitCode() != 0) {
+        return i18n("The KRdp server compatibility check failed.");
+    }
+    for (const QString &option : RequiredKrdpOptions) {
+        if (!help.contains(option)) {
+            return i18n("The installed KRdp server is incompatible because it does not support %1.", option);
+        }
+    }
+
+    if (usePlasmaRdpSession()) {
+        if (!help.contains(QLatin1String("--plasma"))) {
+            return i18n("The installed KRdp server does not support Plasma desktop sessions.");
+        }
+    } else {
+        QDBusInterface remoteDesktopPortal(QStringLiteral("org.freedesktop.portal.Desktop"),
+                                           QStringLiteral("/org/freedesktop/portal/desktop"),
+                                           QStringLiteral("org.freedesktop.portal.RemoteDesktop"),
+                                           QDBusConnection::sessionBus());
+        QDBusInterface screenCastPortal(QStringLiteral("org.freedesktop.portal.Desktop"),
+                                        QStringLiteral("/org/freedesktop/portal/desktop"),
+                                        QStringLiteral("org.freedesktop.portal.ScreenCast"),
+                                        QDBusConnection::sessionBus());
+        if (!remoteDesktopPortal.isValid() || !screenCastPortal.isValid()) {
+            return i18n("Remote desktop requires working ScreenCast and RemoteDesktop desktop portals.");
+        }
+    }
+
+    if (findAvailablePort() == 0) {
+        return i18n("No TCP port is currently available for the RDP server.");
+    }
+    return {};
+#endif
+}
+
+void VirtualMonitorPlugin::updateLocalRemoteDesktopCapabilities()
+{
+    m_remoteDesktopUnavailableReason = remoteDesktopPreflightError();
+    const bool available = m_remoteDesktopUnavailableReason.isEmpty();
+    m_capabilitiesLocal.virtualMonitor = available;
+    m_capabilitiesLocal.remoteDesktop = available;
+
+    if (available) {
+        qCInfo(KDECONNECT_PLUGIN_VIRTUALMONITOR) << "KRdp runtime preflight passed";
+    } else {
+        qCWarning(KDECONNECT_PLUGIN_VIRTUALMONITOR) << "KRdp runtime preflight failed:" << m_remoteDesktopUnavailableReason;
+    }
 }
 
 void VirtualMonitorPlugin::stop()
@@ -226,12 +337,16 @@ void VirtualMonitorPlugin::connected()
     }
 
     m_capabilitiesLocal.rdpClient = checkRdpClient();
-    m_capabilitiesLocal.virtualMonitor = !QStandardPaths::findExecutable(QS("krdpserver")).isEmpty();
-    m_capabilitiesLocal.remoteDesktop = m_capabilitiesLocal.virtualMonitor;
+    updateLocalRemoteDesktopCapabilities();
 
     qCDebug(KDECONNECT_PLUGIN_VIRTUALMONITOR) << "Local device supports RDP client:" << m_capabilitiesLocal.rdpClient;
     qCDebug(KDECONNECT_PLUGIN_VIRTUALMONITOR) << "Local device supports KRdp server:" << m_capabilitiesLocal.remoteDesktop;
 
+    sendLocalCapabilities();
+}
+
+void VirtualMonitorPlugin::sendLocalCapabilities()
+{
     QJsonArray resolutions;
     QJsonArray monitors;
     const auto screens = QGuiApplication::screens();
@@ -262,6 +377,7 @@ void VirtualMonitorPlugin::connected()
                          {QStringLiteral("supports_rdp"), m_capabilitiesLocal.rdpClient},
                          {QStringLiteral("supports_virt_mon"), m_capabilitiesLocal.virtualMonitor},
                          {QStringLiteral("supports_remote_desktop"), m_capabilitiesLocal.remoteDesktop},
+                         {QStringLiteral("remoteDesktopUnavailableReason"), m_remoteDesktopUnavailableReason},
                          {QStringLiteral("sessionModes"), QJsonArray{ModeMonitor, ModeWorkspace, ModeVirtualMonitor}},
                          {QStringLiteral("rdpFeatures"),
                           QJsonObject{
@@ -280,7 +396,10 @@ void VirtualMonitorPlugin::receivePacket(const NetworkPacket &received)
 {
     if (received.type() == PACKET_TYPE_VIRTUALMONITOR_REQUEST) {
         const QString action = received.get<QString>(QStringLiteral("action"));
-        if (action == ActionRequest) {
+        if (action == ActionRequestCapabilities) {
+            updateLocalRemoteDesktopCapabilities();
+            sendLocalCapabilities();
+        } else if (action == ActionRequest) {
             handleSessionRequest(received);
         } else if (action == ActionStop) {
             const QString sessionId = received.get<QString>(QStringLiteral("sessionId"));
@@ -390,9 +509,9 @@ void VirtualMonitorPlugin::handleSessionRequest(const NetworkPacket &np)
         return;
     }
 
-    m_capabilitiesLocal.remoteDesktop = !QStandardPaths::findExecutable(QS("krdpserver")).isEmpty();
+    updateLocalRemoteDesktopCapabilities();
     if (!m_capabilitiesLocal.remoteDesktop) {
-        sendStatusForSession(sessionId, QStringLiteral("failed"), i18n("The krdp package is required on the local device."));
+        sendStatusForSession(sessionId, QStringLiteral("failed"), m_remoteDesktopUnavailableReason);
         return;
     }
 
@@ -622,6 +741,12 @@ bool VirtualMonitorPlugin::startRdpSession(const SessionRequest &request)
     stopSession(false);
 
     m_currentRequest = request;
+    updateLocalRemoteDesktopCapabilities();
+    if (!m_capabilitiesLocal.remoteDesktop) {
+        m_lastError = m_remoteDesktopUnavailableReason;
+        return false;
+    }
+
     m_username = QStringLiteral("kdeconnect");
     m_password = QUuid::createUuid().toString(QUuid::Id128);
     m_port = findAvailablePort();
@@ -654,8 +779,7 @@ bool VirtualMonitorPlugin::startRdpSession(const SessionRequest &request)
               << m_tlsDirectory->filePath(QStringLiteral("server.crt")) << QStringLiteral("--certificate-key")
               << m_tlsDirectory->filePath(QStringLiteral("server.key"));
 
-    static const bool plasma = qgetenv("XDG_CURRENT_DESKTOP").compare("KDE", Qt::CaseInsensitive) == 0;
-    if (plasma) {
+    if (usePlasmaRdpSession()) {
         arguments << QStringLiteral("--plasma");
     }
 
