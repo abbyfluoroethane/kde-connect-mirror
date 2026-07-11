@@ -10,13 +10,16 @@
 #include "plugin_virtualmonitor_debug.h"
 #include <QByteArray>
 #include <QJsonObject>
+#include <QPointer>
 #include <core/kdeconnectplugin.h>
 
 #include <memory>
+#include <optional>
 
 #define PACKET_TYPE_VIRTUALMONITOR QStringLiteral("kdeconnect.virtualmonitor")
 #define PACKET_TYPE_VIRTUALMONITOR_REQUEST QStringLiteral("kdeconnect.virtualmonitor.request")
 
+class KNotification;
 class QProcess;
 class QTemporaryDir;
 
@@ -29,13 +32,16 @@ class VirtualMonitorPlugin : public KdeConnectPlugin
     Q_PROPERTY(bool active READ active NOTIFY activeChanged)
 
 public:
-    using KdeConnectPlugin::KdeConnectPlugin;
+    VirtualMonitorPlugin(QObject *parent, const QVariantList &args);
     ~VirtualMonitorPlugin() override;
 
     Q_SCRIPTABLE bool requestVirtualMonitor();
 
     /// stops the active session
     Q_SCRIPTABLE void stop();
+
+    /// Revokes persistent screen-viewing and remote-control permission for this device.
+    Q_SCRIPTABLE void revokeRemoteDesktopPermission();
 
     QString lastError() const
     {
@@ -82,6 +88,12 @@ private:
 
     bool checkRdpClient() const;
     bool checkDefaultSchemeHandler(const QString &scheme) const;
+    bool remoteDesktopPermissionGranted() const;
+    QString pairedDeviceCertificateFingerprint() const;
+    void requestRemoteDesktopPermission(const SessionRequest &request);
+    void allowRemoteDesktopPermission(const QString &sessionId);
+    void rejectRemoteDesktopPermission(const QString &sessionId, const QString &message);
+    void clearRemoteDesktopPermissionPrompt();
     bool startRdpSession(const SessionRequest &request);
     void stopSession(bool notifyRemote);
     void handleSessionRequest(const NetworkPacket &np);
@@ -103,7 +115,9 @@ private:
     Capabilities m_capabilitiesRemote;
 
     QProcess *m_process = nullptr;
+    QPointer<KNotification> m_permissionNotification;
     std::unique_ptr<QTemporaryDir> m_tlsDirectory;
+    std::optional<SessionRequest> m_pendingPermissionRequest;
     QJsonObject m_remoteResolution;
     SessionRequest m_currentRequest;
     QString m_username;

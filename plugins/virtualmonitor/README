@@ -50,15 +50,21 @@ An `action: capabilities` packet advertises the legacy `supports_rdp` and
 1. The client sends `action: request`, a `sessionId`, `mode`, and `quality`.
    `monitor` also uses `monitorIndex`; `virtualMonitor` uses `width`, `height`,
    and `scale`.
-2. The exporter reports `status: starting`, creates one-time credentials and a
+2. Before the first export to a paired device, the exporter reports
+   `status: awaitingPermission` and asks the local user to allow screen viewing
+   and mouse/keyboard control. No server, credentials, or capture session is
+   created before approval. The grant is bound to the paired certificate and
+   persists until revoked in the plugin settings. Denial, dismissal, or a
+   30-second timeout fails the request.
+3. The exporter reports `status: starting`, creates one-time credentials and a
    temporary TLS certificate, then starts `krdpserver`.
-3. Once the local TCP listener is ready, the exporter sends `action: connect`
+4. Once the local TCP listener is ready, the exporter sends `action: connect`
    with `username`, `password`, `port`, `certificateHash: sha256`, and the
    lowercase 64-hex `certificateFingerprint`.
-4. The client derives the host exclusively from its authenticated KDE Connect
+5. The client derives the host exclusively from its authenticated KDE Connect
    LAN link, pins the fingerprint, starts RDP, and sends
    `action: clientConnected`. The exporter replies with `status: connected`.
-5. Either peer can send `action: stop`; the exporter replies with
+6. Either peer can send `action: stop`; the exporter replies with
    `status: stopped`. Errors use `status: failed` and an optional `message`.
 
 ### Diagnostics
@@ -91,3 +97,10 @@ The preferred graphics profile is RDPGFX with AVC420/H.264 and progressive
 graphics. Audio and clipboard redirection are intentionally disabled in the
 Android integration. AVC444 is not advertised by the KRdp exporter until both
 server and client negotiation are proven interoperable.
+
+Remote-desktop authorization is separate from KDE Connect pairing because an
+RDP session exposes both screen contents and input control. A persistent grant
+stores only the SHA-256 digest of the paired device certificate. Changing the
+certificate, unpairing the device, or revoking access in the plugin settings
+invalidates the grant and stops an active session. A rejected request is not
+remembered permanently, so the local user can approve a later explicit request.

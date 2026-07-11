@@ -9,6 +9,7 @@
 #include "virtualmonitorplugin.h"
 
 #include <KLocalizedString>
+#include <KNotification>
 #include <KPluginFactory>
 
 #include "plugin_virtualmonitor_debug.h"
@@ -53,8 +54,11 @@ constexpr quint16 KdeConnectMaxPort = 1764;
 constexpr int ServerProbeAttempts = 50;
 constexpr int ServerProbeIntervalMs = 100;
 constexpr int ClientConnectionTimeoutMs = 45'000;
+constexpr int PermissionRequestTimeoutMs = 30'000;
 constexpr int MaxRemoteDiagnosticEntries = 50;
 constexpr int MaxRemoteDiagnosticEntryLength = 500;
+
+const auto RemoteDesktopPermissionCertificateKey = QStringLiteral("remoteDesktopAccessCertificateSha256");
 
 const auto ActionCapabilities = QStringLiteral("capabilities");
 const auto ActionRequest = QStringLiteral("request");
@@ -101,8 +105,32 @@ private:
 
 EmitActive *EmitActive::s_outmost = nullptr;
 
+VirtualMonitorPlugin::VirtualMonitorPlugin(QObject *parent, const QVariantList &args)
+    : KdeConnectPlugin(parent, args)
+{
+    connect(config(), &KdeConnectPluginConfig::configChanged, this, [this]() {
+        if (remoteDesktopPermissionGranted()) {
+            return;
+        }
+
+        const QString message = i18n("Remote desktop access was revoked on the computer.");
+        if (m_pendingPermissionRequest) {
+            rejectRemoteDesktopPermission(m_pendingPermissionRequest->sessionId, message);
+        }
+        if (active() || m_serverReady) {
+            m_lastError = message;
+            stopSession(true);
+        }
+    });
+}
+
 VirtualMonitorPlugin::~VirtualMonitorPlugin()
 {
+    // Plugin configuration survives unpairing. Explicitly discard this
+    // high-impact permission when the device itself is no longer trusted.
+    if (!device()->isPaired()) {
+        config()->set(RemoteDesktopPermissionCertificateKey, QString());
+    }
     stopSession(false);
 }
 
@@ -116,14 +144,30 @@ void VirtualMonitorPlugin::stop()
     stopSession(true);
 }
 
+void VirtualMonitorPlugin::revokeRemoteDesktopPermission()
+{
+    config()->set(RemoteDesktopPermissionCertificateKey, QString());
+
+    const QString message = i18n("Remote desktop access was revoked on the computer.");
+    if (m_pendingPermissionRequest) {
+        rejectRemoteDesktopPermission(m_pendingPermissionRequest->sessionId, message);
+    }
+    if (active() || m_serverReady) {
+        m_lastError = message;
+        stopSession(true);
+    }
+}
+
 void VirtualMonitorPlugin::stopSession(bool notifyRemote)
 {
     EmitActive emitter(this);
 
-    const QString sessionId = m_currentRequest.sessionId;
-    const bool hadSession = m_process || m_serverReady;
+    const QString sessionId = m_pendingPermissionRequest ? m_pendingPermissionRequest->sessionId : m_currentRequest.sessionId;
+    const bool hadSession = m_process || m_serverReady || m_pendingPermissionRequest.has_value();
     ++m_sessionGeneration;
     m_stopping = true;
+
+    clearRemoteDesktopPermissionPrompt();
 
     if (m_process) {
         QObject::disconnect(m_process, nullptr, this, nullptr);
@@ -153,7 +197,7 @@ void VirtualMonitorPlugin::stopSession(bool notifyRemote)
                              {QStringLiteral("sessionId"), sessionId},
                              {QStringLiteral("status"), QStringLiteral("stopped")},
                              {QStringLiteral("active"), false},
-        });
+                         });
         sendPacket(np);
     }
 
@@ -164,16 +208,21 @@ void VirtualMonitorPlugin::connected()
 {
     if (!m_deviceLifecycleConnected) {
         connect(device(), &Device::reachableChanged, this, [this](bool reachable) {
-            if (!reachable && active()) {
+            if (!reachable && (active() || m_pendingPermissionRequest)) {
                 stopSession(false);
             }
         });
         connect(device(), &Device::linksChanged, this, [this]() {
-            if (active() && device()->getLocalIpAddress() == QHostAddress::Null) {
+            if ((active() || m_pendingPermissionRequest) && device()->getLocalIpAddress() == QHostAddress::Null) {
                 stopSession(false);
             }
         });
         m_deviceLifecycleConnected = true;
+    }
+
+    const QString storedPermissionCertificate = config()->getString(RemoteDesktopPermissionCertificateKey, QString());
+    if (!storedPermissionCertificate.isEmpty() && !remoteDesktopPermissionGranted()) {
+        config()->set(RemoteDesktopPermissionCertificateKey, QString());
     }
 
     m_capabilitiesLocal.rdpClient = checkRdpClient();
@@ -235,7 +284,8 @@ void VirtualMonitorPlugin::receivePacket(const NetworkPacket &received)
             handleSessionRequest(received);
         } else if (action == ActionStop) {
             const QString sessionId = received.get<QString>(QStringLiteral("sessionId"));
-            if (!sessionId.isEmpty() && sessionId == m_currentRequest.sessionId) {
+            const bool pendingPermission = m_pendingPermissionRequest && sessionId == m_pendingPermissionRequest->sessionId;
+            if (!sessionId.isEmpty() && (sessionId == m_currentRequest.sessionId || pendingPermission)) {
                 stopSession(true);
             }
         } else if (action == ActionClientConnected) {
@@ -261,8 +311,8 @@ void VirtualMonitorPlugin::receivePacket(const NetworkPacket &received)
         const QJsonArray entries = received.get<QJsonArray>(QStringLiteral("entries"));
         const QString sessionId = received.get<QString>(QStringLiteral("sessionId")).left(8);
         const qsizetype entryCount = std::min<qsizetype>(entries.size(), MaxRemoteDiagnosticEntries);
-        qCInfo(KDECONNECT_PLUGIN_VIRTUALMONITOR) << "Remote desktop diagnostics received from" << device()->name() << device()->id()
-                                                 << "session" << (sessionId.isEmpty() ? QStringLiteral("none") : sessionId) << "entries" << entryCount;
+        qCInfo(KDECONNECT_PLUGIN_VIRTUALMONITOR) << "Remote desktop diagnostics received from" << device()->name() << device()->id() << "session"
+                                                 << (sessionId.isEmpty() ? QStringLiteral("none") : sessionId) << "entries" << entryCount;
         for (qsizetype index = 0; index < entryCount; ++index) {
             if (!entries.at(index).isString()) {
                 continue;
@@ -308,8 +358,8 @@ void VirtualMonitorPlugin::receivePacket(const NetworkPacket &received)
         stopSession(false);
     }
 
-    qCDebug(KDECONNECT_PLUGIN_VIRTUALMONITOR) << "Remote RDP capabilities:" << m_capabilitiesRemote.rdpClient
-                                             << m_capabilitiesRemote.remoteDesktop << m_remoteResolution;
+    qCDebug(KDECONNECT_PLUGIN_VIRTUALMONITOR) << "Remote RDP capabilities:" << m_capabilitiesRemote.rdpClient << m_capabilitiesRemote.remoteDesktop
+                                              << m_remoteResolution;
 }
 
 void VirtualMonitorPlugin::handleSessionRequest(const NetworkPacket &np)
@@ -317,6 +367,15 @@ void VirtualMonitorPlugin::handleSessionRequest(const NetworkPacket &np)
     const QString sessionId = np.get<QString>(QStringLiteral("sessionId"));
     if (sessionId.isEmpty() || sessionId.size() > 128) {
         sendStatusForSession(sessionId, QStringLiteral("failed"), i18n("The remote desktop request has an invalid session identifier."));
+        return;
+    }
+
+    if (m_pendingPermissionRequest) {
+        if (sessionId == m_pendingPermissionRequest->sessionId) {
+            sendStatusForSession(sessionId, QStringLiteral("awaitingPermission"), i18n("Waiting for remote desktop permission on the computer."));
+        } else {
+            sendStatusForSession(sessionId, QStringLiteral("failed"), i18n("Another remote desktop request is awaiting permission."));
+        }
         return;
     }
 
@@ -366,8 +425,114 @@ void VirtualMonitorPlugin::handleSessionRequest(const NetworkPacket &np)
     }
 
     m_lastError.clear();
+    if (!remoteDesktopPermissionGranted()) {
+        requestRemoteDesktopPermission(request);
+        return;
+    }
+
     if (!startRdpSession(request)) {
         sendStatus(QStringLiteral("failed"), m_lastError);
+    }
+}
+
+bool VirtualMonitorPlugin::remoteDesktopPermissionGranted() const
+{
+    const QString certificateFingerprint = pairedDeviceCertificateFingerprint();
+    return !certificateFingerprint.isEmpty() && config()->getString(RemoteDesktopPermissionCertificateKey, QString()) == certificateFingerprint;
+}
+
+QString VirtualMonitorPlugin::pairedDeviceCertificateFingerprint() const
+{
+    const QSslCertificate certificate = device()->certificate();
+    if (certificate.isNull()) {
+        return {};
+    }
+    return QString::fromLatin1(certificate.digest(QCryptographicHash::Sha256).toHex());
+}
+
+void VirtualMonitorPlugin::requestRemoteDesktopPermission(const SessionRequest &request)
+{
+    clearRemoteDesktopPermissionPrompt();
+    m_pendingPermissionRequest = request;
+
+    sendStatusForSession(request.sessionId, QStringLiteral("awaitingPermission"), i18n("Waiting for remote desktop permission on the computer."));
+
+    auto *notification = new KNotification(QStringLiteral("remoteDesktopPermissionRequest"), KNotification::NotificationFlag::Persistent, this);
+    m_permissionNotification = notification;
+    notification->setIconName(QStringLiteral("krdc"));
+    notification->setComponentName(QStringLiteral("kdeconnect"));
+    notification->setTitle(i18n("Remote desktop access request"));
+    notification->setText(
+        i18n("%1 wants to view and control this computer.\n\nAllowing access shares the screen and permits mouse and keyboard input. "
+             "The permission remains active until it is revoked in KDE Connect settings.",
+             device()->name().toHtmlEscaped()));
+
+    const QString sessionId = request.sessionId;
+    KNotificationAction *allowAction = notification->addAction(i18nc("@action:button", "Allow"));
+    connect(allowAction, &KNotificationAction::activated, this, [this, sessionId]() {
+        allowRemoteDesktopPermission(sessionId);
+    });
+
+    KNotificationAction *denyAction = notification->addAction(i18nc("@action:button", "Deny"));
+    connect(denyAction, &KNotificationAction::activated, this, [this, sessionId]() {
+        rejectRemoteDesktopPermission(sessionId, i18n("Remote desktop access was denied on the computer."));
+    });
+
+    connect(notification, &KNotification::ignored, this, [this, sessionId]() {
+        rejectRemoteDesktopPermission(sessionId, i18n("Remote desktop access was denied on the computer."));
+    });
+
+    QTimer::singleShot(PermissionRequestTimeoutMs, this, [this, sessionId]() {
+        rejectRemoteDesktopPermission(sessionId, i18n("The remote desktop permission request timed out."));
+    });
+
+    qCInfo(KDECONNECT_PLUGIN_VIRTUALMONITOR) << "Waiting for remote desktop permission for" << device()->name() << sessionId.left(8);
+    notification->sendEvent();
+}
+
+void VirtualMonitorPlugin::allowRemoteDesktopPermission(const QString &sessionId)
+{
+    if (!m_pendingPermissionRequest || m_pendingPermissionRequest->sessionId != sessionId) {
+        return;
+    }
+
+    const QString certificateFingerprint = pairedDeviceCertificateFingerprint();
+    if (certificateFingerprint.isEmpty()) {
+        rejectRemoteDesktopPermission(sessionId, i18n("The paired device identity could not be verified."));
+        return;
+    }
+
+    const SessionRequest request = *m_pendingPermissionRequest;
+    clearRemoteDesktopPermissionPrompt();
+    config()->set(RemoteDesktopPermissionCertificateKey, certificateFingerprint);
+    qCInfo(KDECONNECT_PLUGIN_VIRTUALMONITOR) << "Remote desktop permission granted for" << device()->name();
+
+    m_lastError.clear();
+    if (!startRdpSession(request)) {
+        sendStatus(QStringLiteral("failed"), m_lastError);
+    }
+}
+
+void VirtualMonitorPlugin::rejectRemoteDesktopPermission(const QString &sessionId, const QString &message)
+{
+    if (!m_pendingPermissionRequest || m_pendingPermissionRequest->sessionId != sessionId) {
+        return;
+    }
+
+    clearRemoteDesktopPermissionPrompt();
+    m_lastError = message;
+    qCInfo(KDECONNECT_PLUGIN_VIRTUALMONITOR) << "Remote desktop permission rejected for" << device()->name() << sessionId.left(8);
+    sendStatusForSession(sessionId, QStringLiteral("failed"), message);
+}
+
+void VirtualMonitorPlugin::clearRemoteDesktopPermissionPrompt()
+{
+    m_pendingPermissionRequest.reset();
+    QPointer<KNotification> notification = m_permissionNotification;
+    m_permissionNotification.clear();
+    if (notification) {
+        QObject::disconnect(notification, nullptr, this, nullptr);
+        notification->close();
     }
 }
 
@@ -484,8 +649,8 @@ bool VirtualMonitorPlugin::startRdpSession(const SessionRequest &request)
         arguments << QStringLiteral("--monitor") << QString::number(request.monitorIndex);
     }
 
-    arguments << QStringLiteral("--username") << m_username << QStringLiteral("--password") << m_password << QStringLiteral("--port")
-              << QString::number(m_port) << QStringLiteral("--quality") << QString::number(request.quality) << QStringLiteral("--certificate")
+    arguments << QStringLiteral("--username") << m_username << QStringLiteral("--password") << m_password << QStringLiteral("--port") << QString::number(m_port)
+              << QStringLiteral("--quality") << QString::number(request.quality) << QStringLiteral("--certificate")
               << m_tlsDirectory->filePath(QStringLiteral("server.crt")) << QStringLiteral("--certificate-key")
               << m_tlsDirectory->filePath(QStringLiteral("server.key"));
 
@@ -567,8 +732,8 @@ bool VirtualMonitorPlugin::prepareTlsCredentials()
     const QString certificatePath = m_tlsDirectory->filePath(QStringLiteral("server.crt"));
     QFile keyFile(keyPath);
     QFile certificateFile(certificatePath);
-    if (!keyFile.open(QIODevice::WriteOnly | QIODevice::Truncate) || keyFile.write(key.toPem()) <= 0 || !certificateFile.open(QIODevice::WriteOnly | QIODevice::Truncate)
-        || certificateFile.write(certificate.toPem()) <= 0) {
+    if (!keyFile.open(QIODevice::WriteOnly | QIODevice::Truncate) || keyFile.write(key.toPem()) <= 0
+        || !certificateFile.open(QIODevice::WriteOnly | QIODevice::Truncate) || certificateFile.write(certificate.toPem()) <= 0) {
         m_lastError = i18n("Could not write temporary RDP TLS credentials.");
         m_tlsDirectory.reset();
         return false;
