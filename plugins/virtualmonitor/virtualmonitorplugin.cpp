@@ -45,8 +45,6 @@
 
 K_PLUGIN_CLASS_WITH_JSON(VirtualMonitorPlugin, "kdeconnect_virtualmonitor.json")
 
-#define QS QLatin1String
-
 namespace
 {
 constexpr int ProtocolVersion = 2;
@@ -765,7 +763,7 @@ bool VirtualMonitorPlugin::startRdpSession(const SessionRequest &request)
 
     const quint64 generation = ++m_sessionGeneration;
     auto *process = new QProcess(this);
-    process->setProgram(QS("krdpserver"));
+    process->setProgram(QLatin1String("krdpserver"));
 
     QStringList arguments;
     if (request.mode == SessionMode::VirtualMonitor) {
@@ -993,24 +991,24 @@ void VirtualMonitorPlugin::sendStatusForSession(const QString &sessionId, const 
 
 bool VirtualMonitorPlugin::checkRdpClient() const
 {
-    if (!QStandardPaths::findExecutable(QS("krdc")).isEmpty()) {
+    if (!QStandardPaths::findExecutable(QLatin1String("krdc")).isEmpty()) {
         return true;
     }
-    return checkDefaultSchemeHandler(QS("rdp"));
+    return checkDefaultSchemeHandler(QLatin1String("rdp"));
 }
 
 bool VirtualMonitorPlugin::checkDefaultSchemeHandler(const QString &scheme) const
 {
 #if defined(Q_OS_WIN)
-    QSettings handler(QS("HKEY_CLASSES_ROOT\\") + scheme, QSettings::Registry64Format);
+    QSettings handler(QLatin1String("HKEY_CLASSES_ROOT\\") + scheme, QSettings::Registry64Format);
     if (handler.value(QStringLiteral("URL Protocol")).isNull()) {
         return false;
     }
 
-    QSettings command(QS("HKEY_CLASSES_ROOT\\") + scheme + QS("\\shell\\open\\command"), QSettings::Registry64Format);
+    QSettings command(QLatin1String("HKEY_CLASSES_ROOT\\") + scheme + QLatin1String("\\shell\\open\\command"), QSettings::Registry64Format);
     return !command.value(QStringLiteral("Default")).isNull();
 #else
-    const KService::Ptr service = KApplicationTrader::preferredService(QS("x-scheme-handler/") + scheme);
+    const KService::Ptr service = KApplicationTrader::preferredService(QLatin1String("x-scheme-handler/") + scheme);
     return service && !service->desktopEntryName().isEmpty();
 #endif
 }
