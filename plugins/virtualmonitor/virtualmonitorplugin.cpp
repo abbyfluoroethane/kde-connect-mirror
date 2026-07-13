@@ -449,6 +449,8 @@ void VirtualMonitorPlugin::receivePacket(const NetworkPacket &received)
         }
     }
 
+    // Status packets share this packet type but omit capability fields. Only
+    // update fields that are present so status updates keep cached capabilities.
     if (received.has(QStringLiteral("supports_rdp"))) {
         m_capabilitiesRemote.rdpClient = received.get<bool>(QStringLiteral("supports_rdp"), false);
     }
