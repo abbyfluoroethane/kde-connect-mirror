@@ -153,7 +153,7 @@ bool VirtualMonitorPlugin::active() const
     return m_process && m_process->state() != QProcess::NotRunning;
 }
 
-bool VirtualMonitorPlugin::usePlasmaRdpSession() const
+bool VirtualMonitorPlugin::isUsingPlasmaWayland() const
 {
     if (!QGuiApplication::platformName().contains(QLatin1String("wayland"), Qt::CaseInsensitive)) {
         return false;
@@ -209,7 +209,7 @@ QString VirtualMonitorPlugin::remoteDesktopPreflightError() const
         }
     }
 
-    if (usePlasmaRdpSession()) {
+    if (isUsingPlasmaWayland()) {
         if (!help.contains(QLatin1String("--plasma"))) {
             return i18n("The installed KRdp server does not support Plasma desktop sessions.");
         }
@@ -777,7 +777,7 @@ bool VirtualMonitorPlugin::startRdpSession(const SessionRequest &request)
               << m_tlsDirectory->filePath(QStringLiteral("server.crt")) << QStringLiteral("--certificate-key")
               << m_tlsDirectory->filePath(QStringLiteral("server.key"));
 
-    if (usePlasmaRdpSession()) {
+    if (isUsingPlasmaWayland()) {
         arguments << QStringLiteral("--plasma");
     }
 

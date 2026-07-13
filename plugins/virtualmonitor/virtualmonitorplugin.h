@@ -91,7 +91,7 @@ private:
     QString remoteDesktopPreflightError() const;
     void updateLocalRemoteDesktopCapabilities();
     void sendLocalCapabilities();
-    bool usePlasmaRdpSession() const;
+    bool isUsingPlasmaWayland() const;
     bool remoteDesktopPermissionGranted() const;
     QString pairedDeviceCertificateFingerprint() const;
     void requestRemoteDesktopPermission(const SessionRequest &request);
