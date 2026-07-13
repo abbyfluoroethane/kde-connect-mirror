@@ -49,8 +49,8 @@ namespace
 {
 constexpr int ProtocolVersion = 2;
 constexpr quint16 LegacyDefaultPort = 5901;
-constexpr quint16 KdeConnectMinPort = 1714;
-constexpr quint16 KdeConnectMaxPort = 1764;
+constexpr quint16 KdeConnectRdpMinPort = 1716;
+constexpr quint16 KdeConnectRdpMaxPort = 1764;
 constexpr int ServerProbeAttempts = 50;
 constexpr int ServerProbeIntervalMs = 100;
 constexpr int ClientConnectionTimeoutMs = 45'000;
@@ -873,7 +873,7 @@ bool VirtualMonitorPlugin::prepareTlsCredentials()
 
 quint16 VirtualMonitorPlugin::findAvailablePort() const
 {
-    for (int port = KdeConnectMaxPort; port >= KdeConnectMinPort; --port) {
+    for (int port = KdeConnectRdpMaxPort; port >= KdeConnectRdpMinPort; --port) {
         QTcpServer probe;
         if (probe.listen(QHostAddress::Any, quint16(port))) {
             probe.close();

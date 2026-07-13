@@ -27,7 +27,7 @@ kept for protocol-v1 peers.
 - Peers must have a direct authenticated LAN link. RDP is never exposed for a
   Bluetooth-only or relay-style link.
 
-The server uses a free port in KDE Connect's existing TCP range 1714-1764.
+The server uses a free port in KDE Connect's existing TCP range 1716-1764.
 
 ## Protocol version 2
 
