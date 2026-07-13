@@ -670,8 +670,11 @@ void VirtualMonitorPlugin::openRdpClient(const NetworkPacket &np)
         return;
     }
 
+    const int protocolVersion = np.get<int>(QStringLiteral("protocolVersion"), 1);
     const int port = np.get<int>(QStringLiteral("port"), LegacyDefaultPort);
-    if (port <= 0 || port > 65535) {
+    const bool invalidPort = port <= 0 || port > 65535
+        || (protocolVersion >= ProtocolVersion && (port < KdeConnectRdpMinPort || port > KdeConnectRdpMaxPort));
+    if (invalidPort) {
         sendStatusForSession(np.get<QString>(QStringLiteral("sessionId")),
                              QStringLiteral("failed"),
                              i18n("The remote desktop server supplied an invalid port."));
