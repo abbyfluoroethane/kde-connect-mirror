@@ -672,7 +672,7 @@ void VirtualMonitorPlugin::openRdpClient(const NetworkPacket &np)
 
     const int protocolVersion = np.get<int>(QStringLiteral("protocolVersion"), 1);
     const int port = np.get<int>(QStringLiteral("port"), LegacyDefaultPort);
-    const bool invalidPort = port <= 0 || port > 65535 || (protocolVersion >= ProtocolVersion && (port < KdeConnectRdpMinPort || port > KdeConnectRdpMaxPort));
+    const bool invalidPort = protocolVersion >= ProtocolVersion && (port < KdeConnectRdpMinPort || port > KdeConnectRdpMaxPort);
     if (invalidPort) {
         sendStatusForSession(np.get<QString>(QStringLiteral("sessionId")),
                              QStringLiteral("failed"),
