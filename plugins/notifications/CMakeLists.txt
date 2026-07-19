@@ -11,6 +11,6 @@ target_link_libraries(kdeconnect_notifications
     KF6::WindowSystem
 )
 
-if (UNIX AND NOT APPLE)
+if (WITH_X11)
     target_link_libraries(kdeconnect_notifications Qt6::GuiPrivate)
 endif()
