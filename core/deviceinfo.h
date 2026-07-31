@@ -170,7 +170,7 @@ struct DeviceInfo {
     // Capabilities that will be added to the incoming/outgoing capabilities but don't belong to any plugin.
     static QSet<QString> internalCapabilities()
     {
-        return {PACKET_TYPE_ACK};
+        return {PACKET_TYPE_ALIVE};
     }
 
     static bool isInternalPacket(const QString &type)

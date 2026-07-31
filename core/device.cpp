@@ -27,7 +27,7 @@
 #include "networkpacket.h"
 #include "pluginloader.h"
 
-constexpr int ACK_TIMEOUT = 3000;
+constexpr int PING_TIMEOUT = 3000;
 
 class Device::DevicePrivate
 {
@@ -53,7 +53,7 @@ public:
     QMultiMap<QString, KdeConnectPlugin *> m_pluginsByIncomingCapability;
     QSet<QString> m_supportedPlugins;
     PairingHandler *m_pairingHandler;
-    QTimer m_ackTimer;
+    QTimer m_pingTimer;
 };
 
 Device::Device(QObject *parent, const QString &id)
@@ -85,9 +85,9 @@ void Device::init()
     connect(this, &Device::pairStateChanged, this, &Device::statusIconNameChanged);
     connect(this, &Device::typeChanged, this, &Device::statusIconNameChanged);
 
-    connect(this, &Device::ackReceived, this, &Device::onAckReceived);
-    connect(&d->m_ackTimer, &QTimer::timeout, this, [this]() {
-        qCDebug(KDECONNECT_CORE) << "ACK timed out, device" << name() << "is unreachable";
+    connect(this, &Device::aliveReceived, this, &Device::onAliveReceived);
+    connect(&d->m_pingTimer, &QTimer::timeout, this, [this]() {
+        qCDebug(KDECONNECT_CORE) << "Ping timed out, device" << name() << "is unreachable";
         for (DeviceLink *dl : std::as_const(d->m_deviceLinks)) {
             removeLink(dl);
         }
@@ -98,9 +98,9 @@ void Device::init()
     connect(d->m_pairingHandler, &PairingHandler::pairingSuccessful, this, &Device::pairingHandler_pairingSuccessful);
     connect(d->m_pairingHandler, &PairingHandler::unpaired, this, &Device::pairingHandler_unpaired);
 
-    d->m_ackTimer.setParent(this);
-    d->m_ackTimer.setInterval(ACK_TIMEOUT);
-    d->m_ackTimer.setSingleShot(true);
+    d->m_pingTimer.setParent(this);
+    d->m_pingTimer.setInterval(PING_TIMEOUT);
+    d->m_pingTimer.setSingleShot(true);
 }
 
 Device::~Device()
@@ -387,29 +387,29 @@ bool Device::sendPacket(NetworkPacket &np)
     return false;
 }
 
-bool Device::acknowledge()
+bool Device::ping()
 {
-    if (d->m_ackTimer.isActive()) {
-        return true; // Already waiting for an ACK.
+    if (d->m_pingTimer.isActive()) {
+        return true; // Already pinging.
     }
 
-    NetworkPacket np(PACKET_TYPE_ACK, {{QStringLiteral("acknowledging"), true}});
+    NetworkPacket np(PACKET_TYPE_ALIVE, {{QStringLiteral("ping"), true}});
 
     if (sendPacket(np)) {
-        d->m_ackTimer.start();
+        d->m_pingTimer.start();
         return true;
     }
 
-    return false; // So the caller (e.g. the plugin) can know that acknowledging is not supported.
+    return false; // So the caller (e.g. the plugin) can know that pinging is not supported.
 }
 
 void Device::privateReceivedPacket(const NetworkPacket &np)
 {
     if (np.type() == PACKET_TYPE_PAIR) {
         d->m_pairingHandler->packetReceived(np);
-    } else if (np.type() == PACKET_TYPE_ACK) {
+    } else if (np.type() == PACKET_TYPE_ALIVE) {
         qCDebug(KDECONNECT_CORE) << "Received ACK from" << name();
-        Q_EMIT ackReceived(np);
+        Q_EMIT aliveReceived(np);
     } else if (isPaired()) {
         const QList<KdeConnectPlugin *> plugins = d->m_pluginsByIncomingCapability.values(np.type());
         if (plugins.isEmpty()) {
@@ -429,16 +429,16 @@ void Device::privateReceivedPacket(const NetworkPacket &np)
     }
 }
 
-void Device::onAckReceived(const NetworkPacket &np)
+void Device::onAliveReceived(const NetworkPacket &np)
 {
-    if (np.get<bool>(QStringLiteral("acknowledging"))) {
-        NetworkPacket reply(PACKET_TYPE_ACK, {{QStringLiteral("acknowledged"), true}});
+    if (np.get<bool>(QStringLiteral("ping"))) {
+        NetworkPacket reply(PACKET_TYPE_ALIVE, {{QStringLiteral("pong"), true}});
         sendPacket(reply);
-    } else if (np.get<bool>(QStringLiteral("acknowledged"))) {
-        d->m_ackTimer.stop();
-        Q_EMIT acknowledged(); // Any plugin can ACK the device, use Qt::SingleShotConnection to avoid reacting to other plugins ACKs.
+    } else if (np.get<bool>(QStringLiteral("pong"))) {
+        d->m_pingTimer.stop();
+        Q_EMIT deviceAlive(); // Any plugin can ping the device, use Qt::SingleShotConnection to avoid reacting to other plugins's pings.
     } else {
-        qCDebug(KDECONNECT_CORE) << "Received invalid ACK packet from" << name();
+        qCDebug(KDECONNECT_CORE) << "Received an invalid alive packet from" << name();
     }
 }
 

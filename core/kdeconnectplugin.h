@@ -54,7 +54,7 @@ public:
      * This method can be used to check if the the device is reachable or not,
      * it returns true if the device supports that API and false otherwise.
      */
-    bool ackDevice() const;
+    bool pingDevice() const;
 
 private:
     const std::unique_ptr<KdeConnectPluginPrivate> d;
