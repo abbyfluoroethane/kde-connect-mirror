@@ -65,7 +65,7 @@ void RunCommandPlugin::receivePacket(const NetworkPacket &np)
         OpenConfig oc;
         oc.openConfiguration(device()->id(), QStringLiteral("kdeconnect_runcommand"));
     } else if (np.has(QStringLiteral("stop"))) {
-        for (QProcess *process : currentProcesses.values()) {
+        for (QProcess *process : std::as_const(currentProcesses)) {
             process->terminate(); // will trigger onProcessFinished
         }
     }
