@@ -306,6 +306,9 @@ void RemoteDesktopSession::handleEiEvents()
             if (ei_device_has_capability(device, EI_DEVICE_CAP_POINTER) && !m_pointer) {
                 m_pointer = device;
             }
+            if (ei_device_has_capability(device, EI_DEVICE_CAP_TEXT) && !m_textDevice) {
+                m_textDevice = device;
+            }
             if (ei_device_has_capability(device, EI_DEVICE_CAP_POINTER_ABSOLUTE) && !m_absolutePointer) {
                 m_absolutePointer = device;
             }
@@ -317,6 +320,9 @@ void RemoteDesktopSession::handleEiEvents()
             }
             if (device == m_pointer) {
                 m_pointer = nullptr;
+            }
+            if (device == m_textDevice) {
+                m_textDevice = nullptr;
             }
             if (device == m_absolutePointer) {
                 m_absolutePointer = nullptr;
@@ -434,9 +440,10 @@ void RemoteDesktopSession::keyboardKeysym(int sym, bool press)
 
 void RemoteDesktopSession::keyboardSendText(QStringView text, bool modified)
 {
-    if (m_ei && m_keyboard && ei_device_has_capability(m_keyboard, EI_DEVICE_CAP_TEXT) && !modified) {
+    if (m_ei && m_textDevice && ei_device_has_capability(m_textDevice, EI_DEVICE_CAP_TEXT) && !modified) {
         const QByteArray utfkey = text.toUtf8();
-        ei_device_text_utf8_with_length(m_keyboard, utfkey.constData(), utfkey.size());
+        ei_device_text_utf8_with_length(m_textDevice, utfkey.constData(), utfkey.size());
+        ei_device_frame(m_textDevice, ei_now(m_ei));
     } else {
         for (const QChar character : text) {
             const auto keysym = xkb_utf32_to_keysym(character.unicode());
