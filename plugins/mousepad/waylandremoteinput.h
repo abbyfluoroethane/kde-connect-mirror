@@ -53,6 +53,7 @@ private:
     ei *m_ei = nullptr;
     ei_device *m_keyboard = nullptr;
     ei_device *m_pointer = nullptr;
+    ei_device *m_textDevice = nullptr;
     ei_device *m_absolutePointer = nullptr;
 };
 
