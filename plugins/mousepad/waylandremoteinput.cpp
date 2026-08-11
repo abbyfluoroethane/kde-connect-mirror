@@ -283,6 +283,7 @@ void RemoteDesktopSession::handleEiEvents()
             auto seat = ei_event_get_seat(event);
             ei_seat_bind_capabilities(seat,
                                       EI_DEVICE_CAP_KEYBOARD,
+                                      EI_DEVICE_CAP_TEXT,
                                       EI_DEVICE_CAP_POINTER,
                                       EI_DEVICE_CAP_POINTER_ABSOLUTE,
                                       EI_DEVICE_CAP_BUTTON,
@@ -433,7 +434,7 @@ void RemoteDesktopSession::keyboardKeysym(int sym, bool press)
 
 void RemoteDesktopSession::keyboardSendText(QStringView text, bool modified)
 {
-    if (m_ei && m_keyboard && !modified) {
+    if (m_ei && m_keyboard && ei_device_has_capability(m_keyboard, EI_DEVICE_CAP_TEXT) && !modified) {
         const QByteArray utfkey = text.toUtf8();
         ei_device_text_utf8_with_length(m_keyboard, utfkey.constData(), utfkey.size());
     } else {
