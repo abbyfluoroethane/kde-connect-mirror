@@ -22,6 +22,10 @@ public:
     void receivePacket(const NetworkPacket &np) override;
 
 private:
+    void pausePlayer(const QString &iface);
+    void pauseOrStopPlayer(const QString &iface);
+
     QSet<QString> pausedSources;
     QSet<QString> mutedSinks;
+    bool m_pauseActive = false;
 };
