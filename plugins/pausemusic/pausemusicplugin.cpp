@@ -125,8 +125,8 @@ void PauseMusicPlugin::pausePlayer(const QString &iface)
     }
 
     QDBusInterface props(iface, QStringLiteral("/org/mpris/MediaPlayer2"), QStringLiteral("org.freedesktop.DBus.Properties"), QDBusConnection::sessionBus());
-    QDBusPendingCall statusCall = props.asyncCall(QStringLiteral("Get"),
-                                                  QVariantList{QStringLiteral("org.mpris.MediaPlayer2.Player"), QStringLiteral("PlaybackStatus")});
+    QDBusPendingCall statusCall =
+        props.asyncCall(QStringLiteral("Get"), QVariantList{QStringLiteral("org.mpris.MediaPlayer2.Player"), QStringLiteral("PlaybackStatus")});
     QDBusPendingCallWatcher *statusWatcher = new QDBusPendingCallWatcher(statusCall, this);
     connect(statusWatcher, &QDBusPendingCallWatcher::finished, this, [this, iface](QDBusPendingCallWatcher *watcher) {
         watcher->deleteLater();
@@ -134,7 +134,7 @@ void PauseMusicPlugin::pausePlayer(const QString &iface)
         if (!reply.isValid() || !m_pauseActive) {
             return;
         }
-        // This function might be used by 2 simultaneous events at a time, so guard the insert() by checking contains() first. 
+        // This function might be used by 2 simultaneous events at a time, so guard the insert() by checking contains() first.
         if (pausedSources.contains(iface)) {
             return;
         }
@@ -149,8 +149,8 @@ void PauseMusicPlugin::pausePlayer(const QString &iface)
 void PauseMusicPlugin::pauseOrStopPlayer(const QString &iface)
 {
     QDBusInterface props(iface, QStringLiteral("/org/mpris/MediaPlayer2"), QStringLiteral("org.freedesktop.DBus.Properties"), QDBusConnection::sessionBus());
-    QDBusPendingCall canPauseCall = props.asyncCall(QStringLiteral("Get"),
-                                                    QVariantList{QStringLiteral("org.mpris.MediaPlayer2.Player"), QStringLiteral("CanPause")});
+    QDBusPendingCall canPauseCall =
+        props.asyncCall(QStringLiteral("Get"), QVariantList{QStringLiteral("org.mpris.MediaPlayer2.Player"), QStringLiteral("CanPause")});
     QDBusPendingCallWatcher *canPauseWatcher = new QDBusPendingCallWatcher(canPauseCall, this);
     connect(canPauseWatcher, &QDBusPendingCallWatcher::finished, this, [this, iface](QDBusPendingCallWatcher *watcher) {
         watcher->deleteLater();
