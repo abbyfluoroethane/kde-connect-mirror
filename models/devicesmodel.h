@@ -21,6 +21,7 @@ class KDECONNECTMODELS_EXPORT DevicesModel : public QAbstractListModel
 {
     Q_OBJECT
     Q_PROPERTY(int displayFilter READ displayFilter WRITE setDisplayFilter NOTIFY displayFilterChanged)
+    Q_PROPERTY(bool busy READ busy NOTIFY busyChanged)
     Q_PROPERTY(int count READ rowCount NOTIFY rowsChanged)
 
 public:
@@ -51,6 +52,8 @@ public:
     void setDisplayFilter(int flags);
     int displayFilter() const;
 
+    bool busy() const;
+
     QVariant data(const QModelIndex &index, int role) const override;
     int rowCount(const QModelIndex &parent = QModelIndex()) const override;
 
@@ -69,6 +72,7 @@ private Q_SLOTS:
 Q_SIGNALS:
     void rowsChanged();
     void displayFilterChanged(int value);
+    void busyChanged(bool busy);
 
 private:
     void clearDevices();
@@ -78,6 +82,7 @@ private:
     DaemonDbusInterface *m_dbusInterface;
     QVector<DeviceDbusInterface *> m_deviceList;
     StatusFilterFlag m_displayFilter;
+    bool m_busy = false;
 };
 
 // Q_DECLARE_OPERATORS_FOR_FLAGS(DevicesModel::StatusFilterFlag)
