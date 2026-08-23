@@ -88,9 +88,55 @@ public:
         m_xkbstate.reset(xkb_state_new(m_xkbkeymap.get()));
     }
 
-    std::optional<int> keycodeFromKeysym(xkb_keysym_t keysym)
+    void updateKeyState(int evdevKeyCode, bool pressed)
     {
-        auto layout = xkb_state_serialize_layout(m_xkbstate.get(), XKB_STATE_LAYOUT_EFFECTIVE);
+        xkb_state_update_key(m_xkbstate.get(), xkb_keycode_t(evdevKeyCode + 8), pressed ? XKB_KEY_DOWN : XKB_KEY_UP);
+    }
+
+    xkb_mod_mask_t effectiveMods() const
+    {
+        return xkb_state_serialize_mods(m_xkbstate.get(), XKB_STATE_MODS_EFFECTIVE);
+    }
+
+private:
+    struct KeyBinding {
+        int evdevKeyCode;
+        xkb_mod_mask_t mods;
+    };
+
+    static std::vector<xkb_keysym_t> modifierKeysymCandidates(const char *canonicalModName)
+    {
+        if (qstrcmp(canonicalModName, "Shift") == 0) {
+            return {XKB_KEY_Shift_L, XKB_KEY_Shift_R};
+        }
+        if (qstrcmp(canonicalModName, "Lock") == 0) {
+            return {XKB_KEY_Caps_Lock};
+        }
+        if (qstrcmp(canonicalModName, "Control") == 0) {
+            return {XKB_KEY_Control_L, XKB_KEY_Control_R};
+        }
+        if (qstrcmp(canonicalModName, "Mod1") == 0) {
+            return {XKB_KEY_Alt_L, XKB_KEY_Meta_L};
+        }
+        if (qstrcmp(canonicalModName, "Mod2") == 0) {
+            return {XKB_KEY_Num_Lock};
+        }
+        if (qstrcmp(canonicalModName, "Mod3") == 0) {
+            return {XKB_KEY_ISO_Level5_Shift};
+        }
+        if (qstrcmp(canonicalModName, "Mod4") == 0) {
+            return {XKB_KEY_Super_L, XKB_KEY_Hyper_L};
+        }
+        if (qstrcmp(canonicalModName, "Mod5") == 0) {
+            // This is AltGr on most non-US layouts
+            return {XKB_KEY_ISO_Level3_Shift};
+        }
+        return {};
+    }
+
+    std::optional<int> keycodeForModifierKeysyms(const std::vector<xkb_keysym_t> &candidates) const
+    {
+        const xkb_layout_index_t layout = xkb_state_serialize_layout(m_xkbstate.get(), XKB_STATE_LAYOUT_EFFECTIVE);
         const xkb_keycode_t max = xkb_keymap_max_keycode(m_xkbkeymap.get());
         for (xkb_keycode_t keycode = xkb_keymap_min_keycode(m_xkbkeymap.get()); keycode < max; keycode++) {
             uint levelCount = xkb_keymap_num_levels_for_key(m_xkbkeymap.get(), keycode, layout);
@@ -98,13 +144,103 @@ public:
                 const xkb_keysym_t *syms;
                 uint num_syms = xkb_keymap_key_get_syms_by_level(m_xkbkeymap.get(), keycode, layout, currentLevel, &syms);
                 for (uint sym = 0; sym < num_syms; sym++) {
-                    if (syms[sym] == keysym) {
-                        return {keycode - 8};
+                    for (auto candidate : candidates) {
+                        if (syms[sym] == candidate) {
+                            return {int(keycode - 8)};
+                        }
                     }
                 }
             }
         }
         return {};
+    }
+
+    std::optional<int> modKeycodeForBit(xkb_mod_mask_t bit) const
+    {
+        const xkb_mod_index_t numMods = xkb_keymap_num_mods(m_xkbkeymap.get());
+        for (xkb_mod_index_t modIndex = 0; modIndex < numMods; modIndex++) {
+            if (!(bit & (xkb_mod_mask_t(1) << modIndex))) {
+                continue;
+            }
+            const auto candidates = modifierKeysymCandidates(xkb_keymap_mod_get_name(m_xkbkeymap.get(), modIndex));
+            if (candidates.empty()) {
+                continue;
+            }
+            if (auto keycode = keycodeForModifierKeysyms(candidates)) {
+                return keycode;
+            }
+        }
+        return {};
+    }
+
+    bool canSynthesizeAllBits(xkb_mod_mask_t mask) const
+    {
+        const xkb_mod_index_t numMods = xkb_keymap_num_mods(m_xkbkeymap.get());
+        for (xkb_mod_index_t modIndex = 0; modIndex < numMods; modIndex++) {
+            const xkb_mod_mask_t bit = xkb_mod_mask_t(1) << modIndex;
+            if ((mask & bit) && !modKeycodeForBit(bit)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+public:
+    // Evdev keycodes to press so that all bits of \p mask become active.
+    // Bits without a usable modifier key are skipped.
+    std::vector<int> modKeycodesForMask(xkb_mod_mask_t mask) const
+    {
+        std::vector<int> out;
+        const xkb_mod_index_t numMods = xkb_keymap_num_mods(m_xkbkeymap.get());
+        for (xkb_mod_index_t modIndex = 0; modIndex < numMods; modIndex++) {
+            const xkb_mod_mask_t bit = xkb_mod_mask_t(1) << modIndex;
+            if (!(mask & bit)) {
+                continue;
+            }
+            if (auto keycode = modKeycodeForBit(bit)) {
+                out.push_back(*keycode);
+            }
+        }
+        return out;
+    }
+
+public:
+    // Resolves a keysym to an evdev keycode plus the modifiers that must be
+    // held to produce it with the current keymap. The modifiers are needed
+    // because a character like '/' often lives on Shift or AltGr levels of a
+    // key whose base level produces a different character ('/': ':' on
+    // French layouts, '#' is AltGr+'3', '%' is Shift+'ù').
+    std::optional<KeyBinding> bindingForKeysym(xkb_keysym_t keysym)
+    {
+        auto layout = xkb_state_serialize_layout(m_xkbstate.get(), XKB_STATE_LAYOUT_EFFECTIVE);
+        const xkb_keycode_t max = xkb_keymap_max_keycode(m_xkbkeymap.get());
+        std::optional<KeyBinding> fallback;
+        for (xkb_keycode_t keycode = xkb_keymap_min_keycode(m_xkbkeymap.get()); keycode < max; keycode++) {
+            uint levelCount = xkb_keymap_num_levels_for_key(m_xkbkeymap.get(), keycode, layout);
+            for (uint currentLevel = 0; currentLevel < levelCount; currentLevel++) {
+                const xkb_keysym_t *syms;
+                uint num_syms = xkb_keymap_key_get_syms_by_level(m_xkbkeymap.get(), keycode, layout, currentLevel, &syms);
+                for (uint sym = 0; sym < num_syms; sym++) {
+                    if (syms[sym] != keysym) {
+                        continue;
+                    }
+                    xkb_mod_mask_t masks[16];
+                    size_t numMasks = xkb_keymap_key_get_mods_for_level(m_xkbkeymap.get(), keycode, layout, currentLevel, masks, std::size(masks));
+                    if (numMasks == 0) {
+                        break;
+                    }
+                    if (!fallback) {
+                        fallback = KeyBinding{int(keycode - 8), masks[0]};
+                    }
+                    for (size_t i = 0; i < numMasks; i++) {
+                        if (canSynthesizeAllBits(masks[i])) {
+                            return KeyBinding{int(keycode - 8), masks[i]};
+                        }
+                    }
+                }
+            }
+        }
+        return fallback;
     }
 
 private:
@@ -418,6 +554,7 @@ void RemoteDesktopSession::keyboardKeycode(int key, bool press)
 {
     if (m_ei && m_keyboard) {
         ei_device_keyboard_key(m_keyboard, key, press);
+        m_xkb->updateKeyState(key, press);
         ei_device_frame(m_keyboard, ei_now(m_ei));
     } else {
         iface->NotifyKeyboardKeycode(m_xdpPath, {}, key, press);
@@ -427,12 +564,39 @@ void RemoteDesktopSession::keyboardKeycode(int key, bool press)
 void RemoteDesktopSession::keyboardKeysym(int sym, bool press)
 {
     if (m_ei && m_keyboard) {
-        if (auto code = m_xkb->keycodeFromKeysym(sym)) {
-            ei_device_keyboard_key(m_keyboard, *code, press);
-            ei_device_frame(m_keyboard, ei_now(m_ei));
-        } else {
+        // Resolve the keysym against the compositor's keymap, including the
+        // modifiers needed to reach the level that produces this keysym
+        // (e.g. Shift for '/' on French layouts, AltGr for '#').
+        auto binding = m_xkb->bindingForKeysym(sym);
+        if (!binding) {
             qCWarning(KDECONNECT_PLUGIN_MOUSEPAD) << "failed to convert keysym" << sym;
+            return;
         }
+
+        auto sendEvdevKey = [this](int evdevKeyCode, bool down) {
+            ei_device_keyboard_key(m_keyboard, evdevKeyCode, down);
+            m_xkb->updateKeyState(evdevKeyCode, down);
+        };
+
+        if (press) {
+            // Press whatever modifiers are missing to reach the right level.
+            // Modifiers already held (e.g. from an explicit shift/ctrl in the
+            // packet) are not touched.
+            m_synthModKeys.clear();
+            const xkb_mod_mask_t needed = binding->mods & ~m_xkb->effectiveMods();
+            m_synthModKeys = m_xkb->modKeycodesForMask(needed);
+            for (int keycode : m_synthModKeys) {
+                sendEvdevKey(keycode, true);
+            }
+            sendEvdevKey(binding->evdevKeyCode, true);
+        } else {
+            sendEvdevKey(binding->evdevKeyCode, false);
+            for (int keycode : m_synthModKeys) {
+                sendEvdevKey(keycode, false);
+            }
+            m_synthModKeys.clear();
+        }
+        ei_device_frame(m_keyboard, ei_now(m_ei));
     } else {
         iface->NotifyKeyboardKeysym(m_xdpPath, {}, sym, press).waitForFinished();
     }
