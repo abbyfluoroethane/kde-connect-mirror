@@ -10,6 +10,7 @@
 #include <QList>
 #include <QMap>
 #include <QObject>
+#include <QPointer>
 #include <QString>
 #include <QUrl>
 
@@ -45,7 +46,7 @@ private:
 
     QList<QUrl> m_urls;
     QList<QAction *> m_actions;
-    QObject *m_actionParent = nullptr;
+    QPointer<QObject> m_actionParent;
 
     int m_pendingCalls = 0;
     QStringList m_supportedDeviceIds;
