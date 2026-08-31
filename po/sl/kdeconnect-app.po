@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: kdeconnect-kde\n"
 "Report-Msgid-Bugs-To: https://bugs.kde.org\n"
-"POT-Creation-Date: 2026-07-27 00:44+0000\n"
-"PO-Revision-Date: 2026-07-27 07:18+0200\n"
+"POT-Creation-Date: 2026-08-25 00:44+0000\n"
+"PO-Revision-Date: 2026-08-23 08:46+0200\n"
 "Last-Translator: Matjaž Jeran <matjaz.jeran@amis.net>\n"
 "Language-Team: Slovenian <lugos-slo@lugos.si>\n"
 "Language: sl\n"
@@ -18,57 +18,57 @@ msgstr ""
 "%100==4 ? 3 : 0);\n"
 "X-Generator: Poedit 3.9\n"
 
-#: main.cpp:46 main.cpp:48
+#: main.cpp:45 main.cpp:47
 #, kde-format
 msgid "KDE Connect"
 msgstr "KDE Connect"
 
-#: main.cpp:50
+#: main.cpp:49
 #, kde-format
 msgid "© 2015–2025 KDE Connect Team"
 msgstr "© 2015-2025, Ekipa KDE Connect"
 
-#: main.cpp:51
+#: main.cpp:50
 #, kde-format
 msgid "Aleix Pol Gonzalez"
 msgstr "Aleix Pol Gonzalez"
 
-#: main.cpp:52
+#: main.cpp:51
 #, kde-format
 msgid "Albert Vaca Cintora"
 msgstr "Albert Vaca Cintora"
 
-#: main.cpp:53
+#: main.cpp:52
 #, kde-format
 msgctxt "NAME OF TRANSLATORS"
 msgid "Your names"
 msgstr "Matjaž Jeran"
 
-#: main.cpp:53
+#: main.cpp:52
 #, kde-format
 msgctxt "EMAIL OF TRANSLATORS"
 msgid "Your emails"
 msgstr "matjaz.jeran@amis.net"
 
-#: main.cpp:84
+#: main.cpp:83
 #, kde-format
 msgctxt "@info:shell"
 msgid "Device id to open the app in"
 msgstr "ID naprave za odpiranje aplikacije"
 
-#: main.cpp:87
+#: main.cpp:86
 #, kde-format
 msgctxt "@info:shell"
 msgid "Configuration module to show, requires --device to be set."
 msgstr "Za prikaz konfiguracijskega modula je potrebna nastavitev --device."
 
-#: main.cpp:91
+#: main.cpp:90
 #, kde-format
 msgctxt "command line description"
 msgid "Replace an existing instance"
 msgstr "Zamenjaj obstoječi pojavek"
 
-#: main.cpp:94
+#: main.cpp:93
 #, kde-format
 msgid "URL to share"
 msgstr "URL za deljenje"
@@ -256,50 +256,50 @@ msgstr "Ta naprava ni dosegljiva"
 msgid "Please choose a file"
 msgstr "Izberite datoteko"
 
-#: qml/Main.qml:87
+#: qml/Main.qml:105
 #, kde-format
 msgid "Devices"
 msgstr "Naprave"
 
-#: qml/Main.qml:95
+#: qml/Main.qml:113
 #, kde-format
 msgctxt "@action:button"
 msgid "Refresh"
 msgstr "Osveži"
 
-#: qml/Main.qml:98
+#: qml/Main.qml:116
 #, kde-format
 msgctxt "@action:button accessible"
 msgid "Refresh Devices"
 msgstr "Osveži naprave"
 
-#: qml/Main.qml:134
+#: qml/Main.qml:152
 #, kde-format
 msgid "Remembered"
 msgstr "Zapomnjena"
 
-#: qml/Main.qml:136
+#: qml/Main.qml:154
 #, kde-format
 msgid "Available"
 msgstr "Na voljo"
 
-#: qml/Main.qml:138
+#: qml/Main.qml:156
 #, kde-format
 msgid "Connected"
 msgstr "Povezana"
 
-#: qml/Main.qml:143
+#: qml/Main.qml:161
 #, kde-format
 msgid "No devices found"
 msgstr "Ni najdenih naprav"
 
-#: qml/Main.qml:215
+#: qml/Main.qml:240
 #, kde-format
 msgctxt "@action:button"
 msgid "Settings"
 msgstr "Nastavitve"
 
-#: qml/Main.qml:230
+#: qml/Main.qml:255
 #, kde-format
 msgid "Settings"
 msgstr "Nastavitve"
@@ -350,8 +350,8 @@ msgstr "%1 - %2"
 #: qml/NotificationPanel.qml:21
 #, kde-format
 msgctxt "@title:window"
-msgid "Active Notifications"
-msgstr "Aktivna obvestila"
+msgid "Notifications"
+msgstr "Obvestila"
 
 #: qml/NotificationPanel.qml:196
 #, kde-format
@@ -499,6 +499,10 @@ msgstr ""
 "Če imate težave, obiščite <a href=\"https://userbase.kde.org/KDEConnect"
 "\"><span style=\"text-decoration: underline;\">wiki skupnosti KDE Connect</"
 "span></a > za pomoč."
+
+#~ msgctxt "@title:window"
+#~ msgid "Active Notifications"
+#~ msgstr "Aktivna obvestila"
 
 #~ msgid "@action:button"
 #~ msgstr "@action:button"

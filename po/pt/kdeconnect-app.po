@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: kdeconnect-kde\n"
 "Report-Msgid-Bugs-To: https://bugs.kde.org\n"
-"POT-Creation-Date: 2026-07-27 00:44+0000\n"
+"POT-Creation-Date: 2026-08-25 00:44+0000\n"
 "PO-Revision-Date: 2023-06-09 03:04+0100\n"
 "Last-Translator: José Nuno Coelho Pires <zepires@gmail.com>\n"
 "Language-Team: Portuguese <kde-i18n-pt@kde.org>\n"
@@ -13,57 +13,57 @@ msgstr ""
 "X-POFile-SpellExtra: Gonzalez Pol Connect Aleix\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
 
-#: main.cpp:46 main.cpp:48
+#: main.cpp:45 main.cpp:47
 #, kde-format
 msgid "KDE Connect"
 msgstr "KDE Connect"
 
-#: main.cpp:50
+#: main.cpp:49
 #, kde-format
 msgid "© 2015–2025 KDE Connect Team"
 msgstr ""
 
-#: main.cpp:51
+#: main.cpp:50
 #, kde-format
 msgid "Aleix Pol Gonzalez"
 msgstr "Aleix Pol Gonzalez"
 
-#: main.cpp:52
+#: main.cpp:51
 #, kde-format
 msgid "Albert Vaca Cintora"
 msgstr ""
 
-#: main.cpp:53
+#: main.cpp:52
 #, kde-format
 msgctxt "NAME OF TRANSLATORS"
 msgid "Your names"
 msgstr "José Nuno Pires"
 
-#: main.cpp:53
+#: main.cpp:52
 #, kde-format
 msgctxt "EMAIL OF TRANSLATORS"
 msgid "Your emails"
 msgstr "zepires@gmail.com"
 
-#: main.cpp:84
+#: main.cpp:83
 #, kde-format
 msgctxt "@info:shell"
 msgid "Device id to open the app in"
 msgstr ""
 
-#: main.cpp:87
+#: main.cpp:86
 #, kde-format
 msgctxt "@info:shell"
 msgid "Configuration module to show, requires --device to be set."
 msgstr ""
 
-#: main.cpp:91
+#: main.cpp:90
 #, kde-format
 msgctxt "command line description"
 msgid "Replace an existing instance"
 msgstr ""
 
-#: main.cpp:94
+#: main.cpp:93
 #, kde-format
 msgid "URL to share"
 msgstr "URL a partilhar"
@@ -253,53 +253,53 @@ msgstr "Este dispositivo está inacessível"
 msgid "Please choose a file"
 msgstr "Escolha por favor um ficheiro"
 
-#: qml/Main.qml:87
+#: qml/Main.qml:105
 #, fuzzy, kde-format
 #| msgid "Find Device"
 msgid "Devices"
 msgstr "Procurar um Dispositivo"
 
-#: qml/Main.qml:95
+#: qml/Main.qml:113
 #, kde-format
 msgctxt "@action:button"
 msgid "Refresh"
 msgstr ""
 
-#: qml/Main.qml:98
+#: qml/Main.qml:116
 #, fuzzy, kde-format
 #| msgid "Find Device"
 msgctxt "@action:button accessible"
 msgid "Refresh Devices"
 msgstr "Procurar um Dispositivo"
 
-#: qml/Main.qml:134
+#: qml/Main.qml:152
 #, kde-format
 msgid "Remembered"
 msgstr "Recordado"
 
-#: qml/Main.qml:136
+#: qml/Main.qml:154
 #, kde-format
 msgid "Available"
 msgstr "Disponível"
 
-#: qml/Main.qml:138
+#: qml/Main.qml:156
 #, kde-format
 msgid "Connected"
 msgstr "Ligado"
 
-#: qml/Main.qml:143
+#: qml/Main.qml:161
 #, kde-format
 msgid "No devices found"
 msgstr "Não foram encontrados dispositivos"
 
-#: qml/Main.qml:215
+#: qml/Main.qml:240
 #, fuzzy, kde-format
 #| msgid "Settings"
 msgctxt "@action:button"
 msgid "Settings"
 msgstr "Configuração"
 
-#: qml/Main.qml:230
+#: qml/Main.qml:255
 #, kde-format
 msgid "Settings"
 msgstr "Configuração"
@@ -352,7 +352,7 @@ msgstr "%1 - %2"
 #: qml/NotificationPanel.qml:21
 #, kde-format
 msgctxt "@title:window"
-msgid "Active Notifications"
+msgid "Notifications"
 msgstr ""
 
 #: qml/NotificationPanel.qml:196

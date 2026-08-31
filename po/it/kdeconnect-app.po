@@ -1,13 +1,13 @@
 # Copyright (C) 2023 This file is copyright:
 # This file is distributed under the same license as the kdeconnect-kde package.
-# SPDX-FileCopyrightText: 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026 Vincenzo Reale <smart2128vr@gmail.com>
+# SPDX-FileCopyrightText: 2019-2026 Vincenzo Reale <smart2128vr@gmail.com>
 #
 msgid ""
 msgstr ""
 "Project-Id-Version: kdeconnect-kde\n"
 "Report-Msgid-Bugs-To: https://bugs.kde.org\n"
-"POT-Creation-Date: 2026-07-27 00:44+0000\n"
-"PO-Revision-Date: 2026-04-08 18:34+0200\n"
+"POT-Creation-Date: 2026-08-25 00:44+0000\n"
+"PO-Revision-Date: 2026-08-24 11:03+0200\n"
 "Last-Translator: Vincenzo Reale <smart2128vr@gmail.com>\n"
 "Language-Team: Italian <kde-i18n-it@kde.org>\n"
 "Language: it\n"
@@ -15,47 +15,47 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
-"X-Generator: Lokalize 25.12.3\n"
+"X-Generator: Lokalize 26.08.0\n"
 
-#: main.cpp:46 main.cpp:48
+#: main.cpp:45 main.cpp:47
 #, kde-format
 msgid "KDE Connect"
 msgstr "KDE Connect"
 
-#: main.cpp:50
+#: main.cpp:49
 #, kde-format
 msgid "© 2015–2025 KDE Connect Team"
 msgstr "© 2015–2025 la squadra di KDE Connect"
 
-#: main.cpp:51
+#: main.cpp:50
 #, kde-format
 msgid "Aleix Pol Gonzalez"
 msgstr "Aleix Pol Gonzalez"
 
-#: main.cpp:52
+#: main.cpp:51
 #, kde-format
 msgid "Albert Vaca Cintora"
 msgstr "Albert Vaca Cintora"
 
-#: main.cpp:53
+#: main.cpp:52
 #, kde-format
 msgctxt "NAME OF TRANSLATORS"
 msgid "Your names"
 msgstr "Vincenzo Reale"
 
-#: main.cpp:53
+#: main.cpp:52
 #, kde-format
 msgctxt "EMAIL OF TRANSLATORS"
 msgid "Your emails"
 msgstr "smart2128vr@gmail.com"
 
-#: main.cpp:84
+#: main.cpp:83
 #, kde-format
 msgctxt "@info:shell"
 msgid "Device id to open the app in"
 msgstr "ID dispositivo per aprire l'applicazione"
 
-#: main.cpp:87
+#: main.cpp:86
 #, kde-format
 msgctxt "@info:shell"
 msgid "Configuration module to show, requires --device to be set."
@@ -63,13 +63,13 @@ msgstr ""
 "Per visualizzare il modulo di configurazione, è necessario impostare --"
 "device."
 
-#: main.cpp:91
+#: main.cpp:90
 #, kde-format
 msgctxt "command line description"
 msgid "Replace an existing instance"
 msgstr "Sostituisci un'istanza esistente"
 
-#: main.cpp:94
+#: main.cpp:93
 #, kde-format
 msgid "URL to share"
 msgstr "URL da condividere"
@@ -145,7 +145,7 @@ msgstr "Controllo multimediale"
 #: qml/DevicePage.qml:149
 #, kde-format
 msgid "Notifications"
-msgstr ""
+msgstr "Notifiche"
 
 #: qml/DevicePage.qml:157
 #, kde-format
@@ -257,50 +257,50 @@ msgstr "Questo dispositivo non è raggiungibile"
 msgid "Please choose a file"
 msgstr "Scegli un file"
 
-#: qml/Main.qml:87
+#: qml/Main.qml:105
 #, kde-format
 msgid "Devices"
 msgstr "Dispositivi"
 
-#: qml/Main.qml:95
+#: qml/Main.qml:113
 #, kde-format
 msgctxt "@action:button"
 msgid "Refresh"
 msgstr "Aggiorna"
 
-#: qml/Main.qml:98
+#: qml/Main.qml:116
 #, kde-format
 msgctxt "@action:button accessible"
 msgid "Refresh Devices"
 msgstr "Aggiorna dispositivi"
 
-#: qml/Main.qml:134
+#: qml/Main.qml:152
 #, kde-format
 msgid "Remembered"
 msgstr "Memorizzati"
 
-#: qml/Main.qml:136
+#: qml/Main.qml:154
 #, kde-format
 msgid "Available"
 msgstr "Disponibili"
 
-#: qml/Main.qml:138
+#: qml/Main.qml:156
 #, kde-format
 msgid "Connected"
 msgstr "Connessi"
 
-#: qml/Main.qml:143
+#: qml/Main.qml:161
 #, kde-format
 msgid "No devices found"
 msgstr "Nessun dispositivo trovato"
 
-#: qml/Main.qml:215
+#: qml/Main.qml:240
 #, kde-format
 msgctxt "@action:button"
 msgid "Settings"
 msgstr "Impostazioni"
 
-#: qml/Main.qml:230
+#: qml/Main.qml:255
 #, kde-format
 msgid "Settings"
 msgstr "Impostazioni"
@@ -353,35 +353,34 @@ msgstr "%1 - %2"
 #: qml/NotificationPanel.qml:21
 #, kde-format
 msgctxt "@title:window"
-msgid "Active Notifications"
-msgstr ""
+msgid "Notifications"
+msgstr "Notifiche"
 
 #: qml/NotificationPanel.qml:196
 #, kde-format
 msgid "Reply"
-msgstr ""
+msgstr "Rispondi"
 
 #: qml/NotificationPanel.qml:213
 #, kde-format
 msgid "Dismiss"
-msgstr ""
+msgstr "Ignora"
 
 #: qml/NotificationPanel.qml:244
 #, kde-format
 msgid "Cancel"
-msgstr ""
+msgstr "Annulla"
 
 #: qml/NotificationPanel.qml:262
 #, kde-format
 msgctxt "@info:placeholder"
 msgid "Reply to %1…"
-msgstr ""
+msgstr "Rispondi a %1…"
 
 #: qml/NotificationPanel.qml:281
-#, fuzzy, kde-format
-#| msgid "Send Ping"
+#, kde-format
 msgid "Send"
-msgstr "Invia ping"
+msgstr "Invia"
 
 #: qml/PluginSettings.qml:140
 #, kde-format
@@ -503,6 +502,10 @@ msgstr ""
 "Se riscontri problemi, visita il <a href=\"https://userbase.kde.org/"
 "KDEConnect\"><span style=\" text-decoration: underline;\">wiki della "
 "comunità di KDE Connect</span></a> per ricevere assistenza."
+
+#~ msgctxt "@title:window"
+#~ msgid "Active Notifications"
+#~ msgstr "Notifiche attive"
 
 #~ msgctxt "@info KDE Connect provider name"
 #~ msgid "Bluetooth"

@@ -120,34 +120,29 @@ void SharePlugin::receivePacket(const NetworkPacket &np)
         //         qCDebug(KDECONNECT_PLUGIN_SHARE) << "receiving file" << filename << "in" << dir << "into" << destination;
         const QString filename = cleanFilename(np.get<QString>(QStringLiteral("filename"), QString::number(QDateTime::currentMSecsSinceEpoch())));
         QUrl destination = getFileDestination(filename);
+        const qint64 dateCreated = np.get<qint64>(QStringLiteral("creationTime"), QDateTime::currentMSecsSinceEpoch());
+        const qint64 dateModified = np.get<qint64>(QStringLiteral("lastModified"), QDateTime::currentMSecsSinceEpoch());
+        const bool open = np.get<bool>(QStringLiteral("open"), false);
 
-        if (np.hasPayload()) {
-            qint64 dateCreated = np.get<qint64>(QStringLiteral("creationTime"), QDateTime::currentMSecsSinceEpoch());
-            qint64 dateModified = np.get<qint64>(QStringLiteral("lastModified"), QDateTime::currentMSecsSinceEpoch());
-            const bool open = np.get<bool>(QStringLiteral("open"), false);
+        // Every incoming file (even ones with no payload, like empty files) goes through the same
+        // composite job so it gets counted, auto-renamed and timestamped like any other file.
+        if (!m_compositeJob) {
+            m_compositeJob = new CompositeFileTransferJob(device(), this);
+            m_compositeJob->setProperty("destUrl", destinationDir().toString());
+            m_compositeJob->setProperty("immediateProgressReporting", true);
+            Daemon::instance()->jobTracker()->registerJob(m_compositeJob);
+        }
 
-            if (!m_compositeJob) {
-                m_compositeJob = new CompositeFileTransferJob(device(), this);
-                m_compositeJob->setProperty("destUrl", destinationDir().toString());
-                m_compositeJob->setProperty("immediateProgressReporting", true);
-                Daemon::instance()->jobTracker()->registerJob(m_compositeJob);
-            }
+        FileTransferJob *job = np.createPayloadTransferJob(destination);
+        job->setOriginName(device()->name() + QStringLiteral(": ") + filename);
+        job->setAutoRenameIfDestinationExists(true);
+        connect(job, &KJob::result, this, [this, dateCreated, dateModified, open](KJob *job) -> void {
+            finished(job, dateCreated, dateModified, open);
+        });
+        m_compositeJob->addSubjob(job);
 
-            FileTransferJob *job = np.createPayloadTransferJob(destination);
-            job->setOriginName(device()->name() + QStringLiteral(": ") + filename);
-            job->setAutoRenameIfDestinationExists(true);
-            connect(job, &KJob::result, this, [this, dateCreated, dateModified, open](KJob *job) -> void {
-                finished(job, dateCreated, dateModified, open);
-            });
-            m_compositeJob->addSubjob(job);
-
-            if (!m_compositeJob->isRunning()) {
-                m_compositeJob->start();
-            }
-        } else {
-            QFile file(destination.toLocalFile());
-            file.open(QIODevice::WriteOnly);
-            file.close();
+        if (!m_compositeJob->isRunning()) {
+            m_compositeJob->start();
         }
     } else if (np.has(QStringLiteral("text"))) {
         QString text = np.get<QString>(QStringLiteral("text"));
@@ -236,9 +231,9 @@ void SharePlugin::finished(KJob *job, const qint64 dateCreated, const qint64 dat
 {
     FileTransferJob *ftjob = qobject_cast<FileTransferJob *>(job);
     if (ftjob && !job->error()) {
-        Q_EMIT shareReceived(ftjob->destination().toString());
         setDateCreated(ftjob->destination(), dateCreated);
         setDateModified(ftjob->destination(), dateModified);
+        Q_EMIT shareReceived(ftjob->destination().toString());
         qCDebug(KDECONNECT_PLUGIN_SHARE) << "File transfer finished." << ftjob->destination();
         if (open) {
             QDesktopServices::openUrl(ftjob->destination());

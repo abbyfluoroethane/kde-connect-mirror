@@ -9,7 +9,6 @@
 #include <QIcon>
 #include <QProcess>
 #include <QQmlApplicationEngine>
-#include <QQmlContext>
 #include <QQuickStyle>
 #include <QStandardPaths>
 #include <QWindow>
@@ -19,7 +18,7 @@
 #include <KColorSchemeManager>
 #include <KCrash>
 #include <KDBusService>
-#include <KLocalizedContext>
+#include <KLocalizedQmlContext>
 #include <KLocalizedString>
 #include <KWindowSystem>
 
@@ -120,7 +119,7 @@ int main(int argc, char *argv[])
     }
     KDBusService dbusService(flags);
     QQmlApplicationEngine engine;
-    engine.rootContext()->setContextObject(new KLocalizedContext(&engine));
+    KLocalization::setupLocalizedContext(&engine);
     engine.loadFromModule("org.kde.kdeconnect.app", "Main");
 
     if (engine.rootObjects().isEmpty()) {

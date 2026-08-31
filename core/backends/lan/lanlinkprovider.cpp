@@ -309,7 +309,7 @@ void LanLinkProvider::udpBroadcastReceived()
         qint64 now = QDateTime::currentMSecsSinceEpoch();
         if (m_lastConnectionTime[deviceId] + MILLIS_DELAY_BETWEEN_CONNECTIONS_TO_SAME_DEVICE > now) {
             qCDebug(KDECONNECT_CORE) << "Discarding second UPD packet from the same device" << deviceId << "received too quickly";
-            return;
+            continue;
         }
         m_lastConnectionTime[deviceId] = now;
 
@@ -617,17 +617,22 @@ void LanLinkProvider::configureSocket(QSslSocket *socket)
     socket->setProxy(QNetworkProxy::NoProxy);
     socket->setSocketOption(QAbstractSocket::KeepAliveOption, QVariant(1));
 
-#ifdef TCP_KEEPIDLE
-    // Detect dead connections in ~60s instead of the Linux default ~7875s.
-    // Without this, a phone that silently disappears (e.g. WiFi off) leaves a
-    // stale connection where isReachable() remains true and sends fail without
-    // any user-visible error (BUG 476747).
+#if defined(TCP_KEEPIDLE) || defined(TCP_KEEPALIVE)
+    // Detect dead connections in ~60s instead of the system default (~7875s on
+    // Linux, ~7800s on macOS). Without this, a phone that silently disappears
+    // (e.g. WiFi off) leaves a stale connection where isReachable() remains true
+    // and sends fail without any user-visible error (BUG 476747).
     int fd = socket->socketDescriptor();
     if (fd >= 0) {
         int idle = 30; // seconds before first keepalive probe
         int intvl = 10; // seconds between probes
         int cnt = 3; // failed probes before connection is dropped
+#ifdef TCP_KEEPIDLE
         setsockopt(fd, IPPROTO_TCP, TCP_KEEPIDLE, &idle, sizeof(idle));
+#else
+        // Darwin has no TCP_KEEPIDLE, TCP_KEEPALIVE is its equivalent
+        setsockopt(fd, IPPROTO_TCP, TCP_KEEPALIVE, &idle, sizeof(idle));
+#endif
         setsockopt(fd, IPPROTO_TCP, TCP_KEEPINTVL, &intvl, sizeof(intvl));
         setsockopt(fd, IPPROTO_TCP, TCP_KEEPCNT, &cnt, sizeof(cnt));
     }
@@ -659,9 +664,6 @@ void LanLinkProvider::addLink(QSslSocket *socket, const DeviceInfo &deviceInfo)
         // qCDebug(KDECONNECT_CORE) << "Reusing link to" << deviceId;
         deviceLink->reset(socket);
     } else {
-        deviceLink = new LanDeviceLink(deviceInfo, this, socket);
-        // Socket disconnection will now be handled by LanDeviceLink
-        disconnect(socket, &QAbstractSocket::disconnected, socket, &QObject::deleteLater);
         bool isDeviceTrusted = KdeConnectConfig::instance().trustedDevices().contains(deviceInfo.id);
         if (!isDeviceTrusted && m_links.size() > MAX_UNPAIRED_CONNECTIONS) {
             qCWarning(KDECONNECT_CORE) << "Too many unpaired devices to remember them all. Ignoring" << deviceInfo.id;
@@ -669,6 +671,9 @@ void LanLinkProvider::addLink(QSslSocket *socket, const DeviceInfo &deviceInfo)
             socket->deleteLater();
             return;
         }
+        deviceLink = new LanDeviceLink(deviceInfo, this, socket);
+        // Socket disconnection will now be handled by LanDeviceLink
+        disconnect(socket, &QAbstractSocket::disconnected, socket, &QObject::deleteLater);
         m_links[deviceInfo.id] = deviceLink;
     }
     Q_EMIT onConnectionReceived(deviceLink);

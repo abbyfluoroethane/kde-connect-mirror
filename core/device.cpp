@@ -46,13 +46,13 @@ public:
     }
 
     DeviceInfo m_deviceInfo;
+    PairingHandler *m_pairingHandler;
 
     QVector<DeviceLink *> m_deviceLinks;
     QHash<QString, KdeConnectPlugin *> m_plugins;
 
     QMultiMap<QString, KdeConnectPlugin *> m_pluginsByIncomingCapability;
     QSet<QString> m_supportedPlugins;
-    PairingHandler *m_pairingHandler;
     QTimer m_pingTimer;
 };
 

@@ -11,8 +11,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: kdeconnect-core\n"
 "Report-Msgid-Bugs-To: https://bugs.kde.org\n"
-"POT-Creation-Date: 2026-07-29 00:45+0000\n"
-"PO-Revision-Date: 2026-06-15 06:22-0300\n"
+"POT-Creation-Date: 2026-08-14 00:45+0000\n"
+"PO-Revision-Date: 2026-08-14 07:26-0300\n"
 "Last-Translator: Marcus Gama <marcus.gama@gmail.com>\n"
 "Language-Team: Brazilian Portuguese <kde-i18n-pt_BR@kde.org>\n"
 "Language: pt_BR\n"
@@ -20,29 +20,29 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
-"X-Generator: Lokalize 26.04.2\n"
+"X-Generator: Lokalize 26.04.3\n"
 
 #: backends/lan/compositeuploadjob.cpp:83
 #, kde-format
 msgid "Couldn't find an available port"
 msgstr "Não foi possível encontrar uma porta disponível"
 
-#: backends/lan/compositeuploadjob.cpp:117
+#: backends/lan/compositeuploadjob.cpp:129
 #, kde-format
 msgid "Failed to send packet to %1"
 msgstr "Ocorreu uma falha ao enviar o pacote para %1"
 
-#: backends/lan/compositeuploadjob.cpp:240
+#: backends/lan/compositeuploadjob.cpp:252
 #, kde-format
 msgid "Timeout waiting for receiver to connect"
 msgstr "Tempo limite excedido ao aguardar a conexão do receptor"
 
-#: backends/lan/compositeuploadjob.cpp:281
+#: backends/lan/compositeuploadjob.cpp:303
 #, kde-format
 msgid "Sending to %1"
 msgstr "Enviando para %1"
 
-#: backends/lan/compositeuploadjob.cpp:281
+#: backends/lan/compositeuploadjob.cpp:303
 #, kde-format
 msgid "File"
 msgstr "Arquivo"
@@ -118,12 +118,17 @@ msgstr ""
 msgid "Protocol version: %1\n"
 msgstr "Versão do protocolo: %1\n"
 
-#: filetransferjob.cpp:53
+#: filetransferjob.cpp:54
 #, kde-format
 msgid "Filename already present"
 msgstr "O nome de arquivo já está presente"
 
-#: filetransferjob.cpp:117
+#: filetransferjob.cpp:70
+#, kde-format
+msgid "Could not create destination file: %1"
+msgstr "Não foi possível criar o arquivo de destino: %1"
+
+#: filetransferjob.cpp:129
 #, kde-format
 msgid "Received incomplete file from: %1"
 msgstr "Arquivo incompleto recebido de: %1"

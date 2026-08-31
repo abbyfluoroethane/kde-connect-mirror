@@ -8,8 +8,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: kdeconnect-app\n"
 "Report-Msgid-Bugs-To: https://bugs.kde.org\n"
-"POT-Creation-Date: 2026-07-27 00:44+0000\n"
-"PO-Revision-Date: 2026-07-27 08:42+0300\n"
+"POT-Creation-Date: 2026-08-25 00:44+0000\n"
+"PO-Revision-Date: 2026-08-23 13:30+0300\n"
 "Last-Translator: Yuri Chornoivan <yurchor@ukr.net>\n"
 "Language-Team: Ukrainian <trans-uk@lists.fedoraproject.org>\n"
 "Language: uk\n"
@@ -20,58 +20,58 @@ msgstr ""
 "%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2;\n"
 "X-Generator: Lokalize 25.12.1\n"
 
-#: main.cpp:46 main.cpp:48
+#: main.cpp:45 main.cpp:47
 #, kde-format
 msgid "KDE Connect"
 msgstr "KDE Connect"
 
-#: main.cpp:50
+#: main.cpp:49
 #, kde-format
 msgid "© 2015–2025 KDE Connect Team"
 msgstr "© Команда KDE Connect, 2015–2025"
 
-#: main.cpp:51
+#: main.cpp:50
 #, kde-format
 msgid "Aleix Pol Gonzalez"
 msgstr "Aleix Pol Gonzalez"
 
-#: main.cpp:52
+#: main.cpp:51
 #, kde-format
 msgid "Albert Vaca Cintora"
 msgstr "Albert Vaca Cintora"
 
-#: main.cpp:53
+#: main.cpp:52
 #, kde-format
 msgctxt "NAME OF TRANSLATORS"
 msgid "Your names"
 msgstr "Юрій Чорноіван"
 
-#: main.cpp:53
+#: main.cpp:52
 #, kde-format
 msgctxt "EMAIL OF TRANSLATORS"
 msgid "Your emails"
 msgstr "yurchor@ukr.net"
 
-#: main.cpp:84
+#: main.cpp:83
 #, kde-format
 msgctxt "@info:shell"
 msgid "Device id to open the app in"
 msgstr "Ідентифікатор пристрою для відкриття програми"
 
-#: main.cpp:87
+#: main.cpp:86
 #, kde-format
 msgctxt "@info:shell"
 msgid "Configuration module to show, requires --device to be set."
 msgstr ""
 "Модуль налаштувань, який слід відкрити, потребує встановлення --device."
 
-#: main.cpp:91
+#: main.cpp:90
 #, kde-format
 msgctxt "command line description"
 msgid "Replace an existing instance"
 msgstr "Замінити наявний екземпляр"
 
-#: main.cpp:94
+#: main.cpp:93
 #, kde-format
 msgid "URL to share"
 msgstr "Адреса для оприлюднення"
@@ -259,50 +259,50 @@ msgstr "Цей пристрій є недоступним"
 msgid "Please choose a file"
 msgstr "Будь ласка, виберіть файл"
 
-#: qml/Main.qml:87
+#: qml/Main.qml:105
 #, kde-format
 msgid "Devices"
 msgstr "Пристрої"
 
-#: qml/Main.qml:95
+#: qml/Main.qml:113
 #, kde-format
 msgctxt "@action:button"
 msgid "Refresh"
 msgstr "Освіжити"
 
-#: qml/Main.qml:98
+#: qml/Main.qml:116
 #, kde-format
 msgctxt "@action:button accessible"
 msgid "Refresh Devices"
 msgstr "Оновити список пристроїв"
 
-#: qml/Main.qml:134
+#: qml/Main.qml:152
 #, kde-format
 msgid "Remembered"
 msgstr "Відомий"
 
-#: qml/Main.qml:136
+#: qml/Main.qml:154
 #, kde-format
 msgid "Available"
 msgstr "Доступний"
 
-#: qml/Main.qml:138
+#: qml/Main.qml:156
 #, kde-format
 msgid "Connected"
 msgstr "З'єднаний"
 
-#: qml/Main.qml:143
+#: qml/Main.qml:161
 #, kde-format
 msgid "No devices found"
 msgstr "Пристроїв не виявлено"
 
-#: qml/Main.qml:215
+#: qml/Main.qml:240
 #, kde-format
 msgctxt "@action:button"
 msgid "Settings"
 msgstr "Параметри"
 
-#: qml/Main.qml:230
+#: qml/Main.qml:255
 #, kde-format
 msgid "Settings"
 msgstr "Параметри"
@@ -353,8 +353,8 @@ msgstr "%1 – %2"
 #: qml/NotificationPanel.qml:21
 #, kde-format
 msgctxt "@title:window"
-msgid "Active Notifications"
-msgstr "Активні сповіщення"
+msgid "Notifications"
+msgstr "Сповіщення"
 
 #: qml/NotificationPanel.qml:196
 #, kde-format
@@ -502,6 +502,10 @@ msgstr ""
 "Якщо у вас виникають проблеми, спробуйте знайти довідкову інформацію на "
 "сторінці <a href=\"https://userbase.kde.org/KDEConnect\"><span style=\" text-"
 "decoration: underline;\">KDE Connect у вікі спільноти</span></a>."
+
+#~ msgctxt "@title:window"
+#~ msgid "Active Notifications"
+#~ msgstr "Активні сповіщення"
 
 #~ msgid "@action:button"
 #~ msgstr "Параметри"

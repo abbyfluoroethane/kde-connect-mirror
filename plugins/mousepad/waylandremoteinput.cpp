@@ -42,10 +42,10 @@ int SpecialKeysMap[] = {
     KEY_ESC, // 14
     KEY_SYSRQ, // 15
     KEY_SCROLLLOCK, // 16
-    0, // 17
-    0, // 18
-    0, // 19
-    0, // 20
+    KEY_LEFTCTRL, // 17
+    KEY_LEFTALT, // 18
+    KEY_LEFTSHIFT, // 19
+    KEY_LEFTMETA, // 20
     KEY_F1, // 21
     KEY_F2, // 22
     KEY_F3, // 23
@@ -283,6 +283,7 @@ void RemoteDesktopSession::handleEiEvents()
             auto seat = ei_event_get_seat(event);
             ei_seat_bind_capabilities(seat,
                                       EI_DEVICE_CAP_KEYBOARD,
+                                      EI_DEVICE_CAP_TEXT,
                                       EI_DEVICE_CAP_POINTER,
                                       EI_DEVICE_CAP_POINTER_ABSOLUTE,
                                       EI_DEVICE_CAP_BUTTON,
@@ -305,6 +306,9 @@ void RemoteDesktopSession::handleEiEvents()
             if (ei_device_has_capability(device, EI_DEVICE_CAP_POINTER) && !m_pointer) {
                 m_pointer = device;
             }
+            if (ei_device_has_capability(device, EI_DEVICE_CAP_TEXT) && !m_textDevice) {
+                m_textDevice = device;
+            }
             if (ei_device_has_capability(device, EI_DEVICE_CAP_POINTER_ABSOLUTE) && !m_absolutePointer) {
                 m_absolutePointer = device;
             }
@@ -316,6 +320,9 @@ void RemoteDesktopSession::handleEiEvents()
             }
             if (device == m_pointer) {
                 m_pointer = nullptr;
+            }
+            if (device == m_textDevice) {
+                m_textDevice = nullptr;
             }
             if (device == m_absolutePointer) {
                 m_absolutePointer = nullptr;
@@ -340,10 +347,15 @@ void RemoteDesktopSession::handleEiEvents()
         case EI_EVENT_KEYBOARD_KEY:
         case EI_EVENT_DEVICE_START_EMULATING:
         case EI_EVENT_DEVICE_STOP_EMULATING:
+        case EI_EVENT_PONG: // Ignore because we are never calling ei_ping()
+        case EI_EVENT_TEXT_KEYSYM:
+        case EI_EVENT_TEXT_UTF8:
         case EI_EVENT_TOUCH_DOWN:
         case EI_EVENT_TOUCH_MOTION:
         case EI_EVENT_TOUCH_UP:
             qCDebug(KDECONNECT_PLUGIN_MOUSEPAD) << "Unexpected event of type" << ei_event_get_type(event);
+            break;
+        case EI_EVENT_SYNC: // Ignore because that's libeis pinging us
             break;
         }
         ei_event_unref(event);
@@ -426,6 +438,25 @@ void RemoteDesktopSession::keyboardKeysym(int sym, bool press)
     }
 }
 
+void RemoteDesktopSession::keyboardSendText(QStringView text, bool modified)
+{
+    if (m_ei && m_textDevice && !modified) {
+        const QByteArray utfkey = text.toUtf8();
+        ei_device_text_utf8_with_length(m_textDevice, utfkey.constData(), utfkey.size());
+        ei_device_frame(m_textDevice, ei_now(m_ei));
+    } else {
+        for (const QChar character : text) {
+            const auto keysym = xkb_utf32_to_keysym(character.unicode());
+            if (keysym != XKB_KEY_NoSymbol) {
+                keyboardKeysym(keysym, true);
+                keyboardKeysym(keysym, false);
+            } else {
+                qCDebug(KDECONNECT_PLUGIN_MOUSEPAD) << "Cannot send character" << character;
+            }
+        }
+    }
+}
+
 WaylandRemoteInput::WaylandRemoteInput(QObject *parent)
     : AbstractRemoteInput(parent)
 {
@@ -453,6 +484,7 @@ bool WaylandRemoteInput::handlePacket(const NetworkPacket &np)
     const bool isScroll = np.get<bool>(QStringLiteral("scroll"), false);
     const QString key = np.get<QString>(QStringLiteral("key"), QLatin1String(""));
     const int specialKey = np.get<int>(QStringLiteral("specialKey"), 0);
+    bool validSpecialKey = (specialKey > 0 && specialKey < (int)std::size(SpecialKeysMap));
 
     if (isSingleClick || isDoubleClick || isMiddleClick || isRightClick || isSingleHold || isSingleRelease || isScroll || !key.isEmpty() || specialKey) {
         if (isSingleClick) {
@@ -476,7 +508,7 @@ bool WaylandRemoteInput::handlePacket(const NetworkPacket &np)
             s_session->pointerButton(BTN_LEFT, false);
         } else if (isScroll) {
             s_session->pointerAxis(dx, dy);
-        } else if (specialKey || !key.isEmpty()) {
+        } else if (validSpecialKey || !key.isEmpty()) {
             bool ctrl = np.get<bool>(QStringLiteral("ctrl"), false);
             bool alt = np.get<bool>(QStringLiteral("alt"), false);
             bool shift = np.get<bool>(QStringLiteral("shift"), false);
@@ -491,19 +523,13 @@ bool WaylandRemoteInput::handlePacket(const NetworkPacket &np)
             if (super)
                 s_session->keyboardKeycode(KEY_LEFTMETA, true);
 
-            if (specialKey) {
-                s_session->keyboardKeycode(SpecialKeysMap[specialKey], true);
-                s_session->keyboardKeycode(SpecialKeysMap[specialKey], false);
+            if (validSpecialKey) {
+                const int keycode = SpecialKeysMap[specialKey];
+                s_session->keyboardKeycode(keycode, true);
+                s_session->keyboardKeycode(keycode, false);
             } else if (!key.isEmpty()) {
-                for (const QChar character : key) {
-                    const auto keysym = xkb_utf32_to_keysym(character.unicode());
-                    if (keysym != XKB_KEY_NoSymbol) {
-                        s_session->keyboardKeysym(keysym, true);
-                        s_session->keyboardKeysym(keysym, false);
-                    } else {
-                        qCDebug(KDECONNECT_PLUGIN_MOUSEPAD) << "Cannot send character" << character;
-                    }
-                }
+                const bool modified = ctrl || alt || shift || super;
+                s_session->keyboardSendText(key, modified);
             }
 
             if (ctrl)
