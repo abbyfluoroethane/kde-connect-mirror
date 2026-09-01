@@ -12,7 +12,7 @@
 
 #include <QDBusConnection>
 #include <QDBusPendingCallWatcher>
-#include <QDBusReply>
+#include <QDBusPendingReply>
 
 #include "generated/systeminterfaces/dbusproperties.h"
 #include "generated/systeminterfaces/mprisplayer.h"
@@ -64,11 +64,9 @@ void PauseMusicPlugin::receivePacket(const NetworkPacket &np)
         }
 
         if (pause) {
-            // Pause every MPRIS player (Pause has no effect on players that aren't playing) and
-            // remember which players were playing, so they can be resumed when the call ends.
-            // Pause and Play are already asynchronous, and only PlaybackStatus is read
-            // asynchronously here, so an unresponsive player (e.g. Chromium's MPRIS service)
-            // can't block the daemon's event loop.
+            // Search for interfaces currently playing. The properties are read asynchronously,
+            // and Pause/Stop/Play are asynchronous already, so a player that doesn't answer
+            // (e.g. Chromium's MPRIS service) can't block the daemon's event loop.
             const QStringList interfaces = QDBusConnection::sessionBus().interface()->registeredServiceNames().value();
             for (const QString &iface : interfaces) {
                 if (!iface.startsWith(QStringLiteral("org.mpris.MediaPlayer2."))) {
@@ -77,26 +75,34 @@ void PauseMusicPlugin::receivePacket(const NetworkPacket &np)
                 if (iface.startsWith(QStringLiteral("org.mpris.MediaPlayer2.kdeconnect."))) {
                     continue;
                 }
-                // Both ringing and talking events trigger this, so skip players already handled.
+                // Both the ringing and the talking event trigger this, so skip known players.
                 if (pausedSources.contains(iface)) {
                     continue;
                 }
 
-                OrgMprisMediaPlayer2PlayerInterface mprisInterface(iface, QStringLiteral("/org/mpris/MediaPlayer2"), QDBusConnection::sessionBus());
-                mprisInterface.Pause();
-
-                OrgFreedesktopDBusPropertiesInterface props(iface, QStringLiteral("/org/mpris/MediaPlayer2"), QDBusConnection::sessionBus());
-                QDBusPendingCallWatcher *statusWatcher =
-                    new QDBusPendingCallWatcher(props.Get(QStringLiteral("org.mpris.MediaPlayer2.Player"), QStringLiteral("PlaybackStatus")), this);
-                connect(statusWatcher, &QDBusPendingCallWatcher::finished, this, [this, iface](QDBusPendingCallWatcher *watcher) {
+                // Fetch the player's properties to check whether it is playing and can pause.
+                OrgFreedesktopDBusPropertiesInterface properties(iface, QStringLiteral("/org/mpris/MediaPlayer2"), QDBusConnection::sessionBus());
+                QDBusPendingCallWatcher *propertiesWatcher =
+                    new QDBusPendingCallWatcher(properties.GetAll(QStringLiteral("org.mpris.MediaPlayer2.Player")), this);
+                connect(propertiesWatcher, &QDBusPendingCallWatcher::finished, this, [this, iface](QDBusPendingCallWatcher *watcher) {
                     watcher->deleteLater();
-                    QDBusReply<QVariant> reply = watcher->reply();
-                    // Guard against duplicate inserts when ringing and talking events overlap.
-                    if (!reply.isValid() || !m_pauseActive || pausedSources.contains(iface)) {
+                    const QDBusPendingReply<QVariantMap> reply = *watcher;
+                    // The call might have ended, or another event might have handled this player.
+                    if (reply.isError() || !m_pauseActive || pausedSources.contains(iface)) {
                         return;
                     }
-                    if (reply.value().toString() == QLatin1String("Playing")) {
-                        pausedSources.insert(iface);
+                    const QVariantMap playerProperties = reply.value();
+                    if (playerProperties.value(QStringLiteral("PlaybackStatus")).toString() != QLatin1String("Playing")) {
+                        return;
+                    }
+                    pausedSources.insert(iface);
+
+                    // Pause the playing player, or stop it if it doesn't support pausing.
+                    OrgMprisMediaPlayer2PlayerInterface mprisInterface(iface, QStringLiteral("/org/mpris/MediaPlayer2"), QDBusConnection::sessionBus());
+                    if (playerProperties.value(QStringLiteral("CanPause")).toBool()) {
+                        mprisInterface.Pause();
+                    } else {
+                        mprisInterface.Stop();
                     }
                 });
             }
