@@ -40,8 +40,6 @@ Kirigami.ScrollablePage {
 
                 required property int index
                 required property var model
-                // Control animation suppression (for instant collapsing)
-                property bool _suppressAnimations: false
                 property bool replying: false
 
                 hoverEnabled: true
@@ -56,7 +54,6 @@ Kirigami.ScrollablePage {
                 Kirigami.Theme.colorSet: Kirigami.Theme.View
                 Kirigami.Theme.inherit: false
                 enabled: true
-                onClicked: checked = !checked
 
                 // Dismiss with animation
                 SequentialAnimation {
@@ -75,31 +72,6 @@ Kirigami.ScrollablePage {
 
                 }
 
-                // Timer to delay collapse until list animation finishes
-                Timer {
-                    id: collapseDelayTimer
-
-                    interval: Kirigami.Units.shortDuration // Match the list collapse duration
-                    onTriggered: {
-                        listitem._suppressAnimations = true;
-                        listitem.checked = false;
-                        listitem._suppressAnimations = false;
-                    }
-                }
-
-                // Collapse if notification list is collapsed
-                // Watch for list expansion state changes
-                Connections {
-                    function onNotificationsExpandedChanged() {
-                        if (!root.notificationsExpanded)
-                            collapseDelayTimer.start();
-                        else
-                            collapseDelayTimer.stop();
-                    }
-
-                    target: root
-                }
-
                 Kirigami.Separator {
                     anchors.bottom: parent.bottom
                     anchors.horizontalCenter: parent.horizontalCenter
@@ -109,8 +81,6 @@ Kirigami.ScrollablePage {
                 }
 
                 Behavior on height {
-                    enabled: !listitem._suppressAnimations
-
                     NumberAnimation {
                         duration: Kirigami.Units.shortDuration
                         easing.type: Easing.InOutQuad
@@ -159,8 +129,8 @@ Kirigami.ScrollablePage {
 
                                             text: listitem.model.appName
                                             level: 5
-                                            elide: listitem.checked ? Text.ElideNone : Text.ElideRight
-                                            maximumLineCount: listitem.checked ? 0 : 1
+                                            elide: Text.ElideRight
+                                            maximumLineCount: 1
                                             wrapMode: Text.Wrap
                                             Layout.alignment: Qt.AlignVCenter
                                             Layout.fillWidth: true
@@ -170,16 +140,12 @@ Kirigami.ScrollablePage {
                                     }
 
                                     // Notification title
-                                    Kirigami.Heading {
-                                        id: notificationTitle
-
+                                    Kirigami.SelectableLabel {
                                         text: listitem.model.title
-                                        level: 2
-                                        type: Kirigami.Heading.Type.Primary
                                         visible: text.length > 0
-                                        elide: listitem.checked ? Text.ElideNone : Text.ElideRight
-                                        maximumLineCount: listitem.checked ? 0 : 1
-                                        wrapMode: Text.Wrap
+                                        font.pointSize: Kirigami.Theme.defaultFont.pointSize * 1.2
+                                        font.weight: Font.DemiBold
+                                        wrapMode: TextEdit.Wrap
                                         Layout.fillWidth: true
                                     }
 
@@ -216,14 +182,10 @@ Kirigami.ScrollablePage {
 
                             }
 
-                            Label {
-                                id: notificationNotitext
-
+                            Kirigami.SelectableLabel {
                                 text: listitem.model.notitext
                                 visible: text.length > 0
-                                elide: listitem.checked ? Text.ElideNone : Text.ElideRight
-                                maximumLineCount: listitem.checked ? 0 : 1
-                                wrapMode: Text.Wrap
+                                wrapMode: TextEdit.Wrap
                                 Layout.fillWidth: true
                             }
 
