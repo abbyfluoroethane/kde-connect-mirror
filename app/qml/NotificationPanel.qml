@@ -176,10 +176,19 @@ Kirigami.ScrollablePage {
                                         text: listitem.model.title
                                         level: 2
                                         type: Kirigami.Heading.Type.Primary
-                                        visible: text.length > 0
-                                        elide: listitem.checked ? Text.ElideNone : Text.ElideRight
-                                        maximumLineCount: listitem.checked ? 0 : 1
+                                        visible: text.length > 0 && !listitem.checked
+                                        elide: Text.ElideRight
+                                        maximumLineCount: 1
                                         wrapMode: Text.Wrap
+                                        Layout.fillWidth: true
+                                    }
+
+                                    Kirigami.SelectableLabel {
+                                        text: listitem.model.title
+                                        visible: text.length > 0 && listitem.checked
+                                        font: notificationTitle.font
+                                        color: notificationTitle.color
+                                        wrapMode: TextEdit.Wrap
                                         Layout.fillWidth: true
                                     }
 
@@ -214,16 +223,33 @@ Kirigami.ScrollablePage {
                                     onClicked: dismissAnimation.start()
                                 }
 
+                                Kirigami.Icon {
+                                    visible: listitem.checked || notificationTitle.truncated || notificationNotitext.truncated
+                                    source: listitem.checked ? "arrow-up" : "arrow-down"
+                                    Layout.preferredWidth: Kirigami.Units.iconSizes.smallMedium
+                                    Layout.preferredHeight: Kirigami.Units.iconSizes.smallMedium
+                                    Layout.alignment: Qt.AlignTop
+                                }
+
                             }
 
                             Label {
                                 id: notificationNotitext
 
                                 text: listitem.model.notitext
-                                visible: text.length > 0
-                                elide: listitem.checked ? Text.ElideNone : Text.ElideRight
-                                maximumLineCount: listitem.checked ? 0 : 1
+                                visible: text.length > 0 && !listitem.checked
+                                elide: Text.ElideRight
+                                maximumLineCount: 1
                                 wrapMode: Text.Wrap
+                                Layout.fillWidth: true
+                            }
+
+                            Kirigami.SelectableLabel {
+                                text: listitem.model.notitext
+                                visible: text.length > 0 && listitem.checked
+                                font: notificationNotitext.font
+                                color: notificationNotitext.color
+                                wrapMode: TextEdit.Wrap
                                 Layout.fillWidth: true
                             }
 
