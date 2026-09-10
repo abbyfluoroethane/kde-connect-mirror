@@ -7,24 +7,27 @@ if(UNIX AND NOT APPLE)
     if (Evdev_FOUND)
         set(HAS_DEPS 1)
     endif()
+elseif(WIN32)
+    set(HAS_DEPS 1)
 endif()
 
 if(HAS_DEPS)
     kdeconnect_add_plugin(kdeconnect_digitizer SOURCES digitizerplugin.cpp abstractdigitizerimpl.cpp)
 
-    target_link_libraries(kdeconnect_digitizer
-        kdeconnectcore
-        KF6::I18n
-        KF6::WidgetsAddons
-    )
+    target_link_libraries(kdeconnect_digitizer kdeconnectcore KF6::I18n KF6::WidgetsAddons)
 
     if(UNIX AND NOT APPLE)
         target_link_libraries(kdeconnect_digitizer PkgConfig::Evdev)
-
         target_sources(kdeconnect_digitizer PUBLIC linuxdigitizerimpl.cpp)
     endif()
 
-    install(FILES 40-kdeconnect-uinput.rules DESTINATION ${KDE_INSTALL_LIBDIR}/udev/rules.d)
+    if(WIN32)
+        target_sources(kdeconnect_digitizer PUBLIC windowsdigitizerimpl.cpp)
+    endif()
+
+    if(UNIX AND NOT APPLE)
+        install(FILES 40-kdeconnect-uinput.rules DESTINATION ${KDE_INSTALL_LIBDIR}/udev/rules.d)
+    endif()
 
     message(STATUS "digitizer: Dependencies met, compiling.")
 else()
