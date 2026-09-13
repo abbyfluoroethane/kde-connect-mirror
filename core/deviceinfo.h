@@ -127,6 +127,27 @@ struct DeviceInfo {
         return np;
     }
 
+    NetworkPacket toDiscoveryPacket(int tcpPort)
+    {
+        NetworkPacket np(PACKET_TYPE_IDENTITY);
+        np.set(QStringLiteral("deviceId"), id);
+        np.set(QStringLiteral("deviceName"), name);
+        np.set(QStringLiteral("protocolVersion"), protocolVersion);
+        np.set(QStringLiteral("tcpPort"), tcpPort);
+        return np;
+    }
+
+    NetworkPacket toDiscoveryResponsePacket(const QString &targetDeviceId, int targetProtocolVersion)
+    {
+        NetworkPacket np(PACKET_TYPE_IDENTITY);
+        np.set(QStringLiteral("deviceId"), id);
+        np.set(QStringLiteral("deviceName"), name);
+        np.set(QStringLiteral("protocolVersion"), protocolVersion);
+        np.set(QStringLiteral("targetDeviceId"), targetDeviceId);
+        np.set(QStringLiteral("targetProtocolVersion"), targetProtocolVersion);
+        return np;
+    }
+
     static DeviceInfo FromIdentityPacketAndCert(const NetworkPacket &np, const QSslCertificate &certificate)
     {
         QStringList incomingCapabilities = np.get<QStringList>(QStringLiteral("incomingCapabilities"));
@@ -152,6 +173,11 @@ struct DeviceInfo {
     {
         return np->type() == PACKET_TYPE_IDENTITY && !filterName(np->get(QLatin1String("deviceName"), QString())).isEmpty()
             && isValidDeviceId(np->get(QLatin1String("deviceId"), QString()));
+    }
+
+    static bool isValidDiscoveryPacket(NetworkPacket *np)
+    {
+        return np->type() == PACKET_TYPE_IDENTITY && isValidDeviceId(np->get(QLatin1String("deviceId"), QString()));
     }
 
     static bool isValidDeviceId(const QString &deviceId)
