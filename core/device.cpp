@@ -84,12 +84,7 @@ void Device::init()
     connect(this, &Device::typeChanged, this, &Device::statusIconNameChanged);
 
     connect(this, &Device::aliveReceived, this, &Device::onAliveReceived);
-    connect(&d->m_pingTimer, &QTimer::timeout, this, [this]() {
-        qCDebug(KDECONNECT_CORE) << "Ping timed out, device" << name() << "is unreachable";
-        for (DeviceLink *dl : std::as_const(d->m_deviceLinks)) {
-            removeLink(dl);
-        }
-    });
+    connect(&d->m_pingTimer, &QTimer::timeout, this, &Device::deviceNotResponding);
 
     connect(d->m_pairingHandler, &PairingHandler::incomingPairRequest, this, &Device::pairingHandler_incomingPairRequest);
     connect(d->m_pairingHandler, &PairingHandler::pairingFailed, this, &Device::pairingHandler_pairingFailed);

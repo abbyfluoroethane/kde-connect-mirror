@@ -10,7 +10,6 @@
 #include <QHostAddress>
 #include <QObject>
 #include <QString>
-#include <qtmetamacros.h>
 
 #include "backends/devicelink.h"
 #include "deviceinfo.h"
@@ -148,6 +147,7 @@ Q_SIGNALS:
     Q_SCRIPTABLE void statusIconNameChanged();
     Q_SCRIPTABLE void aliveReceived(const NetworkPacket &np);
     Q_SCRIPTABLE void deviceAlive(); // Emitted when a ping packet is received with the pong flag set to true.
+    Q_SCRIPTABLE void deviceNotResponding(); // Emitted when there's no response for an alive packet.
 
 private:
     void init();
