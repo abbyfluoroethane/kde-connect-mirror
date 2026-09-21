@@ -81,8 +81,6 @@ void Device::init()
 {
     QDBusConnection::sessionBus().registerObject(dbusPath(), this, QDBusConnection::ExportScriptableContents | QDBusConnection::ExportAdaptors);
 
-    connect(this, &Device::reachableChanged, this, &Device::statusIconNameChanged);
-    connect(this, &Device::pairStateChanged, this, &Device::statusIconNameChanged);
     connect(this, &Device::typeChanged, this, &Device::statusIconNameChanged);
 
     connect(this, &Device::aliveReceived, this, &Device::onAliveReceived);
@@ -105,6 +103,9 @@ void Device::init()
 
 Device::~Device()
 {
+    for (DeviceLink *link : std::as_const(d->m_deviceLinks)) {
+        disconnect(link, &QObject::destroyed, this, &Device::linkDestroyed);
+    }
     delete d;
 }
 
@@ -190,6 +191,9 @@ void Device::reloadPlugins()
                     plugin = loader->instantiatePluginForDevice(pluginName, this);
                 }
                 Q_ASSERT(plugin);
+                if (!plugin) {
+                    continue;
+                }
 
                 for (const QString &interface : incomingCapabilities) {
                     newPluginsByIncomingCapability.insert(interface, plugin);
@@ -483,14 +487,9 @@ QString Device::iconName() const
     return d->m_deviceInfo.type.icon();
 }
 
-QString Device::statusIconName() const
-{
-    return d->m_deviceInfo.type.iconForStatus(isReachable(), isPaired());
-}
-
 KdeConnectPlugin *Device::plugin(const QString &pluginName) const
 {
-    return d->m_plugins[pluginName];
+    return d->m_plugins.value(pluginName);
 }
 
 void Device::setPluginEnabled(const QString &pluginName, bool enabled)
@@ -550,10 +549,11 @@ QString Device::verificationKey() const
 
 QString Device::pluginIconName(const QString &pluginName)
 {
-    if (hasPlugin(pluginName)) {
-        return d->m_plugins[pluginName]->iconName();
+    KdeConnectPlugin *loadedPlugin = plugin(pluginName);
+    if (loadedPlugin == nullptr) {
+        return QString();
     }
-    return QString();
+    return loadedPlugin->iconName();
 }
 
 #include "moc_device.cpp"

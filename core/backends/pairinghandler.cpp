@@ -27,11 +27,11 @@ PairingHandler::PairingHandler(Device *parent, PairState initialState)
 
 void PairingHandler::packetReceived(const NetworkPacket &np)
 {
-    m_pairingTimeout.stop();
     bool wantsPair = np.get<bool>(QStringLiteral("pair"));
     if (wantsPair) {
         switch (m_pairState) {
         case PairState::Requested:
+            m_pairingTimeout.stop();
             pairingDone();
             break;
         case PairState::RequestedByPeer:
@@ -48,19 +48,17 @@ void PairingHandler::packetReceived(const NetworkPacket &np)
                 Q_EMIT unpaired();
             }
 
-            if (m_device->protocolVersion() >= 8) {
-                m_pairingTimestamp = np.get<long>(QStringLiteral("timestamp"), -1L);
-                if (m_pairingTimestamp == -1L) {
-                    m_pairState = PairState::NotPaired;
-                    Q_EMIT unpaired();
-                    return;
-                }
-                long currentTimestamp = QDateTime::currentDateTime().toSecsSinceEpoch();
-                if (abs(m_pairingTimestamp - currentTimestamp) > ALLOWED_TIMESTAMP_TIME_DIFFERENCE_SECONDS) {
-                    m_pairState = PairState::NotPaired;
-                    Q_EMIT pairingFailed(i18n("Device clocks are out of sync"));
-                    return;
-                }
+            m_pairingTimestamp = np.get<long>(QStringLiteral("timestamp"), -1L);
+            if (m_pairingTimestamp == -1L) {
+                m_pairState = PairState::NotPaired;
+                Q_EMIT unpaired();
+                return;
+            }
+            long currentTimestamp = QDateTime::currentDateTime().toSecsSinceEpoch();
+            if (abs(m_pairingTimestamp - currentTimestamp) > ALLOWED_TIMESTAMP_TIME_DIFFERENCE_SECONDS) {
+                m_pairState = PairState::NotPaired;
+                Q_EMIT pairingFailed(i18n("Device clocks are out of sync"));
+                return;
             }
 
             m_pairState = PairState::RequestedByPeer;
@@ -69,6 +67,7 @@ void PairingHandler::packetReceived(const NetworkPacket &np)
             break;
         }
     } else { // wantsPair == false
+        m_pairingTimeout.stop();
         qCDebug(KDECONNECT_CORE) << "Unpair request received";
         switch (m_pairState) {
         case PairState::NotPaired:
@@ -93,7 +92,6 @@ bool PairingHandler::requestPairing()
 
     if (m_pairState == PairState::Paired) {
         qWarning() << m_device->name() << ": requestPairing was called on an already paired device.";
-        Q_EMIT pairingFailed(i18n("%1: Already paired", m_device->name()));
         return false;
     }
     if (m_pairState == PairState::RequestedByPeer) {
@@ -128,6 +126,14 @@ bool PairingHandler::requestPairing()
 
 bool PairingHandler::acceptPairing()
 {
+    if (m_pairState == PairState::Paired) {
+        return true;
+    }
+    if (m_pairState != PairState::RequestedByPeer) {
+        qWarning() << "Cannot accept pairing without a pairing request";
+        return false;
+    }
+
     m_pairingTimeout.stop();
     NetworkPacket np(PACKET_TYPE_PAIR, {{QStringLiteral("pair"), true}});
     const bool success = m_device->sendPacket(np);
@@ -143,6 +149,11 @@ bool PairingHandler::acceptPairing()
 
 void PairingHandler::cancelPairing()
 {
+    if (m_pairState != PairState::Requested && m_pairState != PairState::RequestedByPeer) {
+        qWarning() << "Cannot cancel pairing when no pairing is in progress";
+        return;
+    }
+
     m_pairingTimeout.stop();
     m_pairState = PairState::NotPaired;
     NetworkPacket np(PACKET_TYPE_PAIR, {{QStringLiteral("pair"), false}});
@@ -152,6 +163,7 @@ void PairingHandler::cancelPairing()
 
 void PairingHandler::unpair()
 {
+    m_pairingTimeout.stop();
     m_pairState = PairState::NotPaired;
     NetworkPacket np(PACKET_TYPE_PAIR, {{QStringLiteral("pair"), false}});
     m_device->sendPacket(np);
@@ -175,6 +187,10 @@ void PairingHandler::pairingDone()
 
 QString PairingHandler::verificationKey() const
 {
+    if (m_pairState != PairState::Requested && m_pairState != PairState::RequestedByPeer) {
+        return i18n("Pairing is not in progress");
+    }
+
     auto a = KdeConnectConfig::instance().certificate().publicKey().toDer();
     auto b = m_device->certificate().publicKey().toDer();
     if (a < b) {
@@ -185,11 +201,9 @@ QString PairingHandler::verificationKey() const
     hash.addData(a);
     hash.addData(b);
 
-    if (m_device->protocolVersion() >= 8) {
-        QByteArray timestamp;
-        timestamp.setNum(m_pairingTimestamp);
-        hash.addData(timestamp);
-    }
+    QByteArray timestamp;
+    timestamp.setNum(m_pairingTimestamp);
+    hash.addData(timestamp);
 
     return QString::fromLatin1(hash.result().toHex().left(8).toUpper());
 }

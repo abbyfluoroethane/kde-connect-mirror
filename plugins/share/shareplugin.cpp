@@ -177,6 +177,9 @@ void SharePlugin::receivePacket(const NetworkPacket &np)
 
             if (defaultApp == QLatin1String("org.kde.kate") || defaultApp == QLatin1String("org.kde.kwrite")) {
                 QProcess *proc = new QProcess();
+#ifdef Q_OS_UNIX
+                proc->setUnixProcessParameters(QProcess::UnixProcessFlag::CloseFileDescriptors);
+#endif
                 connect(proc, &QProcess::finished, proc, &QObject::deleteLater);
                 if (const QString token = notif->xdgActivationToken(); !token.isEmpty()) {
                     QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
@@ -188,9 +191,13 @@ void SharePlugin::receivePacket(const NetworkPacket &np)
                 proc->closeWriteChannel();
             } else {
                 QTemporaryFile tmpFile;
-                tmpFile.setFileTemplate(QStringLiteral("kdeconnect-XXXXXX.txt"));
+                QString tmpFilename = QStringLiteral("kdeconnect-XXXXXX.txt");
+                tmpFile.setFileTemplate(tmpFilename);
                 tmpFile.setAutoRemove(false);
-                tmpFile.open();
+                if (!tmpFile.open()) {
+                    qWarning() << "Couldn't open temp file:" << tmpFilename;
+                    return;
+                }
                 tmpFile.write(text.toUtf8());
                 tmpFile.close();
 

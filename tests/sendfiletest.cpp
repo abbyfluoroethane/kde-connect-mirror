@@ -8,6 +8,7 @@
 #include <QSignalSpy>
 #include <QSocketNotifier>
 #include <QStandardPaths>
+#include <QTcpSocket>
 #include <QTemporaryFile>
 #include <QTest>
 #include <backends/lan/uploadjob.h>
@@ -60,7 +61,7 @@ private Q_SLOTS:
         QByteArray content("12312312312313213123213123");
 
         QTemporaryFile temp;
-        temp.open();
+        QVERIFY(temp.open());
         temp.write(content);
         temp.close();
 
@@ -106,7 +107,7 @@ private Q_SLOTS:
         QCOMPARE(device->isPaired(), true);
 
         QTemporaryFile temp;
-        temp.open();
+        QVERIFY(temp.open());
         temp.close();
         QCOMPARE(QFileInfo(temp.fileName()).size(), 0);
 
@@ -148,7 +149,7 @@ private Q_SLOTS:
         QSignalSpy spyUpload(job, &KJob::result);
         job->start();
 
-        f->open(QIODevice::ReadWrite);
+        QVERIFY(f->open(QIODevice::ReadWrite));
 
         FileTransferJob *ft = np.createPayloadTransferJob(QUrl::fromLocalFile(destFile));
 
@@ -221,6 +222,27 @@ private Q_SLOTS:
         QCOMPARE(resultFile.size(), 0);
     }
 
+    void testUploadMissingInput()
+    {
+        QTemporaryFile temporaryFile;
+        QVERIFY(temporaryFile.open());
+        const QString missingFilePath = temporaryFile.fileName();
+        temporaryFile.close();
+        QVERIFY(QFile::remove(missingFilePath));
+
+        QSharedPointer<QFile> input(new QFile(missingFilePath));
+        NetworkPacket packet(PACKET_TYPE_SHARE_REQUEST);
+        packet.setPayload(input, 1);
+
+        UploadJob job(packet);
+        QSignalSpy resultSpy(&job, &KJob::result);
+        job.start();
+
+        QVERIFY(resultSpy.wait());
+        QVERIFY(job.error());
+        QVERIFY(!job.errorText().isEmpty());
+    }
+
     void testMultipleEmptyFilesInOneCompositeUpload()
     {
         // Regression test for a bug where sending several empty files in one go got the count
@@ -238,7 +260,7 @@ private Q_SLOTS:
         TestDevice *device = new TestDevice(this, deviceInfo.id);
 
         QTemporaryFile empty;
-        empty.open();
+        QVERIFY(empty.open());
         empty.close();
 
         CompositeUploadJob *job = new CompositeUploadJob(device, false);
@@ -298,7 +320,7 @@ private Q_SLOTS:
         job->addSubjob(uj);
         job->start();
 
-        f->open(QIODevice::ReadWrite);
+        QVERIFY(f->open(QIODevice::ReadWrite));
 
         FileTransferJob *ft = np.createPayloadTransferJob(QUrl::fromLocalFile(destFile));
         QSignalSpy spyTransfer(ft, &KJob::result);
@@ -342,7 +364,7 @@ private Q_SLOTS:
         job->addSubjob(uj);
         job->start();
 
-        f->open(QIODevice::ReadWrite);
+        QVERIFY(f->open(QIODevice::ReadWrite));
 
         FileTransferJob *ft = np.createPayloadTransferJob(QUrl::fromLocalFile(destFile));
         QSignalSpy spyTransfer(ft, &KJob::result);
@@ -383,6 +405,41 @@ private Q_SLOTS:
 
         QSignalSpy spy(job, &KJob::result);
         job->start();
+
+        QVERIFY(spy.wait(5000));
+        QCOMPARE(job->error(), CompositeUploadJob::ConnectionTimeoutError);
+    }
+
+    void testTlsHandshakeTimeout()
+    {
+        const QString aFile = QFINDTESTDATA("sendfiletest.cpp");
+
+        DeviceInfo deviceInfo = KdeConnectConfig::instance().deviceInfo();
+        KdeConnectConfig::instance().addTrustedDevice(deviceInfo);
+
+        TestDevice *device = new TestDevice(this, deviceInfo.id);
+        m_daemon->addDevice(device);
+
+        QSharedPointer<QFile> f(new QFile(aFile));
+        NetworkPacket np(PACKET_TYPE_SHARE_REQUEST);
+        np.setPayload(f, f->size());
+
+        CompositeUploadJob *job = new CompositeUploadJob(device, false);
+#ifdef BUILD_TESTING
+        job->testSetTimeoutMs(1000);
+#endif
+        job->addSubjob(new UploadJob(np));
+
+        QSignalSpy spy(job, &KJob::result);
+        job->start();
+
+        QTRY_VERIFY(device->getLastPacket());
+        const quint16 port = device->getLastPacket()->payloadTransferInfo().value(QStringLiteral("port")).toUInt();
+        QVERIFY(port);
+
+        QTcpSocket socket;
+        socket.connectToHost(QHostAddress::LocalHost, port);
+        QVERIFY(socket.waitForConnected());
 
         QVERIFY(spy.wait(5000));
         QCOMPARE(job->error(), CompositeUploadJob::ConnectionTimeoutError);

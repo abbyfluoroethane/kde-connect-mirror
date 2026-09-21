@@ -51,6 +51,13 @@ void DesktopDaemon::askPairingConfirmation(Device *device)
     KNotificationAction *rejectAction = notification->addAction(i18n("Reject"));
     connect(rejectAction, &KNotificationAction::activated, device, &Device::cancelPairing);
 
+    int previousPairState = device->pairStateAsInt();
+    connect(device, &Device::pairStateChanged, notification, [notification, previousPairState](int pairState) {
+        if (pairState != previousPairState) {
+            notification->close();
+        }
+    });
+
     notification->sendEvent();
 }
 

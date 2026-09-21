@@ -9,8 +9,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: https://bugs.kde.org\n"
-"POT-Creation-Date: 2026-08-14 00:45+0000\n"
-"PO-Revision-Date: 2026-08-15 09:07+0200\n"
+"POT-Creation-Date: 2026-09-19 00:44+0000\n"
+"PO-Revision-Date: 2026-09-15 07:14+0200\n"
 "Last-Translator: Xavier Besnard <xavier.besnard@kde.org>\n"
 "Language-Team: fr\n"
 "Language: fr\n"
@@ -20,7 +20,7 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 "X-Accelerator-Marker: &\n"
 "X-Environment: kde\n"
-"X-Generator: Lokalize 26.07.90\n"
+"X-Generator: Lokalize 26.08.0\n"
 "X-Text-Markup: kde4\n"
 
 #: backends/lan/compositeuploadjob.cpp:83
@@ -48,40 +48,45 @@ msgstr "Envoi vers %1"
 msgid "File"
 msgstr "Fichier"
 
-#: backends/pairinghandler.cpp:61
+#: backends/lan/uploadjob.cpp:102
+#, kde-format
+msgid "Could not open source file: %1"
+msgstr "Impossible d'ouvrir le fichier source : « %1 »"
+
+#: backends/pairinghandler.cpp:60
 #, kde-format
 msgid "Device clocks are out of sync"
 msgstr "Les horloges du périphérique ne sont pas synchronisées."
 
-#: backends/pairinghandler.cpp:80
+#: backends/pairinghandler.cpp:79
 #, kde-format
 msgid "Canceled by other peer"
 msgstr "Annulé par l'autre périphérique"
 
-#: backends/pairinghandler.cpp:96
-#, kde-format
-msgid "%1: Already paired"
-msgstr "%1 : déjà associé"
-
-#: backends/pairinghandler.cpp:105 backends/pairinghandler.cpp:124
+#: backends/pairinghandler.cpp:103 backends/pairinghandler.cpp:122
 #, kde-format
 msgid "%1: Device not reachable"
 msgstr "%1 : périphérique non accessible"
 
-#: backends/pairinghandler.cpp:139
+#: backends/pairinghandler.cpp:145
 #, kde-format
 msgid "Device not reachable"
 msgstr "Périphérique non accessible"
 
-#: backends/pairinghandler.cpp:150
+#: backends/pairinghandler.cpp:161
 #, kde-format
 msgid "Cancelled by user"
 msgstr "Annulé par l'utilisateur"
 
-#: backends/pairinghandler.cpp:166
+#: backends/pairinghandler.cpp:178
 #, kde-format
 msgid "Timed out"
 msgstr "Délai expiré"
+
+#: backends/pairinghandler.cpp:191
+#, kde-format
+msgid "Pairing is not in progress"
+msgstr "L'association n'est pas en cours."
 
 #: compositefiletransferjob.cpp:47
 #, kde-format
@@ -103,18 +108,18 @@ msgctxt "The destination of a file operation"
 msgid "Destination"
 msgstr "Destination"
 
-#: device.cpp:480
+#: device.cpp:479
 #, kde-format
 msgid "SHA256 fingerprint of your device certificate is: %1\n"
 msgstr "L'empreinte « SHA256 » du certificat de votre appareil est : %1\n"
 
-#: device.cpp:486
+#: device.cpp:485
 #, kde-format
 msgid "SHA256 fingerprint of remote device certificate is: %1\n"
 msgstr ""
 "L'empreinte « SHA256 » du certificat de votre appareil distant est : %1\n"
 
-#: device.cpp:488
+#: device.cpp:487
 #, kde-format
 msgid "Protocol version: %1\n"
 msgstr "Version de protocole : %1\n"
@@ -158,6 +163,9 @@ msgstr "Impossible de générer le certificat du périphérique."
 #, kde-format
 msgid "Could not store certificate file: %1"
 msgstr "Impossible de stocker le fichier de certificat : %1"
+
+#~ msgid "%1: Already paired"
+#~ msgstr "%1 : déjà associé"
 
 #, fuzzy
 #~| msgctxt "@info"

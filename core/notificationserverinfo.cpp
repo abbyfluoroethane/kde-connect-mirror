@@ -22,6 +22,7 @@ NotificationServerInfo &NotificationServerInfo::instance()
 
 void NotificationServerInfo::init()
 {
+#if !defined(Q_OS_WIN) && !defined(Q_OS_MAC)
     QDBusMessage query = QDBusMessage::createMethodCall(QStringLiteral("org.freedesktop.Notifications"),
                                                         QStringLiteral("/org/freedesktop/Notifications"),
                                                         QStringLiteral("org.freedesktop.Notifications"),
@@ -44,7 +45,12 @@ void NotificationServerInfo::init()
         if (reply.value().contains(QLatin1String("x-kde-origin-name"))) {
             m_supportedHints |= X_KDE_ORIGIN_NAME;
         }
+
+        if (reply.value().contains(QLatin1String("body-markup"))) {
+            m_supportedHints |= BODY_MARKUP;
+        }
     });
+#endif
 }
 
 NotificationServerInfo::Hints NotificationServerInfo::supportedHints()

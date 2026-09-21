@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: kdeconnect-kde\n"
 "Report-Msgid-Bugs-To: https://bugs.kde.org\n"
-"POT-Creation-Date: 2026-08-25 00:44+0000\n"
+"POT-Creation-Date: 2026-09-13 00:44+0000\n"
 "PO-Revision-Date: 2026-08-23 06:43+0200\n"
 "Last-Translator: Temuri Doghonadze <temuri.doghonadze@gmail.com>\n"
 "Language-Team: Georgian <kde-i18n-doc@kde.org>\n"
@@ -355,28 +355,28 @@ msgctxt "@title:window"
 msgid "Notifications"
 msgstr "გაფრთხილებები"
 
-#: qml/NotificationPanel.qml:196
+#: qml/NotificationPanel.qml:162
 #, kde-format
 msgid "Reply"
 msgstr "პასუხი"
 
-#: qml/NotificationPanel.qml:213
+#: qml/NotificationPanel.qml:179
 #, kde-format
 msgid "Dismiss"
 msgstr "მოცილება"
 
-#: qml/NotificationPanel.qml:244
+#: qml/NotificationPanel.qml:206
 #, kde-format
 msgid "Cancel"
 msgstr "გაუქმება"
 
-#: qml/NotificationPanel.qml:262
+#: qml/NotificationPanel.qml:224
 #, kde-format
 msgctxt "@info:placeholder"
 msgid "Reply to %1…"
 msgstr "%1-ისთვის პასუხი…"
 
-#: qml/NotificationPanel.qml:281
+#: qml/NotificationPanel.qml:243
 #, kde-format
 msgid "Send"
 msgstr "გაგზავნა"
@@ -462,45 +462,43 @@ msgctxt "@info"
 msgid "Make sure to install KDE Connect on your other devices."
 msgstr "დარწმუნდით, რომ დააყენეთ KDE Connect სხვ მოწყობილობებზეც."
 
-#: qml/WelcomePage.qml:43
+#: qml/WelcomePage.qml:44
 #, kde-format
 msgctxt "@title:context"
 msgid "KDE Connect Android App"
 msgstr "KDE Connect-ის Android-ის აპლიკაცია"
 
-#: qml/WelcomePage.qml:50
+#: qml/WelcomePage.qml:51
 #, kde-format
 msgctxt "Android Application Store"
 msgid "F-Droid"
 msgstr "F-Droid"
 
-#: qml/WelcomePage.qml:57
+#: qml/WelcomePage.qml:58
 #, kde-format
 msgctxt "Android Application Store"
 msgid "Play Store"
 msgstr "Play Store"
 
-#: qml/WelcomePage.qml:63
+#: qml/WelcomePage.qml:64
 #, kde-format
 msgctxt "@title:context"
 msgid "KDE Connect iOS App"
 msgstr "KDE Connect-ის iOS-ის აპლიკაცია"
 
-#: qml/WelcomePage.qml:68
+#: qml/WelcomePage.qml:69
 #, kde-format
 msgid "Apple Store"
 msgstr "Apple Store"
 
-#: qml/WelcomePage.qml:74
-#, kde-format
-msgid ""
-"If you are having problems, visit the <a href=\"https://userbase.kde.org/"
-"KDEConnect\"><span style=\" text-decoration: underline;\">KDE Connect "
-"Community wiki</span></a> for help."
-msgstr ""
-"პრობლემების ქონის შემთხვევაში დახმარებისთვის ეწვიეთ <a href=\"https://"
-"userbase.kde.org/KDEConnect\"><span style=\" text-decoration: underline;"
-"\">KDE Connect-ის საზოგადოების ვიკის</span></a>."
+#~ msgid ""
+#~ "If you are having problems, visit the <a href=\"https://userbase.kde.org/"
+#~ "KDEConnect\"><span style=\" text-decoration: underline;\">KDE Connect "
+#~ "Community wiki</span></a> for help."
+#~ msgstr ""
+#~ "პრობლემების ქონის შემთხვევაში დახმარებისთვის ეწვიეთ <a href=\"https://"
+#~ "userbase.kde.org/KDEConnect\"><span style=\" text-decoration: underline;"
+#~ "\">KDE Connect-ის საზოგადოების ვიკის</span></a>."
 
 #~ msgctxt "@title:window"
 #~ msgid "Active Notifications"

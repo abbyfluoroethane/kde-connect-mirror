@@ -15,12 +15,12 @@
 const QString kServiceType = QStringLiteral("_kdeconnect._udp.local");
 
 MdnshDiscovery::MdnshDiscovery(LanLinkProvider *lanLinkProvider)
-    : mdnsAnnouncer(KdeConnectConfig::instance().deviceId(), kServiceType, lanLinkProvider->tcpPort())
+    : m_lanLinkProvider(lanLinkProvider)
+    , mdnsAnnouncer(KdeConnectConfig::instance().deviceId(), kServiceType, lanLinkProvider->tcpPort())
 {
     KdeConnectConfig &config = KdeConnectConfig::instance();
     mdnsAnnouncer.putTxtRecord(QStringLiteral("id"), config.deviceId());
     mdnsAnnouncer.putTxtRecord(QStringLiteral("name"), config.name());
-    mdnsAnnouncer.putTxtRecord(QStringLiteral("type"), config.deviceType().toString());
     mdnsAnnouncer.putTxtRecord(QStringLiteral("protocol"), QString::number(NetworkPacket::s_protocolVersion));
 
     connect(&mdnsDiscoverer, &MdnshWrapper::Discoverer::serviceFound, this, [lanLinkProvider](const MdnshWrapper::Discoverer::MdnsService &service) {
@@ -28,13 +28,9 @@ MdnshDiscovery::MdnshDiscovery(LanLinkProvider *lanLinkProvider)
             qCDebug(KDECONNECT_CORE) << "Discovered myself, ignoring";
             return;
         }
-        // TODO: For protocol v8, we can skip ahead and open a TCP connection
-        //       instead of sending a UDP packet and waiting for the other end
-        //       to send the TCP connection to us, since we already have all the
-        //       info we need to start a connection (ip, port, device id and protocol
-        //       version) and the remaining identity info is exchanged later.
-        lanLinkProvider->sendUdpIdentityPacket(QList<QHostAddress>{service.address});
-        qCDebug(KDECONNECT_CORE) << "Discovered" << service.name << "at" << service.address;
+        int protocolVersion = service.txtRecords[QStringLiteral("protocol")].toInt();
+        qCDebug(KDECONNECT_CORE) << "MDNS Discovered" << service.name << "at" << service.address << service.port;
+        lanLinkProvider->deviceDiscovered(service.address, service.port, service.name, protocolVersion);
     });
 }
 
@@ -45,6 +41,7 @@ MdnshDiscovery::~MdnshDiscovery()
 
 void MdnshDiscovery::onStart()
 {
+    mdnsAnnouncer.setPort(m_lanLinkProvider->tcpPort());
     mdnsAnnouncer.startAnnouncing();
     mdnsDiscoverer.startDiscovering(kServiceType);
 }
