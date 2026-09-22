@@ -226,7 +226,10 @@ void InputCaptureSession::setUpBarrier()
     connect(request, &OrgFreedesktopPortalRequestInterface::Response, this, &InputCaptureSession::barriersSet);
     auto call = m_inputCapturePortal->SetPointerBarriers(
         QDBusObjectPath(m_session->path()),
-        {{u"handle_token"_s, token}},
+        {
+            {u"handle_token"_s, token},
+            {u"persist_mode"_s, QVariant::fromValue<uint>(2)}, // Persist permission until explicitly revoked by user
+        },
         {{{u"barrier_id"_s, 1}, {u"position"_s, QVariant::fromValue(QList<int>{m_barrier.x1(), m_barrier.y1(), m_barrier.x2(), m_barrier.y2()})}}},
         m_currentZoneSet);
     connect(new QDBusPendingCallWatcher(call, this), &QDBusPendingCallWatcher::finished, request, [request](QDBusPendingCallWatcher *watcher) {
