@@ -133,6 +133,7 @@ struct DeviceInfo {
         np.set(QStringLiteral("protocolVersion"), protocolVersion);
         np.set(QStringLiteral("targetDeviceId"), targetDeviceId);
         np.set(QStringLiteral("targetProtocolVersion"), targetProtocolVersion);
+        np.set(QStringLiteral("connectionTieBreak"), true); // See LanLinkProvider::tcpPacketReceived
         return np;
     }
 
