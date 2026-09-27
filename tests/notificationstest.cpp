@@ -9,6 +9,7 @@
 
 #include <KSystemClipboard>
 
+#include <QJsonArray>
 #include <QtTest>
 
 /**
@@ -85,6 +86,52 @@ private Q_SLOTS:
         auto mimeData = new QMimeData;
         mimeData->setText(originalClipboardContents);
         KSystemClipboard::instance()->setMimeData(mimeData, QClipboard::Clipboard);
+    }
+
+    /**
+     * The actions of a notification should be readable, so that clients can
+     * offer them and trigger them with sendAction().
+     */
+    void testActionsAreExposed()
+    {
+        Device *device = nullptr;
+        const auto deviceIds = m_daemon->devices();
+        for (const QString &deviceId : deviceIds) {
+            Device *d = m_daemon->getDevice(deviceId);
+            if (d->isReachable()) {
+                if (!d->isPaired())
+                    d->requestPairing();
+                device = d;
+            }
+        }
+        QVERIFY(device);
+        QVERIFY(device->isPaired());
+
+        KdeConnectPlugin *plugin = device->plugin(QStringLiteral("kdeconnect_notifications"));
+        QVERIFY(plugin);
+
+        const QString key = QStringLiteral("0|org.example.messages|7|actions-test|10129");
+        const QStringList actions = {QStringLiteral("Mark as read"), QStringLiteral("Call")};
+
+        NetworkPacket np(QStringLiteral("kdeconnect.notification"),
+                         {
+                             {QStringLiteral("id"), key},
+                             {QStringLiteral("appName"), QStringLiteral("Messages")},
+                             {QStringLiteral("ticker"), QStringLiteral("Test")},
+                             {QStringLiteral("silent"), true},
+                             {QStringLiteral("actions"), QJsonArray::fromStringList(actions)},
+                         });
+        plugin->receivePacket(np);
+
+        QObject *notification = nullptr;
+        const auto children = plugin->findChildren<QObject *>();
+        for (QObject *child : children) {
+            if (child->property("internalId").toString() == key) {
+                notification = child;
+            }
+        }
+        QVERIFY(notification);
+        QCOMPARE(notification->property("actions").toStringList(), actions);
     }
 };
 
