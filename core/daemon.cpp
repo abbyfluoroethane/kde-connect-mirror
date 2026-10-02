@@ -27,6 +27,7 @@
 #include "backends/linkprovider.h"
 #include "backends/loopback/loopbacklinkprovider.h"
 #include "device.h"
+#include "geolocationworker.h"
 
 static Daemon *s_instance = nullptr;
 
@@ -36,6 +37,8 @@ struct DaemonPrivate {
 
     // Every known device
     QMap<QString, Device *> m_devices;
+
+    GeolocationWorker *m_geolocationWorker;
 
     bool m_testMode;
 };
@@ -119,9 +122,14 @@ void Daemon::init()
         a->onStart();
     }
 
+    connect(this, &Daemon::deviceListChanged, this, &Daemon::gpsProvidersChanged);
+
     qCDebug(KDECONNECT_CORE) << "Link providers started";
 
     NotificationServerInfo::instance().init();
+
+    d->m_geolocationWorker = new GeolocationWorker(this);
+    connect(this, &Daemon::onNmeaDataReceived, d->m_geolocationWorker, &GeolocationWorker::forwardNmeaPacket);
 
     qCDebug(KDECONNECT_CORE) << "Daemon start completed";
 }
@@ -179,6 +187,27 @@ QStringList Daemon::linkProviders() const
     return returnValue;
 }
 
+QStringList Daemon::gpsProviders() const
+{
+    QStringList ret;
+    for (auto [id, device] : d->m_devices.asKeyValueRange()) {
+        if (device->supportedPlugins().contains(QLatin1String("kdeconnect_geolocation")))
+        {
+            QString line(id + u'|' + device->name());
+            ret.append(line);
+        }
+    }
+    return ret;
+}
+
+QString Daemon::preferredGpsProvider() const
+{
+    KdeConnectConfig configInstance = KdeConnectConfig::instance();
+    QString deviceId = configInstance.getGpsProvider();
+    qCWarning(KDECONNECT_CORE) << "Gps Provider: " << deviceId;
+    return deviceId;
+}
+
 void Daemon::setLinkProviderState(const QString &linkProviderName, bool enabled)
 {
     qCDebug(KDECONNECT_CORE) << "setLinkProviderState called" << linkProviderName << enabled;
@@ -212,6 +241,14 @@ void Daemon::setLinkProviderState(const QString &linkProviderName, bool enabled)
     Q_EMIT linkProvidersChanged(linkProviders());
 }
 
+void Daemon::setPreferredGpsProvider(const QString &deviceId)
+{
+    qCWarning(KDECONNECT_CORE) << "setGpsprovider " << deviceId;
+    KdeConnectConfig configInstance = KdeConnectConfig::instance();
+    configInstance.setGpsProvider(deviceId);
+    Q_EMIT preferredGpsProviderChanged(deviceId);
+}
+
 QStringList Daemon::devices(bool onlyReachable, bool onlyTrusted) const
 {
     QStringList ret;
@@ -237,6 +274,7 @@ QMap<QString, QString> Daemon::deviceNames(bool onlyReachable, bool onlyTrusted)
     }
     return ret;
 }
+
 
 void Daemon::onNewDeviceLink(DeviceLink *link)
 {

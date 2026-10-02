@@ -14,24 +14,20 @@
 
 #include <core/daemon.h>
 #include <core/device.h>
-#include <sys/socket.h>
-#include "socketworker.h"
-#include "plugin_geolocation_debug.h"
 
 K_PLUGIN_CLASS_WITH_JSON(GeolocationPlugin, "kdeconnect_geolocation.json");
 
-GeolocationPlugin::GeolocationPlugin(QObject *parent, const QVariantList &args):
-    KdeConnectPlugin(parent, args)
+GeolocationPlugin::GeolocationPlugin(QObject *parent, const QVariantList &args)
+    : KdeConnectPlugin(parent, args)
 {
-    m_socketWorker = new SocketWorker();
-    m_thread = new QThread(this);
-    m_socketWorker->moveToThread(m_thread);
-    connect(m_thread, &QThread::started, m_socketWorker, &SocketWorker::process);
-    connect(m_thread, &QThread::finished, m_socketWorker, &QObject::deleteLater);
-    connect(m_socketWorker, &SocketWorker::startedListening, this, &GeolocationPlugin::consumerConnected);
-    connect(m_socketWorker, &SocketWorker::stoppedListening, this, &GeolocationPlugin::consumerDisconnected);
-    connect(this, SIGNAL(onDataReceived(QString)), m_socketWorker, SLOT(sendToCurrentClient(QString)));
-    m_thread->start();
+    Daemon *d = Daemon::instance();
+    connect(d, &Daemon::activeGpsProviderChanged, this, &GeolocationPlugin::providerChanged);
+    connect(this, &GeolocationPlugin::onDataReceived, d, &Daemon::onNmeaDataReceived);
+}
+
+void GeolocationPlugin::providerChanged(const QString &deviceId)
+{
+    sendLocationRequest(deviceId == device()->id());
 }
 
 void GeolocationPlugin::consumerConnected() const {
@@ -48,18 +44,12 @@ void GeolocationPlugin::sendLocationRequest(bool enable) const {
     sendPacket(np);
 }
 
-GeolocationPlugin::~GeolocationPlugin() {
-    if (m_thread != nullptr) {
-        m_thread->quit();
-        m_thread->wait();
-    }
-}
+GeolocationPlugin::~GeolocationPlugin() = default;
 
 void GeolocationPlugin::receivePacket(const NetworkPacket &np)
 {
     auto a = np.get<QString>(QStringLiteral("nmea"));
-    if (m_socketWorker != nullptr)
-        onDataReceived(a);
+    Q_EMIT onDataReceived(a);
 }
 
 QString GeolocationPlugin::dbusPath() const

@@ -66,6 +66,47 @@ Kirigami.ScrollablePage
         }
 
         FormCard.FormCard {
+            DBusProperty {
+                id: gpsProvidersProperty
+                object: DaemonDbusInterface
+                read: "gpsProviders"
+                defaultValue: []
+            }
+            DBusProperty {
+                id: preferredGpsProviderProperty
+                object: DaemonDbusInterface
+                read: "preferredGpsProvider"
+                defaultValue: []
+            }
+            visible: gpsProvidersProperty.value.length > 0
+
+            FormCard.FormComboBoxDelegate {
+                text: i18nc("@title:group", "Preferred GPS provider")
+                model: {
+                    let rawList = gpsProvidersProperty.value || [];
+                    return rawList.map(item => {
+                        let parts = item.split('|');
+                        return {
+                            deviceId: parts[0] || "",
+                            displayName: parts[1] || ""
+                        };
+                    });
+                }
+
+                currentValue: preferredGpsProviderProperty.value
+
+                textRole: "displayName"
+                valueRole: "deviceId"
+
+                onCurrentValueChanged: {
+                    if (currentValue.length > 0) {
+                        DaemonDbusInterface.setPreferredGpsProvider(currentValue);
+                    }
+                }
+            }
+        }
+
+        FormCard.FormCard {
             Layout.topMargin: Kirigami.Units.gridUnit
 
             FormCard.FormButtonDelegate {

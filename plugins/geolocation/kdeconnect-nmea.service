@@ -1,7 +1,0 @@
-<service-group>
-  <name>KDE Connect NMEA GPS</name>
-  <service>
-    <type>_nmea-0183._tcp</type>
-    <port>10110</port>
-  </service>
-</service-group>

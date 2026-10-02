@@ -68,8 +68,17 @@ public Q_SLOTS:
     /// Return the list of link providers with their state e.g. "BluetoothLinkProvider|enabled"
     Q_SCRIPTABLE QStringList linkProviders() const;
 
+    /// Return the list of device names that support the geolocation plugin.
+    Q_SCRIPTABLE QStringList gpsProviders() const;
+
+    /// Return the current device selected as NMEA provider.
+    Q_SCRIPTABLE QString preferredGpsProvider() const;
+
     /// Set the state of a link provider.
     Q_SCRIPTABLE void setLinkProviderState(const QString &linkProvider, bool enabled);
+
+    /// Set GPS provider.
+    Q_SCRIPTABLE void setPreferredGpsProvider(const QString &gpsProvider);
 
     Q_SCRIPTABLE virtual void sendSimpleNotification(const QString &eventId, const QString &title, const QString &text, const QString &iconName) = 0;
 
@@ -81,7 +90,12 @@ Q_SIGNALS:
     Q_SCRIPTABLE void announcedNameChanged(const QString &announcedName);
     Q_SCRIPTABLE void pairingRequestsChanged();
     Q_SCRIPTABLE void linkProvidersChanged(const QStringList &linkProviders);
+    Q_SCRIPTABLE void preferredGpsProviderChanged(const QString &deviceId);
+    Q_SCRIPTABLE void activeGpsProviderChanged(const QString &deviceId);
+    Q_SCRIPTABLE void gpsProvidersChanged();
     Q_SCRIPTABLE void customDevicesChanged(const QStringList &customDevices);
+
+    void onNmeaDataReceived(const QString &data);
 
 private Q_SLOTS:
     void onNewDeviceLink(DeviceLink *dl);

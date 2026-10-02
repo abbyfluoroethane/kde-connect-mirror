@@ -38,6 +38,9 @@ public:
     void setDisabledLinkProviders(const QStringList disabledProviders);
     QStringList disabledLinkProviders() const;
 
+    void setGpsProvider(const QString &deviceId) const;
+    QString getGpsProvider() const;
+
     /*
      * Trusted devices
      */

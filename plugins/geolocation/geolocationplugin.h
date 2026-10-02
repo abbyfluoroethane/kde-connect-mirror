@@ -6,7 +6,6 @@
 
 #pragma once
 
-#include "socketworker.h"
 #include <QObject>
 #include <core/kdeconnectplugin.h>
 
@@ -21,19 +20,16 @@ class GeolocationPlugin : public KdeConnectPlugin
 public:
     using KdeConnectPlugin::KdeConnectPlugin;
     explicit GeolocationPlugin(QObject *parent, const QVariantList &args);
+    void providerChanged(const QString &deviceId);
     ~GeolocationPlugin() override;
     void receivePacket(const NetworkPacket &np) override;
     QString dbusPath() const override;
 public Q_SLOTS:
-    void consumerConnected() const;
+    Q_SCRIPTABLE void consumerConnected() const;
     void consumerDisconnected() const;
 Q_SIGNALS:
-    void onDataReceived(QString data);
-
+    void onDataReceived(const QString &data);
 
 private:
-    SocketWorker *m_socketWorker = nullptr;
-    QThread *m_thread;
-
     void sendLocationRequest(bool enable) const;
 };
