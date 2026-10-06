@@ -65,6 +65,11 @@ Kirigami.ScrollablePage
             }
         }
 
+        FormCard.FormHeader {
+            title: i18nc("@title:group", "Geolocation")
+            visible: gpsProvidersProperty.value.length > 0
+        }
+
         FormCard.FormCard {
             DBusProperty {
                 id: gpsProvidersProperty
@@ -76,7 +81,7 @@ Kirigami.ScrollablePage
                 id: preferredGpsProviderProperty
                 object: DaemonDbusInterface
                 read: "preferredGpsProvider"
-                defaultValue: []
+                defaultValue: ""
             }
             visible: gpsProvidersProperty.value.length > 0
 
@@ -99,7 +104,7 @@ Kirigami.ScrollablePage
                 valueRole: "deviceId"
 
                 onCurrentValueChanged: {
-                    if (currentValue.length > 0) {
+                    if (currentValue && currentValue.length > 0) {
                         DaemonDbusInterface.setPreferredGpsProvider(currentValue);
                     }
                 }

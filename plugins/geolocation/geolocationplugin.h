@@ -6,7 +6,6 @@
 
 #pragma once
 
-#include <QObject>
 #include <core/kdeconnectplugin.h>
 
 #define PACKET_TYPE_LOCATION_REQUEST QStringLiteral("kdeconnect.geolocation.request")
@@ -20,16 +19,14 @@ class GeolocationPlugin : public KdeConnectPlugin
 public:
     using KdeConnectPlugin::KdeConnectPlugin;
     explicit GeolocationPlugin(QObject *parent, const QVariantList &args);
-    void providerChanged(const QString &deviceId);
     ~GeolocationPlugin() override;
+
     void receivePacket(const NetworkPacket &np) override;
     QString dbusPath() const override;
-public Q_SLOTS:
-    Q_SCRIPTABLE void consumerConnected() const;
-    void consumerDisconnected() const;
-Q_SIGNALS:
-    void onDataReceived(const QString &data);
+
+    void setActive(bool active);
 
 private:
     void sendLocationRequest(bool enable) const;
+    bool m_active = false;
 };

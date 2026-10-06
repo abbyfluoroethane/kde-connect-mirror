@@ -91,11 +91,8 @@ Q_SIGNALS:
     Q_SCRIPTABLE void pairingRequestsChanged();
     Q_SCRIPTABLE void linkProvidersChanged(const QStringList &linkProviders);
     Q_SCRIPTABLE void preferredGpsProviderChanged(const QString &deviceId);
-    Q_SCRIPTABLE void activeGpsProviderChanged(const QString &deviceId);
     Q_SCRIPTABLE void gpsProvidersChanged();
     Q_SCRIPTABLE void customDevicesChanged(const QStringList &customDevices);
-
-    void onNmeaDataReceived(const QString &data);
 
 private Q_SLOTS:
     void onNewDeviceLink(DeviceLink *dl);

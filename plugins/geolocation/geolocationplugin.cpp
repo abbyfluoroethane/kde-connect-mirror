@@ -5,51 +5,43 @@
  */
 
 #include "geolocationplugin.h"
+#include "geolocationworker.h"
 
 #include <KPluginFactory>
-
-#include <QDBusConnection>
-#include <QDebug>
-#include <QThread>
-
-#include <core/daemon.h>
 #include <core/device.h>
 
-K_PLUGIN_CLASS_WITH_JSON(GeolocationPlugin, "kdeconnect_geolocation.json");
+K_PLUGIN_CLASS_WITH_JSON(GeolocationPlugin, "kdeconnect_geolocation.json")
 
 GeolocationPlugin::GeolocationPlugin(QObject *parent, const QVariantList &args)
     : KdeConnectPlugin(parent, args)
 {
-    Daemon *d = Daemon::instance();
-    connect(d, &Daemon::activeGpsProviderChanged, this, &GeolocationPlugin::providerChanged);
-    connect(this, &GeolocationPlugin::onDataReceived, d, &Daemon::onNmeaDataReceived);
+    GeolocationWorker::instance()->registerPlugin(this);
 }
 
-void GeolocationPlugin::providerChanged(const QString &deviceId)
+GeolocationPlugin::~GeolocationPlugin()
 {
-    sendLocationRequest(deviceId == device()->id());
+    GeolocationWorker::instance()->unregisterPlugin(this);
 }
 
-void GeolocationPlugin::consumerConnected() const {
-    sendLocationRequest(true);
+void GeolocationPlugin::setActive(bool active)
+{
+    if (m_active != active) {
+        m_active = active;
+        sendLocationRequest(m_active);
+    }
 }
 
-void GeolocationPlugin::consumerDisconnected() const {
-    sendLocationRequest(false);
-}
-
-void GeolocationPlugin::sendLocationRequest(bool enable) const {
+void GeolocationPlugin::sendLocationRequest(bool enable) const
+{
     NetworkPacket np(PACKET_TYPE_LOCATION_REQUEST);
     np.set(QStringLiteral("enable"), enable);
     sendPacket(np);
 }
 
-GeolocationPlugin::~GeolocationPlugin() = default;
-
 void GeolocationPlugin::receivePacket(const NetworkPacket &np)
 {
-    auto a = np.get<QString>(QStringLiteral("nmea"));
-    Q_EMIT onDataReceived(a);
+    const QString nmea = np.get<QString>(QStringLiteral("nmea"));
+    GeolocationWorker::instance()->forwardNmeaPacket(device()->id(), nmea);
 }
 
 QString GeolocationPlugin::dbusPath() const
@@ -57,5 +49,5 @@ QString GeolocationPlugin::dbusPath() const
     return QLatin1String("/modules/kdeconnect/devices/%1/geolocation").arg(device()->id());
 }
 
-#include "moc_geolocationplugin.cpp"
 #include "geolocationplugin.moc"
+#include "moc_geolocationplugin.cpp"

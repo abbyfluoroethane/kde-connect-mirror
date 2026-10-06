@@ -91,12 +91,14 @@ QStringList KdeConnectConfig::disabledLinkProviders() const
     return d->m_config->value(QStringLiteral("disabled_providers_v2"), QStringList{QStringLiteral("bluetooth"), QStringLiteral("loopback")}).toStringList();
 }
 
-void KdeConnectConfig::setGpsProvider(const QString &deviceId) const {
+void KdeConnectConfig::setGpsProvider(const QString &deviceId)
+{
     d->m_config->setValue(QStringLiteral("nmea_provider"), deviceId);
     d->m_config->sync();
 }
 
-QString KdeConnectConfig::getGpsProvider() const {
+QString KdeConnectConfig::gpsProvider() const
+{
     return d->m_config->value(QStringLiteral("nmea_provider"), QStringLiteral("")).toString();
 }
 
