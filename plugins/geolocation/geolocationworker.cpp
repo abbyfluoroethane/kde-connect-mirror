@@ -13,8 +13,6 @@
 #include <core/daemon.h>
 #include <core/device.h>
 
-#include "generated/systeminterfaces/avahientrygroup.h"
-#include "generated/systeminterfaces/avahiserver.h"
 #include "plugin_geolocation_debug.h"
 
 GeolocationWorker *GeolocationWorker::instance()
@@ -26,13 +24,10 @@ GeolocationWorker *GeolocationWorker::instance()
 GeolocationWorker::GeolocationWorker(QObject *parent)
     : QObject(parent)
     , m_localServer(new QTcpServer(this))
-    , m_avahiServerInterface(std::make_unique<OrgFreedesktopAvahiServer2Interface>(QStringLiteral("org.freedesktop.Avahi"),
-                                                                                   QStringLiteral("/"),
-                                                                                   QDBusConnection::systemBus(),
-                                                                                   this))
+    , m_nmeaAdvertiser(this)
 {
     if (m_localServer->listen(QHostAddress::Any, 10110)) {
-        m_avahiEntryGroupInterface = advertise();
+        m_nmeaAdvertiser.startAdvertising();
     } else {
         qCWarning(KDECONNECT_PLUGIN_GEOLOCATION) << "Failed to bind to port 10110:" << m_localServer->errorString();
     }
@@ -40,48 +35,16 @@ GeolocationWorker::GeolocationWorker(QObject *parent)
     connect(m_localServer, &QTcpServer::newConnection, this, &GeolocationWorker::slotNewConnection);
 
     Daemon *d = Daemon::instance();
-    connect(d, &Daemon::deviceListChanged, this, &GeolocationWorker::chooseGpsProvider);
     connect(d, &Daemon::preferredGpsProviderChanged, this, &GeolocationWorker::chooseGpsProvider);
+    connect(this, &GeolocationWorker::pluginsUpdated, this, &GeolocationWorker::chooseGpsProvider);
+    connect(this, &GeolocationWorker::consumersUpdated, this, &GeolocationWorker::chooseGpsProvider);
 }
 
 GeolocationWorker::~GeolocationWorker()
 {
     qCDebug(KDECONNECT_PLUGIN_GEOLOCATION) << "Destroying NMEA socket";
-    if (m_avahiEntryGroupInterface) {
-        auto reply = m_avahiEntryGroupInterface->Free();
-        reply.waitForFinished();
-    }
+    m_nmeaAdvertiser.stopAdvertising();
     m_localServer->close();
-}
-
-std::unique_ptr<OrgFreedesktopAvahiEntryGroupInterface> GeolocationWorker::advertise()
-{
-    auto reply = m_avahiServerInterface->EntryGroupNew();
-    reply.waitForFinished();
-
-    if (reply.isError()) {
-        qCWarning(KDECONNECT_PLUGIN_GEOLOCATION) << "Could not reach avahi:" << reply.error().message();
-        return nullptr;
-    }
-
-    const QString groupPath = reply.value().path();
-
-    auto entryGroup =
-        std::make_unique<OrgFreedesktopAvahiEntryGroupInterface>(QStringLiteral("org.freedesktop.Avahi"), groupPath, QDBusConnection::systemBus(), this);
-
-    qCDebug(KDECONNECT_PLUGIN_GEOLOCATION) << "Advertising _nmea-0183._tcp with Avahi.";
-    entryGroup->AddService(-1,
-                           -1,
-                           0,
-                           QStringLiteral("KDE Connect NMEA"),
-                           QStringLiteral("_nmea-0183._tcp"),
-                           QStringLiteral(""),
-                           QStringLiteral(""),
-                           10110,
-                           QList<QByteArray>());
-
-    entryGroup->Commit();
-    return entryGroup;
 }
 
 void GeolocationWorker::registerPlugin(GeolocationPlugin *plugin)
@@ -90,7 +53,7 @@ void GeolocationWorker::registerPlugin(GeolocationPlugin *plugin)
         return;
     }
     m_plugins.append(plugin);
-    chooseGpsProvider();
+    Q_EMIT pluginsUpdated();
 }
 
 void GeolocationWorker::unregisterPlugin(GeolocationPlugin *plugin)
@@ -102,7 +65,7 @@ void GeolocationWorker::unregisterPlugin(GeolocationPlugin *plugin)
     if (plugin->device() && plugin->device()->id() == m_activeProviderId) {
         m_activeProviderId.clear();
     }
-    chooseGpsProvider();
+    Q_EMIT pluginsUpdated();
 }
 
 void GeolocationWorker::chooseGpsProvider()
@@ -144,6 +107,7 @@ void GeolocationWorker::chooseGpsProvider()
 
 void GeolocationWorker::slotNewConnection()
 {
+    bool updated = false;
     while (m_localServer->hasPendingConnections()) {
         QTcpSocket *consumer = m_localServer->nextPendingConnection();
         if (!consumer) {
@@ -151,12 +115,15 @@ void GeolocationWorker::slotNewConnection()
         }
 
         m_consumers.append(consumer);
+        updated = true;
         connect(consumer, &QTcpSocket::disconnected, this, [this, consumer]() {
             slotDisconnected(consumer);
         });
         qCDebug(KDECONNECT_PLUGIN_GEOLOCATION) << "Consumer connected to NMEA socket. Consumers:" << m_consumers.length();
     }
-    chooseGpsProvider();
+    if (updated) {
+        Q_EMIT consumersUpdated();
+    }
 }
 
 void GeolocationWorker::slotDisconnected(QTcpSocket *consumer)
@@ -165,9 +132,9 @@ void GeolocationWorker::slotDisconnected(QTcpSocket *consumer)
         consumer->disconnect(this);
         consumer->deleteLater();
         m_consumers.removeOne(consumer);
+        Q_EMIT consumersUpdated();
         qCDebug(KDECONNECT_PLUGIN_GEOLOCATION) << "Consumer closed connection to NMEA socket. Consumers:" << m_consumers.length();
     }
-    chooseGpsProvider();
 }
 
 void GeolocationWorker::forwardNmeaPacket(const QString &deviceId, const QString &data)

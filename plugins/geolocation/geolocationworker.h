@@ -6,15 +6,12 @@
 
 #pragma once
 
-#include <QList>
-#include <QObject>
-#include <QString>
 #include <memory>
+
+#include "advertise/nmeaadvertiser.h"
 
 class QTcpServer;
 class QTcpSocket;
-class OrgFreedesktopAvahiEntryGroupInterface;
-class OrgFreedesktopAvahiServer2Interface;
 class GeolocationPlugin;
 
 class GeolocationWorker : public QObject
@@ -31,21 +28,19 @@ public:
 
 public Q_SLOTS:
     void chooseGpsProvider();
-
 private Q_SLOTS:
     void slotNewConnection();
     void slotDisconnected(QTcpSocket *consumer);
+Q_SIGNALS:
+    void pluginsUpdated();
+    void consumersUpdated();
 
 private:
     explicit GeolocationWorker(QObject *parent = nullptr);
-
-    std::unique_ptr<OrgFreedesktopAvahiEntryGroupInterface> advertise();
 
     QList<GeolocationPlugin *> m_plugins;
     QString m_activeProviderId;
     QList<QTcpSocket *> m_consumers;
     QTcpServer *m_localServer = nullptr;
-
-    std::unique_ptr<OrgFreedesktopAvahiServer2Interface> m_avahiServerInterface;
-    std::unique_ptr<OrgFreedesktopAvahiEntryGroupInterface> m_avahiEntryGroupInterface;
+    NmeaAdvertiser m_nmeaAdvertiser;
 };

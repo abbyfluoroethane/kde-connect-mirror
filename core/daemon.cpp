@@ -120,6 +120,7 @@ void Daemon::init()
     }
 
     connect(this, &Daemon::deviceListChanged, this, &Daemon::gpsProvidersChanged);
+    connect(this, &Daemon::onDeviceStatusChanged, this, &Daemon::gpsProvidersChanged);
 
     qCDebug(KDECONNECT_CORE) << "Link providers started";
 
@@ -185,8 +186,7 @@ QStringList Daemon::gpsProviders() const
 {
     QStringList ret;
     for (auto [id, device] : d->m_devices.asKeyValueRange()) {
-        if (device->supportedPlugins().contains(QLatin1String("kdeconnect_geolocation")))
-        {
+        if (device->isPaired() && device->supportedPlugins().contains(QLatin1String("kdeconnect_geolocation"))) {
             QString line(id + u'|' + device->name());
             ret.append(line);
         }
@@ -198,7 +198,6 @@ QString Daemon::preferredGpsProvider() const
 {
     KdeConnectConfig configInstance = KdeConnectConfig::instance();
     QString deviceId = configInstance.gpsProvider();
-    qCDebug(KDECONNECT_CORE) << "GPS Provider:" << deviceId;
     return deviceId;
 }
 
@@ -268,7 +267,6 @@ QMap<QString, QString> Daemon::deviceNames(bool onlyReachable, bool onlyTrusted)
     }
     return ret;
 }
-
 
 void Daemon::onNewDeviceLink(DeviceLink *link)
 {
