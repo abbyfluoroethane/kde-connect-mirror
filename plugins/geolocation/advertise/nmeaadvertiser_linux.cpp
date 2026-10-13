@@ -51,8 +51,8 @@ bool NmeaAdvertiser::startAdvertising()
                                             0,
                                             QStringLiteral("KDE Connect NMEA"),
                                             QStringLiteral("_nmea-0183._tcp"),
-                                            QStringLiteral(""),
-                                            QStringLiteral(""),
+                                            QString(),
+                                            QString(),
                                             10110,
                                             QList<QByteArray>());
 
