@@ -236,10 +236,12 @@ void Daemon::setLinkProviderState(const QString &linkProviderName, bool enabled)
 
 void Daemon::setPreferredGpsProvider(const QString &deviceId)
 {
-    qCDebug(KDECONNECT_CORE) << "setPreferredGpsProvider:" << deviceId;
     KdeConnectConfig configInstance = KdeConnectConfig::instance();
-    configInstance.setGpsProvider(deviceId);
-    Q_EMIT preferredGpsProviderChanged(deviceId);
+    if (configInstance.gpsProvider() != deviceId) {
+        qCDebug(KDECONNECT_CORE) << "setPreferredGpsProvider:" << deviceId;
+        configInstance.setGpsProvider(deviceId);
+        Q_EMIT preferredGpsProviderChanged(deviceId);
+    }
 }
 
 QStringList Daemon::devices(bool onlyReachable, bool onlyTrusted) const
