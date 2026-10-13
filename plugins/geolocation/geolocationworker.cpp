@@ -5,6 +5,9 @@
  */
 
 #include "geolocationworker.h"
+
+#include <QNetworkInterface>
+
 #include "geolocationplugin.h"
 
 #include <QTcpServer>
@@ -105,12 +108,35 @@ void GeolocationWorker::chooseGpsProvider()
     }
 }
 
+static bool isLocalConnection(const QHostAddress &address)
+{
+    if (address.isLoopback()) {
+        return true;
+    }
+
+    const QList<QHostAddress> localAddresses = QNetworkInterface::allAddresses();
+    for (const QHostAddress &localAddress : localAddresses) {
+        if (address.isEqual(localAddress, QHostAddress::TolerantConversion)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 void GeolocationWorker::slotNewConnection()
 {
     bool updated = false;
     while (m_localServer->hasPendingConnections()) {
         QTcpSocket *consumer = m_localServer->nextPendingConnection();
         if (!consumer) {
+            continue;
+        }
+
+        if (!isLocalConnection(consumer->peerAddress())) {
+            qCWarning(KDECONNECT_PLUGIN_GEOLOCATION) << "Dropping connection from non-local address: " << consumer->peerAddress().toString();
+            consumer->abort();
+            consumer->deleteLater();
             continue;
         }
 
