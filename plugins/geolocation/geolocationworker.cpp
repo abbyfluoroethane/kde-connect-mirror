@@ -87,7 +87,7 @@ void GeolocationWorker::chooseGpsProvider()
             newActiveId = preferredProvider;
             qCDebug(KDECONNECT_PLUGIN_GEOLOCATION) << "Using Geolocation data from preferred provider:" << candidates[preferredProvider]->name();
         } else if (!candidates.isEmpty()) {
-            newActiveId = candidates.keys().first();
+            newActiveId = candidates.constBegin().key();
             qCDebug(KDECONNECT_PLUGIN_GEOLOCATION) << "Preferred Geolocation device not accessible, using first available device:"
                                                    << candidates[newActiveId]->name();
         } else {
