@@ -64,7 +64,6 @@ void NmeaAdvertiser::stopAdvertising()
 {
     if (d->avahiEntryGroupInterface) {
         auto reply = d->avahiEntryGroupInterface->Free();
-        reply.waitForFinished();
         d->avahiEntryGroupInterface.reset();
     }
 }
