@@ -45,13 +45,10 @@ bool NmeaAdvertiser::startAdvertising()
     d->avahiEntryGroupInterface =
         std::make_unique<OrgFreedesktopAvahiEntryGroupInterface>(QStringLiteral("org.freedesktop.Avahi"), groupPath, QDBusConnection::systemBus(), this);
 
-    qCDebug(KDECONNECT_PLUGIN_GEOLOCATION)
-        << "Advertising _nmea-0183._tcp with Avahi.";
+    qCDebug(KDECONNECT_PLUGIN_GEOLOCATION) << "Advertising _nmea-0183._tcp with Avahi.";
 
-    d->avahiEntryGroupInterface->AddService(
-        -1, -1, 0, QStringLiteral("KDE Connect NMEA"),
-        QStringLiteral("_nmea-0183._tcp"), QString(), QString(), 10110,
-        QList<QByteArray>());
+    d->avahiEntryGroupInterface
+        ->AddService(-1, -1, 0, QStringLiteral("KDE Connect NMEA"), QStringLiteral("_nmea-0183._tcp"), QString(), QString(), 10110, QList<QByteArray>());
     d->avahiEntryGroupInterface->Commit();
     return true;
 }
