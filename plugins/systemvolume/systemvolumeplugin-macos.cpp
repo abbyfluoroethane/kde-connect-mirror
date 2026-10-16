@@ -47,6 +47,14 @@ static const AudioObjectPropertyAddress kAudioStreamPropertyAddress = {kAudioDev
                                                                        kAudioDevicePropertyScopeOutput,
                                                                        kAudioObjectPropertyElementMain};
 
+static const AudioObjectPropertyAddress kAudioCanBeDefaultPropertyAddress = {kAudioDevicePropertyDeviceCanBeDefaultDevice,
+                                                                             kAudioDevicePropertyScopeOutput,
+                                                                             kAudioObjectPropertyElementMain};
+
+static const AudioObjectPropertyAddress kAudioIsHiddenPropertyAddress = {kAudioDevicePropertyIsHidden,
+                                                                         kAudioObjectPropertyScopeGlobal,
+                                                                         kAudioObjectPropertyElementMain};
+
 static const AudioObjectPropertyAddress kAudioMasterVolumePropertyAddress = {kAudioDevicePropertyVolumeScalar,
                                                                              kAudioDevicePropertyScopeOutput,
                                                                              kAudioObjectPropertyElementMain};
@@ -158,7 +166,7 @@ QString translateDeviceSource(AudioObjectID deviceId)
     UInt32 sourceId = getDeviceSourceId(deviceId);
 
     if (sourceId == kAudioDeviceUnknown) {
-        qWarning(KDECONNECT_PLUGIN_SYSTEMVOLUME) << "Unknown data source id of device" << deviceId;
+        qCDebug(KDECONNECT_PLUGIN_SYSTEMVOLUME) << "Unknown data source id of device" << deviceId;
         return QStringLiteral("");
     }
 
@@ -182,6 +190,24 @@ QString translateDeviceSource(AudioObjectID deviceId)
 
     QString ret = QString::fromCFString(sourceName);
     CFRelease(sourceName);
+
+    return ret;
+}
+
+QString getDeviceName(AudioObjectID deviceId)
+{
+    CFStringRef deviceName = nullptr;
+    UInt32 size = sizeof(deviceName);
+    AudioObjectPropertyAddress propertyAddress = {kAudioObjectPropertyName, kAudioObjectPropertyScopeGlobal, kAudioObjectPropertyElementMain};
+
+    OSStatus result = AudioObjectGetPropertyData(deviceId, &propertyAddress, 0, NULL, &size, &deviceName);
+    if (result != noErr || !deviceName) {
+        qWarning(KDECONNECT_PLUGIN_SYSTEMVOLUME) << "Cannot get name of device" << deviceId;
+        return QStringLiteral("");
+    }
+
+    QString ret = QString::fromCFString(deviceName);
+    CFRelease(deviceName);
 
     return ret;
 }
@@ -217,12 +243,30 @@ std::vector<AudioObjectID> GetAllOutputAudioDeviceIDs()
         UInt32 streamCount = 0;
         result = AudioObjectGetPropertyDataSize(deviceId, &kAudioStreamPropertyAddress, 0, NULL, &streamCount);
 
-        if (result == noErr && streamCount > 0) {
-            outputDeviceIds.push_back(deviceId);
-            qCDebug(KDECONNECT_PLUGIN_SYSTEMVOLUME) << "Device" << deviceId << "added";
-        } else {
+        if (result != noErr || streamCount == 0) {
             qCDebug(KDECONNECT_PLUGIN_SYSTEMVOLUME) << "Device" << deviceId << "dropped";
+            continue;
         }
+
+        // Skip devices that macOS itself doesn't offer as outputs (eg: ZoomAudioDevice)
+        UInt32 canBeDefault = 0;
+        size = sizeof(canBeDefault);
+        result = AudioObjectGetPropertyData(deviceId, &kAudioCanBeDefaultPropertyAddress, 0, NULL, &size, &canBeDefault);
+        if (result != noErr || !canBeDefault) {
+            qCDebug(KDECONNECT_PLUGIN_SYSTEMVOLUME) << "Device" << deviceId << "dropped because it can't be default";
+            continue;
+        }
+
+        UInt32 isHidden = 0;
+        size = sizeof(isHidden);
+        result = AudioObjectGetPropertyData(deviceId, &kAudioIsHiddenPropertyAddress, 0, NULL, &size, &isHidden);
+        if (result == noErr && isHidden) {
+            qCDebug(KDECONNECT_PLUGIN_SYSTEMVOLUME) << "Device" << deviceId << "dropped because it's hidden";
+            continue;
+        }
+
+        outputDeviceIds.push_back(deviceId);
+        qCDebug(KDECONNECT_PLUGIN_SYSTEMVOLUME) << "Device" << deviceId << "added";
     }
 
     return outputDeviceIds;
@@ -274,6 +318,9 @@ void SystemvolumePlugin::sendSinkList()
         MacOSCoreAudioDevice *audioDevice = new MacOSCoreAudioDevice(deviceId);
 
         audioDevice->m_description = translateDeviceSource(deviceId);
+        if (audioDevice->m_description.isEmpty()) {
+            audioDevice->m_description = getDeviceName(deviceId);
+        }
 
         m_sinksMap.insert(QStringLiteral("default-") + QString::number(deviceId), audioDevice);
 
