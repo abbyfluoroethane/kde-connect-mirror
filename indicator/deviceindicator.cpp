@@ -21,7 +21,7 @@
 DeviceIndicator::DeviceIndicator(DeviceDbusInterface *device)
     : QMenu(device->name(), nullptr)
     , m_device(device)
-    , m_remoteCommandsInterface(new RemoteCommandsDbusInterface(m_device->id()))
+    , m_remoteCommandsInterface(new RemoteCommandsDbusInterface(m_device->id(), this))
 {
     setIcon(QIcon::fromTheme(device->iconName()));
 
@@ -29,6 +29,7 @@ DeviceIndicator::DeviceIndicator(DeviceDbusInterface *device)
 
     // Battery status
     auto battery = new BatteryAction(device);
+    battery->setParent(this);
     addAction(battery);
     setWhenAvailable(
         device->hasPlugin(QStringLiteral("kdeconnect_battery")),
@@ -39,6 +40,7 @@ DeviceIndicator::DeviceIndicator(DeviceDbusInterface *device)
         this);
 
     auto connectivity = new ConnectivityAction(device);
+    connectivity->setParent(this);
     addAction(connectivity);
     setWhenAvailable(
         device->hasPlugin(QStringLiteral("kdeconnect_connectivity_report")),
