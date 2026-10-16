@@ -12,6 +12,8 @@
 #include <QDBusObjectPath>
 #include <QSocketNotifier>
 
+#include <vector>
+
 class FakeInput;
 class Xkb;
 struct ei;
@@ -50,6 +52,9 @@ private:
     void handleEiEvents();
     QSocketNotifier m_eiNotifier;
     std::unique_ptr<Xkb> m_xkb;
+    // Modifier keycodes synthesized by keyboardKeysym() at press time,
+    // released again when the matching keysym release arrives.
+    std::vector<int> m_synthModKeys;
     ei *m_ei = nullptr;
     ei_device *m_keyboard = nullptr;
     ei_device *m_pointer = nullptr;
