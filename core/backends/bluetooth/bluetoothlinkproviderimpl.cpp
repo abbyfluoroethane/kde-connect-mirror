@@ -236,7 +236,7 @@ void BluetoothLinkProviderImpl::clientIdentityReceived(const QBluetoothAddress &
 
     if (!success || !DeviceInfo::isValidIdentityPacket(&receivedPacket)) {
         qCWarning(KDECONNECT_CORE) << "BluetoothLinkProviderImpl: Invalid identity packet received";
-        mSockets.remove(peer);
+        mSockets.take(peer)->deleteLater();
         socket->close();
         socket->deleteLater();
         return;
@@ -252,7 +252,7 @@ void BluetoothLinkProviderImpl::clientIdentityReceived(const QBluetoothAddress &
     QSslCertificate receivedCertificate(certificateBody.toLatin1());
     DeviceInfo deviceInfo = DeviceInfo::FromIdentityPacketAndCert(receivedPacket, receivedCertificate);
     if (!isCertificateValid(deviceInfo)) {
-        mSockets.remove(peer);
+        mSockets.take(peer)->deleteLater();
         socket->close();
         socket->deleteLater();
         return;
@@ -359,7 +359,7 @@ void BluetoothLinkProviderImpl::serverDataReceived(const QBluetoothAddress &peer
 
     if (!success || !DeviceInfo::isValidIdentityPacket(&receivedPacket)) {
         qCWarning(KDECONNECT_CORE) << "BluetoothLinkProviderImpl: Invalid identity packet received";
-        mSockets.remove(peer);
+        mSockets.take(peer)->deleteLater();
         socket->close();
         socket->deleteLater();
         return;
@@ -375,7 +375,7 @@ void BluetoothLinkProviderImpl::serverDataReceived(const QBluetoothAddress &peer
     QSslCertificate receivedCertificate(certificateBody.toLatin1());
     DeviceInfo deviceInfo = DeviceInfo::FromIdentityPacketAndCert(receivedPacket, receivedCertificate);
     if (!isCertificateValid(deviceInfo)) {
-        mSockets.remove(peer);
+        mSockets.take(peer)->deleteLater();
         socket->close();
         socket->deleteLater();
         return;
