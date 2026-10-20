@@ -94,6 +94,21 @@ void ConversationsDbusInterface::addMessages(const QList<ConversationMessage> &m
         // we will never respond to that request
         updatedConversationIDs.insert(message.threadID());
 
+        // A known message is sent again when it changes, e.g. when it is read on the phone
+        const auto conversation = m_conversations.find(threadId);
+        if (conversation != m_conversations.end()) {
+            const auto known = conversation->find(message.date());
+            if (known != conversation->end() && known->uID() == message.uID()) {
+                if (known->read() != message.read()) {
+                    *known = message;
+                    if (std::next(known) == conversation->end()) {
+                        Q_EMIT conversationUpdated(QDBusVariant(QVariant::fromValue(message)));
+                    }
+                }
+                continue;
+            }
+        }
+
         if (m_known_messages[threadId].contains(message.uID())) {
             // This message has already been processed. Don't do anything.
             continue;
