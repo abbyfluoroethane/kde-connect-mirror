@@ -5,20 +5,25 @@
  */
 
 #include "notification.h"
+#include "otpdetector.h"
 #include "plugin_notifications_debug.h"
 
 #include <KLocalizedString>
 #include <KNotification>
 #include <KNotificationReplyAction>
+#include <KSystemClipboard>
 #include <QFile>
 #include <QIcon>
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QJsonValue>
+#include <QMimeData>
 #include <QPixmap>
+#include <QRegularExpression>
 #include <QString>
 #include <QUrl>
 #include <QtGlobal>
+#include <algorithm>
 #include <knotifications_version.h>
 
 #include <core/filetransferjob.h>
@@ -26,10 +31,34 @@
 
 QMap<QString, FileTransferJob *> Notification::s_downloadsInProgress;
 
-Notification::Notification(const NetworkPacket &np, const Device *device, QObject *parent)
+namespace
+{
+void copyCodeToClipboard(const QString &code)
+{
+    auto mimeData = new QMimeData;
+    mimeData->setText(code);
+    // Keep the code out of the clipboard manager's history
+    mimeData->setData(QStringLiteral("x-kde-passwordManagerHint"), QByteArrayLiteral("secret"));
+    KSystemClipboard::instance()->setMimeData(mimeData, QClipboard::Clipboard);
+}
+
+QString digitsOnly(const QString &text)
+{
+    QString result;
+    for (const QChar c : text) {
+        if (c.isDigit()) {
+            result.append(c);
+        }
+    }
+    return result;
+}
+}
+
+Notification::Notification(const NetworkPacket &np, const Device *device, KdeConnectPluginConfig *config, QObject *parent)
     : QObject(parent)
     , m_imagesDir()
     , m_device(device)
+    , m_config(config)
 {
     // Make a own directory for each user so no one can see each others icons
     QString username;
@@ -66,7 +95,15 @@ void Notification::show()
 
 void Notification::update(const NetworkPacket &np)
 {
+    const QString previousCode = m_otpCode;
     parseNetworkPacket(np);
+
+    // A new message in an unread conversation arrives as a silent update of the same
+    // notification. If it carries a new code, alert anyway so it is noticed.
+    if (m_silent && !otpCode().isEmpty() && m_otpCode != previousCode) {
+        m_silent = false;
+    }
+
     createKNotification(np);
 }
 
@@ -112,6 +149,19 @@ void Notification::createKNotification(const NetworkPacket &np)
         }
     }
 
+    const QString otpCode = this->otpCode();
+    if (!otpCode.isEmpty()) {
+        // Silent notifications are resent on reconnect, don't overwrite the clipboard for those
+        if (!m_silent && otpCode != m_lastAutoCopiedCode && m_config->getBool(QStringLiteral("autoCopyOtpCodes"), false)) {
+            copyCodeToClipboard(otpCode);
+            m_lastAutoCopiedCode = otpCode;
+        }
+        if (otpCode == m_lastAutoCopiedCode) {
+            const QString separator = supportsMarkup ? QStringLiteral("<br/>") : QStringLiteral("\n");
+            m_notification->setText(m_notification->text() + separator + i18nc("@info %1 is a verification code", "Code %1 copied to clipboard", otpCode));
+        }
+    }
+
     m_notification->setHint(QStringLiteral("x-kde-origin-name"), m_device->name());
     // Mark this notification so sendnotifications can filter it out and not echo it back to the device
     m_notification->setHint(QStringLiteral("x-kdeconnect-source-device"), m_device->name());
@@ -134,6 +184,18 @@ void Notification::createKNotification(const NetworkPacket &np)
     }
 
     m_notification->clearActions();
+
+    if (!otpCode.isEmpty()) {
+        // Don't duplicate a "Copy <code>" action provided by the phone (see copyAuthCodeIfPresent)
+        const bool phoneProvidesCopy = std::any_of(m_actions.cbegin(), m_actions.cend(), [&otpCode](const QString &action) {
+            return digitsOnly(action).contains(otpCode);
+        });
+        if (!phoneProvidesCopy) {
+            KNotificationAction *copyAction = m_notification->addAction(i18nc("@action:button %1 is a verification code", "Copy %1", otpCode));
+            connect(copyAction, &KNotificationAction::activated, this, &Notification::copyOtpCode);
+        }
+    }
+
     for (const QString &actionId : std::as_const(m_actions)) {
         KNotificationAction *action = m_notification->addAction(actionId);
 
@@ -234,6 +296,42 @@ void Notification::sendReply(const QString &message)
     Q_EMIT replied(message);
 }
 
+QString Notification::otpCode() const
+{
+    return m_config->getBool(QStringLiteral("detectOtpCodes"), true) ? m_otpCode : QString();
+}
+
+void Notification::copyOtpCode()
+{
+    const QString code = otpCode();
+    if (code.isEmpty()) {
+        return;
+    }
+    copyCodeToClipboard(code);
+
+    if (m_config->getBool(QStringLiteral("markReadOnCopy"), true)) {
+        markAsRead();
+    }
+}
+
+void Notification::markAsRead()
+{
+    // Prefer the app's own "Mark as read" action, whose label is localized by the phone
+    static const QRegularExpression markReadRegex(
+        QStringLiteral("^(mark (as )?read|marcar como (lida|lido|leíd[ao])|als gelesen markieren|marquer comme lu|segna come letto|отметить как прочитанное)$"),
+        QRegularExpression::CaseInsensitiveOption | QRegularExpression::UseUnicodePropertiesOption);
+
+    for (const QString &action : std::as_const(m_actions)) {
+        if (markReadRegex.match(action.trimmed()).hasMatch()) {
+            Q_EMIT actionTriggered(m_internalId, action);
+            return;
+        }
+    }
+
+    // Otherwise dismiss it, so the next message is a new notification rather than a silent update
+    dismiss();
+}
+
 void Notification::parseNetworkPacket(const NetworkPacket &np)
 {
     m_internalId = np.get<QString>(QStringLiteral("id"));
@@ -252,6 +350,13 @@ void Notification::parseNetworkPacket(const NetworkPacket &np)
         m_title = isGroupConversation() ? m_groupName : Message::fromObject(m_conversation.at(0).toObject()).sender;
         bool supportsMarkup = true; // The QML app and plasmoid, which query this via D-Bus, support HTML.
         m_text = getConversationMessages(supportsMarkup);
+    }
+
+    // Only scan the body: the title holds the sender, which for SMS may be a short code
+    if (isConversation()) {
+        m_otpCode = OtpDetector::findCode(Message::fromObject(m_conversation.last().toObject()).content);
+    } else {
+        m_otpCode = OtpDetector::findCode(m_text.isEmpty() ? m_ticker : m_text);
     }
 
     m_hasIcon = !m_payloadHash.isEmpty();
