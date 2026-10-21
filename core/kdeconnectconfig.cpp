@@ -9,6 +9,9 @@
 #include <KLocalizedString>
 
 #include <QCoreApplication>
+#include <QDBusConnection>
+#include <QDBusMessage>
+#include <QDBusReply>
 #include <QDebug>
 #include <QDir>
 #include <QFile>
@@ -93,19 +96,65 @@ QStringList KdeConnectConfig::disabledLinkProviders() const
 
 DeviceType KdeConnectConfig::deviceType()
 {
-    const QByteArrayList platforms = qgetenv("PLASMA_PLATFORM").split(':');
+    static const DeviceType type = []() -> DeviceType {
+        const QByteArrayList platforms = qgetenv("PLASMA_PLATFORM").split(':');
 
-    if (platforms.contains("phone")) {
-        return DeviceType::Phone;
-    } else if (platforms.contains("tablet")) {
-        return DeviceType::Tablet;
-    } else if (platforms.contains("mediacenter")) {
-        return DeviceType::Tv;
-    }
+        if (platforms.contains("phone")) {
+            return DeviceType::Phone;
+        } else if (platforms.contains("tablet")) {
+            return DeviceType::Tablet;
+        } else if (platforms.contains("mediacenter")) {
+            return DeviceType::Tv;
+        }
 
-    // TODO non-Plasma mobile platforms
+#if !defined(Q_OS_WIN) && !defined(Q_OS_MAC)
+        // Check chassis type from systemd-hostnamed over D-Bus
+        QDBusMessage query = QDBusMessage::createMethodCall(QStringLiteral("org.freedesktop.hostname1"),
+                                                            QStringLiteral("/org/freedesktop/hostname1"),
+                                                            QStringLiteral("org.freedesktop.DBus.Properties"),
+                                                            QStringLiteral("Get"));
+        query << QStringLiteral("org.freedesktop.hostname1") << QStringLiteral("Chassis");
 
-    return DeviceType::Desktop;
+        QDBusReply<QDBusVariant> reply = QDBusConnection::systemBus().call(query);
+        if (reply.isValid()) {
+            const QString chassis = reply.value().variant().toString().toLower();
+            if (chassis == QLatin1String("laptop") || chassis == QLatin1String("notebook") || chassis == QLatin1String("convertible")) {
+                return DeviceType::Laptop;
+            } else if (chassis == QLatin1String("tablet")) {
+                return DeviceType::Tablet;
+            } else if (chassis == QLatin1String("handset")) {
+                return DeviceType::Phone;
+            }
+        }
+
+        // Fallback: check Linux sysfs chassis type (DMI type 8, 9, 10, 11, 14, 31, 32 represent portable/laptops)
+        QFile chassisFile(QStringLiteral("/sys/class/dmi/id/chassis_type"));
+        if (chassisFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+            bool ok = false;
+            int type = chassisFile.readAll().trimmed().toInt(&ok);
+            if (ok) {
+                switch (type) {
+                case 8: // Portable
+                case 9: // Laptop
+                case 10: // Notebook
+                case 11: // Hand Held
+                case 14: // Sub Notebook
+                case 31: // Convertible
+                case 32: // Detachable
+                    return DeviceType::Laptop;
+                default:
+                    break;
+                }
+            }
+        }
+#endif
+
+        // TODO non-Plasma mobile platforms
+
+        return DeviceType::Desktop;
+    }();
+
+    return type;
 }
 
 QString KdeConnectConfig::deviceId()
