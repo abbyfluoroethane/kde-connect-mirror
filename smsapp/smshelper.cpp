@@ -16,6 +16,7 @@
 #include <QMimeType>
 #include <QPainter>
 #include <QRegularExpression>
+#include <QSet>
 #include <QStandardPaths>
 #include <QString>
 #include <QtDebug>
@@ -302,6 +303,8 @@ QString SmsHelper::getTitleForAddresses(const QList<ConversationAddress> &addres
         }
     }
 
+    titleParts.removeDuplicates();
+
     // It might be nice to alphabetize before combining so that the names don't move around randomly
     // (based on how the data came to us from Android)
     return titleParts.join(QLatin1String(", "));
@@ -310,8 +313,15 @@ QString SmsHelper::getTitleForAddresses(const QList<ConversationAddress> &addres
 QIcon SmsHelper::getIconForAddresses(const QList<ConversationAddress> &addresses)
 {
     QList<QPixmap> icons;
+    QSet<QString> seenParticipants;
     for (const ConversationAddress &address : addresses) {
         const auto personData = SmsHelper::lookupPersonByAddress(address.address());
+        const QString participantKey = personData ? personData->name() : address.address();
+        if (seenParticipants.contains(participantKey)) {
+            continue;
+        }
+        seenParticipants.insert(participantKey);
+
         static const QIcon defaultIcon = QIcon::fromTheme(QStringLiteral("im-user"));
         static const QPixmap defaultAvatar = defaultIcon.pixmap(defaultIcon.actualSize(QSize(32, 32)));
         QPixmap avatar;

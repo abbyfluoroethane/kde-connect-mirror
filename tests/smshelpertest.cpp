@@ -36,6 +36,7 @@ private Q_SLOTS:
     void testDifferentPhoneNumbers2();
     void testAllZeros();
     void testEmptyInput();
+    void testDeduplicateAddressesInTitle();
     void benchmark_serialize()
     {
         NetworkPacket pack(QStringLiteral("bla"), QVariantMap{{QStringLiteral("test"), 54321}});
@@ -256,6 +257,22 @@ void SmsHelperTest::testEmptyInput()
 
     QVERIFY2(!SmsHelper::isPhoneNumberMatch(empty, shortCode), "The empty string matched a shortcode phone number");
     QVERIFY2(!SmsHelper::isPhoneNumberMatch(empty, realNumber), "The empty string matched a real phone number");
+}
+
+/**
+ * Duplicated participant addresses should be deduplicated in the conversation title
+ */
+void SmsHelperTest::testDeduplicateAddressesInTitle()
+{
+    const ConversationAddress address1(QStringLiteral("+1 (222) 333-4444"));
+    const ConversationAddress address2(QStringLiteral("+1 (222) 333-4444"));
+    const ConversationAddress address3(QStringLiteral("+1 (555) 666-7777"));
+
+    const QString singleTitle = SmsHelper::getTitleForAddresses({address1, address2});
+    QCOMPARE(singleTitle, QStringLiteral("+1 (222) 333-4444"));
+
+    const QString multipleTitle = SmsHelper::getTitleForAddresses({address1, address2, address3});
+    QCOMPARE(multipleTitle, QStringLiteral("+1 (222) 333-4444, +1 (555) 666-7777"));
 }
 
 QTEST_GUILESS_MAIN(SmsHelperTest);
