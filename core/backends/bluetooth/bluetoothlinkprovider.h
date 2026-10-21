@@ -6,12 +6,7 @@
 
 #pragma once
 
-#include <QMutex>
-#include <QPointer>
-#include <QQueue>
-#include <QThread>
 #include <QTimer>
-#include <qtmetamacros.h>
 
 #include "../devicelink.h"
 #include "../linkprovider.h"
@@ -46,18 +41,19 @@ public:
     void onStop() override;
     void onNetworkChange() override;
     void onLinkDestroyed(const QString &a, DeviceLink *b) override;
-Q_SIGNALS:
-    void enableRequestEvent();
-    void disableRequestEvent();
-    void startRequestEvent();
-    void stopRequestEvent();
-    void networkChangeEvent();
 
 private:
+    void updateImpl();
+
     BluetoothLinkProviderImpl *wrappedInstance;
-    bool startDisabled;
-    QThread workerThread;
     QTimer *connectTimer;
+    bool started;
+    bool enabled;
+
+#ifdef Q_OS_LINUX
+    void startBluezAsync();
+    bool bluezRunning;
+#endif
 
 private Q_SLOTS:
     void onNewDeviceLink(DeviceLink *link);
