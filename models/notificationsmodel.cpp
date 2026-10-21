@@ -41,6 +41,7 @@ QHash<int, QByteArray> NotificationsModel::roleNames() const
     names.insert(IconPathModelRole, "appIcon");
     names.insert(TitleModelRole, "title");
     names.insert(TextModelRole, "notitext");
+    names.insert(OtpCodeModelRole, "otpCode");
     return names;
 }
 
@@ -174,6 +175,8 @@ QVariant NotificationsModel::data(const QModelIndex &index, int role) const
         return notification->title();
     case TextModelRole:
         return notification->text();
+    case OtpCodeModelRole:
+        return notification->otpCode();
     default:
         return QVariant();
     }

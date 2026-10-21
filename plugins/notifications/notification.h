@@ -16,6 +16,7 @@
 #include <QString>
 
 #include <core/device.h>
+#include <core/kdeconnectpluginconfig.h>
 #include <core/networkpacket.h>
 
 class Notification : public QObject
@@ -35,9 +36,10 @@ class Notification : public QObject
     Q_PROPERTY(bool hasIcon READ hasIcon NOTIFY ready)
     Q_PROPERTY(bool silent READ silent NOTIFY ready)
     Q_PROPERTY(QString replyId READ replyId NOTIFY ready)
+    Q_PROPERTY(QString otpCode READ otpCode NOTIFY ready)
 
 public:
-    Notification(const NetworkPacket &np, const Device *device, QObject *parent);
+    Notification(const NetworkPacket &np, const Device *device, KdeConnectPluginConfig *config, QObject *parent);
 
     QString internalId() const
     {
@@ -75,6 +77,7 @@ public:
     {
         return m_requestReplyId;
     }
+    QString otpCode() const;
     bool hasIcon() const
     {
         return m_hasIcon;
@@ -103,6 +106,7 @@ public Q_SLOTS:
     Q_SCRIPTABLE void dismiss();
     Q_SCRIPTABLE void reply();
     Q_SCRIPTABLE void sendReply(const QString &message);
+    Q_SCRIPTABLE void copyOtpCode();
 
 Q_SIGNALS:
     void dismissRequested(const QString &m_internalId);
@@ -130,6 +134,9 @@ private:
     QStringList m_actions;
     QJsonArray m_conversation;
     const Device *m_device;
+    KdeConnectPluginConfig *m_config;
+    QString m_otpCode;
+    QString m_lastAutoCopiedCode;
 
     struct Message {
         QString sender;
@@ -144,6 +151,7 @@ private:
     void parseNetworkPacket(const NetworkPacket &np);
     void loadIcon(const NetworkPacket &np);
     void applyIcon();
+    void markAsRead();
 
     QString getConversationMessages(bool supportsMarkup) const;
 

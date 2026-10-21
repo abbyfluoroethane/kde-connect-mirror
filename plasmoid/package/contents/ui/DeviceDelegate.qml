@@ -601,6 +601,18 @@ PlasmaComponents.ItemDelegate {
                                         }
 
                                         PlasmaComponents.ToolButton {
+                                            id: copyCodeButton
+                                            visible: listitem.model.otpCode.length > 0
+                                            icon.name: "edit-copy"
+                                            icon.width: Kirigami.Units.iconSizes.smallMedium
+                                            icon.height: Kirigami.Units.iconSizes.smallMedium
+                                            PlasmaComponents.ToolTip.text: i18nc("@info:tooltip %1 is a verification code", "Copy code %1", listitem.model.otpCode)
+                                            onClicked: listitem.model.dbusInterface.copyOtpCode()
+
+                                            Layout.alignment: Qt.AlignTop
+                                        }
+
+                                        PlasmaComponents.ToolButton {
                                             id: replyButton
                                             visible: listitem.model.repliable
                                             enabled: listitem.model.repliable && !listitem.replying

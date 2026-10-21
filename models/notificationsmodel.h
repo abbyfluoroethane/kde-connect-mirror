@@ -35,7 +35,8 @@ public:
         IconPathModelRole,
         DbusInterfaceRole,
         TitleModelRole,
-        TextModelRole
+        TextModelRole,
+        OtpCodeModelRole
     };
 
     explicit NotificationsModel(QObject *parent = nullptr);

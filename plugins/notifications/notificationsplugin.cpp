@@ -50,7 +50,7 @@ void NotificationsPlugin::receivePacket(const NetworkPacket &np)
     Notification *noti = nullptr;
 
     if (!m_internalIdToPublicId.contains(id)) {
-        noti = new Notification(np, device(), this);
+        noti = new Notification(np, device(), config(), this);
 
         if (noti->isReady()) {
             addNotification(noti);
