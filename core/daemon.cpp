@@ -119,6 +119,9 @@ void Daemon::init()
         a->onStart();
     }
 
+    connect(this, &Daemon::deviceListChanged, this, &Daemon::gpsProvidersChanged);
+    connect(this, &Daemon::onDeviceStatusChanged, this, &Daemon::gpsProvidersChanged);
+
     qCDebug(KDECONNECT_CORE) << "Link providers started";
 
     NotificationServerInfo::instance().init();
@@ -179,6 +182,25 @@ QStringList Daemon::linkProviders() const
     return returnValue;
 }
 
+QStringList Daemon::gpsProviders() const
+{
+    QStringList ret;
+    for (auto [id, device] : d->m_devices.asKeyValueRange()) {
+        if (device->isPaired() && device->supportedPlugins().contains(QLatin1String("kdeconnect_geolocation"))) {
+            QString line(id + u'|' + device->name());
+            ret.append(line);
+        }
+    }
+    return ret;
+}
+
+QString Daemon::preferredGpsProvider() const
+{
+    KdeConnectConfig configInstance = KdeConnectConfig::instance();
+    QString deviceId = configInstance.gpsProvider();
+    return deviceId;
+}
+
 void Daemon::setLinkProviderState(const QString &linkProviderName, bool enabled)
 {
     qCDebug(KDECONNECT_CORE) << "setLinkProviderState called" << linkProviderName << enabled;
@@ -210,6 +232,16 @@ void Daemon::setLinkProviderState(const QString &linkProviderName, bool enabled)
 
     configInstance.setDisabledLinkProviders(disabledLinkProviders);
     Q_EMIT linkProvidersChanged(linkProviders());
+}
+
+void Daemon::setPreferredGpsProvider(const QString &deviceId)
+{
+    KdeConnectConfig configInstance = KdeConnectConfig::instance();
+    if (configInstance.gpsProvider() != deviceId) {
+        qCDebug(KDECONNECT_CORE) << "setPreferredGpsProvider:" << deviceId;
+        configInstance.setGpsProvider(deviceId);
+        Q_EMIT preferredGpsProviderChanged(deviceId);
+    }
 }
 
 QStringList Daemon::devices(bool onlyReachable, bool onlyTrusted) const
