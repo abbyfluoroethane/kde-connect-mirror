@@ -88,10 +88,15 @@ LanLinkProvider::LanLinkProvider(bool testMode, bool isDisabled)
     });
 
     const auto checkNetworkChange = [this]() {
-        if (QNetworkInformation::instance()->reachability() == QNetworkInformation::Reachability::Online) {
+        if (QNetworkInformation::instance()->reachability() == QNetworkInformation::Reachability::Disconnected) {
+            for (LanDeviceLink *dl : m_links.values()) {
+                dl->deleteLater();
+            }
+        } else {
             onNetworkChange();
         }
     };
+
     // Detect when a network interface changes status, so we announce ourselves in the new network
     QNetworkInformation::loadBackendByFeatures(QNetworkInformation::Feature::Reachability);
 
