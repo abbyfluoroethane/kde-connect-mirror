@@ -9,6 +9,7 @@
 
 #include <KPluginFactory>
 #include <core/device.h>
+#include <core/kdeconnectpluginconfig.h>
 
 K_PLUGIN_CLASS_WITH_JSON(GeolocationPlugin, "kdeconnect_geolocation.json")
 
@@ -16,6 +17,8 @@ GeolocationPlugin::GeolocationPlugin(QObject *parent, const QVariantList &args)
     : KdeConnectPlugin(parent, args)
     , m_device(device())
 {
+    connect(config(), &KdeConnectPluginConfig::configChanged, this, &GeolocationPlugin::configChanged);
+    m_allowRemote = config()->getBool(QStringLiteral("allowRemote"), false);
     GeolocationWorker::instance()->registerPlugin(this);
 }
 
@@ -38,6 +41,17 @@ void GeolocationPlugin::setActive(bool active)
 bool GeolocationPlugin::isActive() const
 {
     return m_active;
+}
+
+bool GeolocationPlugin::allowRemote() const
+{
+    return m_allowRemote;
+}
+
+void GeolocationPlugin::configChanged()
+{
+    m_allowRemote = config()->getBool(QStringLiteral("allowRemote"), false);
+    GeolocationWorker::instance()->updateRemoteAccess();
 }
 
 void GeolocationPlugin::sendLocationRequest(bool enable) const

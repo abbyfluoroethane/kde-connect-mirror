@@ -7,16 +7,30 @@
 #include "geolocationworker.h"
 
 #include <QNetworkInterface>
-
-#include "geolocationplugin.h"
-
 #include <QTcpServer>
 #include <QTcpSocket>
 
 #include <core/daemon.h>
 #include <core/device.h>
 
+#include "geolocationplugin.h"
 #include "plugin_geolocation_debug.h"
+
+static bool isLocalConnection(const QHostAddress &address)
+{
+    if (address.isLoopback()) {
+        return true;
+    }
+
+    const QList<QHostAddress> localAddresses = QNetworkInterface::allAddresses();
+    for (const QHostAddress &localAddress : localAddresses) {
+        if (address.isEqual(localAddress, QHostAddress::TolerantConversion)) {
+            return true;
+        }
+    }
+
+    return false;
+}
 
 GeolocationWorker *GeolocationWorker::instance()
 {
@@ -32,11 +46,6 @@ GeolocationWorker::GeolocationWorker(QObject *parent)
     connect(m_localServer, &QTcpServer::newConnection, this, &GeolocationWorker::slotNewConnection);
 
     Daemon *d = Daemon::instance();
-    connect(d, &Daemon::gpsAllowRemoteChanged, this, [this](bool allow) {
-        if (!allow) {
-            dropConsumers(true);
-        }
-    });
     connect(d, &Daemon::preferredGpsProviderChanged, this, &GeolocationWorker::chooseGpsProvider);
     connect(this, &GeolocationWorker::pluginsUpdated, this, &GeolocationWorker::chooseGpsProvider);
     connect(this, &GeolocationWorker::consumersUpdated, this, &GeolocationWorker::chooseGpsProvider);
@@ -93,28 +102,39 @@ void GeolocationWorker::unregisterPlugin(GeolocationPlugin *plugin)
     Q_EMIT pluginsUpdated();
 }
 
+GeolocationPlugin *GeolocationWorker::selectProvider() const
+{
+    const QString preferredProvider = Daemon::instance()->preferredGpsProvider();
+    GeolocationPlugin *firstAvailable = nullptr;
+
+    for (GeolocationPlugin *plugin : std::as_const(m_plugins)) {
+        const Device *device = plugin->device();
+        if (!device || !device->isReachable() || !device->isPaired()) {
+            continue;
+        }
+        if (device->id() == preferredProvider) {
+            return plugin;
+        }
+        if (!firstAvailable) {
+            firstAvailable = plugin;
+        }
+    }
+    return firstAvailable;
+}
+
 void GeolocationWorker::chooseGpsProvider()
 {
     QString newActiveId;
 
     if (!m_consumers.isEmpty()) {
-        const QString preferredProvider = Daemon::instance()->preferredGpsProvider();
-        QHash<QString, Device *> candidates;
-
-        for (GeolocationPlugin *plugin : std::as_const(m_plugins)) {
-            const Device *device = plugin->device();
-            if (device && device->isReachable() && device->isPaired()) {
-                candidates.emplace(device->id(), device);
+        if (const GeolocationPlugin *provider = selectProvider()) {
+            const Device *device = provider->device();
+            newActiveId = device->id();
+            if (newActiveId == Daemon::instance()->preferredGpsProvider()) {
+                qCDebug(KDECONNECT_PLUGIN_GEOLOCATION) << "Using Geolocation data from preferred provider:" << device->name();
+            } else {
+                qCDebug(KDECONNECT_PLUGIN_GEOLOCATION) << "Preferred Geolocation device not accessible, using first available device:" << device->name();
             }
-        }
-
-        if (candidates.contains(preferredProvider)) {
-            newActiveId = preferredProvider;
-            qCDebug(KDECONNECT_PLUGIN_GEOLOCATION) << "Using Geolocation data from preferred provider:" << candidates[preferredProvider]->name();
-        } else if (!candidates.isEmpty()) {
-            newActiveId = candidates.constBegin().key();
-            qCDebug(KDECONNECT_PLUGIN_GEOLOCATION) << "Preferred Geolocation device not accessible, using first available device:"
-                                                   << candidates[newActiveId]->name();
         } else {
             qCDebug(KDECONNECT_PLUGIN_GEOLOCATION) << "No Geolocation providers available.";
         }
@@ -128,22 +148,22 @@ void GeolocationWorker::chooseGpsProvider()
             }
         }
     }
+
+    updateRemoteAccess();
 }
 
-static bool isLocalConnection(const QHostAddress &address)
+bool GeolocationWorker::remoteAllowed() const
 {
-    if (address.isLoopback()) {
-        return true;
-    }
+    // Decided by the device that provides (or would provide) the location
+    const GeolocationPlugin *provider = selectProvider();
+    return provider && provider->allowRemote();
+}
 
-    const QList<QHostAddress> localAddresses = QNetworkInterface::allAddresses();
-    for (const QHostAddress &localAddress : localAddresses) {
-        if (address.isEqual(localAddress, QHostAddress::TolerantConversion)) {
-            return true;
-        }
+void GeolocationWorker::updateRemoteAccess()
+{
+    if (!remoteAllowed()) {
+        dropConsumers(true);
     }
-
-    return false;
 }
 
 void GeolocationWorker::slotNewConnection()
@@ -155,7 +175,7 @@ void GeolocationWorker::slotNewConnection()
             continue;
         }
 
-        if (!Daemon::instance()->gpsAllowRemote() && !isLocalConnection(consumer->peerAddress())) {
+        if (!remoteAllowed() && !isLocalConnection(consumer->peerAddress())) {
             qCWarning(KDECONNECT_PLUGIN_GEOLOCATION) << "Dropping connection from non-local address: " << consumer->peerAddress().toString();
             consumer->abort();
             consumer->deleteLater();
@@ -176,13 +196,11 @@ void GeolocationWorker::slotNewConnection()
 
 void GeolocationWorker::slotDisconnected(QTcpSocket *consumer)
 {
-    if (consumer) {
-        consumer->disconnect(this);
-        consumer->deleteLater();
-        m_consumers.removeOne(consumer);
-        Q_EMIT consumersUpdated();
-        qCDebug(KDECONNECT_PLUGIN_GEOLOCATION) << "Consumer closed connection to NMEA socket. Consumers:" << m_consumers.length();
-    }
+    consumer->disconnect(this);
+    consumer->deleteLater();
+    m_consumers.removeOne(consumer);
+    qCDebug(KDECONNECT_PLUGIN_GEOLOCATION) << "Consumer closed connection to NMEA socket. Consumers:" << m_consumers.length();
+    Q_EMIT consumersUpdated();
 }
 
 void GeolocationWorker::dropConsumers(bool onlyRemote)
@@ -210,7 +228,7 @@ void GeolocationWorker::forwardNmeaPacket(const QString &deviceId, const QString
 
     const QByteArray bytes = data.toLatin1();
     for (QTcpSocket *consumer : std::as_const(m_consumers)) {
-        if (consumer && consumer->isWritable()) {
+        if (consumer->isWritable()) {
             consumer->write(bytes);
         }
     }

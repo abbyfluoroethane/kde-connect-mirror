@@ -102,17 +102,6 @@ QString KdeConnectConfig::gpsProvider() const
     return d->m_config->value(QStringLiteral("nmea_provider"), QStringLiteral("")).toString();
 }
 
-void KdeConnectConfig::setGpsAllowRemote(bool allow)
-{
-    d->m_config->setValue(QStringLiteral("nmea_allow_remote"), allow);
-    d->m_config->sync();
-}
-
-bool KdeConnectConfig::gpsAllowRemote() const
-{
-    return d->m_config->value(QStringLiteral("nmea_allow_remote"), false).toBool();
-}
-
 DeviceType KdeConnectConfig::deviceType()
 {
     const QByteArrayList platforms = qgetenv("PLASMA_PLATFORM").split(':');

@@ -6,8 +6,6 @@
 
 #pragma once
 
-#include <memory>
-
 #include "advertise/nmeaadvertiser.h"
 
 class QTcpServer;
@@ -26,9 +24,11 @@ public:
 
     void forwardNmeaPacket(const QString &deviceId, const QString &data);
 
-public Q_SLOTS:
-    void chooseGpsProvider();
+    // Drops non-local consumers if the provider device does not allow them
+    void updateRemoteAccess();
+
 private Q_SLOTS:
+    void chooseGpsProvider();
     void slotNewConnection();
     void slotDisconnected(QTcpSocket *consumer);
 Q_SIGNALS:
@@ -40,6 +40,8 @@ private:
 
     void updateServerState();
     void dropConsumers(bool onlyRemote);
+    GeolocationPlugin *selectProvider() const;
+    bool remoteAllowed() const;
 
     QList<GeolocationPlugin *> m_plugins;
     QString m_activeProviderId;

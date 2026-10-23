@@ -22,3 +22,5 @@ target_link_libraries(kdeconnect_geolocation
     kdeconnectdbusinterfaces
     ${kdeconnect_geolocation_WL_LINK_LIBS}
 )
+
+install(FILES "kdeconnect_geolocation_config.qml" DESTINATION ${KDE_INSTALL_DATADIR}/kdeconnect)

@@ -28,10 +28,13 @@ public:
 
     void setActive(bool active);
     bool isActive() const;
+    bool allowRemote() const;
 
 private:
+    void configChanged();
     void sendLocationRequest(bool enable) const;
     bool m_active = false;
+    bool m_allowRemote = false;
     // Null once the device starts being destroyed, e.g. on daemon shutdown
     QPointer<const Device> m_device;
 };
