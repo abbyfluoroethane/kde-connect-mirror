@@ -16,7 +16,7 @@ class NmeaAdvertiser : public QObject
 public:
     explicit NmeaAdvertiser(QObject *parent = nullptr);
     ~NmeaAdvertiser();
-    bool startAdvertising();
+    void startAdvertising();
     void stopAdvertising();
 
 private:

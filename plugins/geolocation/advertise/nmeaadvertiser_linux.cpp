@@ -4,6 +4,9 @@
  * SPDX-License-Identifier: GPL-2.0-only OR GPL-3.0-only OR LicenseRef-KDE-Accepted-GPL
  */
 
+#include <QDBusPendingCallWatcher>
+#include <QDBusPendingReply>
+
 #include "generated/systeminterfaces/avahientrygroup.h"
 #include "generated/systeminterfaces/avahiserver.h"
 #include "nmeaadvertiser.h"
@@ -12,6 +15,7 @@
 struct NmeaAdvertiserPrivate {
     std::unique_ptr<OrgFreedesktopAvahiServer2Interface> avahiServerInterface;
     std::unique_ptr<OrgFreedesktopAvahiEntryGroupInterface> avahiEntryGroupInterface;
+    QDBusPendingCallWatcher *pendingEntryGroup = nullptr;
 };
 
 NmeaAdvertiser::NmeaAdvertiser(QObject *parent)
@@ -27,36 +31,44 @@ NmeaAdvertiser::~NmeaAdvertiser()
     stopAdvertising();
 }
 
-bool NmeaAdvertiser::startAdvertising()
+void NmeaAdvertiser::startAdvertising()
 {
-    if (d->avahiEntryGroupInterface) {
-        return true;
-    }
-    auto reply = d->avahiServerInterface->EntryGroupNew();
-    reply.waitForFinished();
-
-    if (reply.isError()) {
-        qCWarning(KDECONNECT_PLUGIN_GEOLOCATION) << "Could not reach avahi:" << reply.error().message();
-        return false;
+    if (d->avahiEntryGroupInterface || d->pendingEntryGroup) {
+        return;
     }
 
-    const QString groupPath = reply.value().path();
+    d->pendingEntryGroup = new QDBusPendingCallWatcher(d->avahiServerInterface->EntryGroupNew(), this);
+    connect(d->pendingEntryGroup, &QDBusPendingCallWatcher::finished, this, [this](QDBusPendingCallWatcher *watcher) {
+        watcher->deleteLater();
+        d->pendingEntryGroup = nullptr;
 
-    d->avahiEntryGroupInterface =
-        std::make_unique<OrgFreedesktopAvahiEntryGroupInterface>(QStringLiteral("org.freedesktop.Avahi"), groupPath, QDBusConnection::systemBus(), this);
+        const QDBusPendingReply<QDBusObjectPath> reply = *watcher;
+        if (reply.isError()) {
+            qCWarning(KDECONNECT_PLUGIN_GEOLOCATION) << "Could not reach avahi:" << reply.error().message();
+            return;
+        }
 
-    qCDebug(KDECONNECT_PLUGIN_GEOLOCATION) << "Advertising _nmea-0183._tcp with Avahi.";
+        d->avahiEntryGroupInterface = std::make_unique<OrgFreedesktopAvahiEntryGroupInterface>(QStringLiteral("org.freedesktop.Avahi"),
+                                                                                               reply.value().path(),
+                                                                                               QDBusConnection::systemBus(),
+                                                                                               this);
 
-    d->avahiEntryGroupInterface
-        ->AddService(-1, -1, 0, QStringLiteral("KDE Connect NMEA"), QStringLiteral("_nmea-0183._tcp"), QString(), QString(), 10110, QList<QByteArray>());
-    d->avahiEntryGroupInterface->Commit();
-    return true;
+        qCDebug(KDECONNECT_PLUGIN_GEOLOCATION) << "Advertising _nmea-0183._tcp with Avahi.";
+
+        d->avahiEntryGroupInterface
+            ->AddService(-1, -1, 0, QStringLiteral("KDE Connect NMEA"), QStringLiteral("_nmea-0183._tcp"), QString(), QString(), 10110, QList<QByteArray>());
+        d->avahiEntryGroupInterface->Commit();
+    });
 }
 
 void NmeaAdvertiser::stopAdvertising()
 {
+    // Dropping the watcher cancels the callback if EntryGroupNew is still pending
+    delete d->pendingEntryGroup;
+    d->pendingEntryGroup = nullptr;
+
     if (d->avahiEntryGroupInterface) {
-        auto reply = d->avahiEntryGroupInterface->Free();
+        d->avahiEntryGroupInterface->Free();
         d->avahiEntryGroupInterface.reset();
     }
 }

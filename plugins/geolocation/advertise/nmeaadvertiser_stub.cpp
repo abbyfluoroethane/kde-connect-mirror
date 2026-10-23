@@ -19,9 +19,8 @@ NmeaAdvertiser::~NmeaAdvertiser()
 {
 }
 
-bool NmeaAdvertiser::startAdvertising()
+void NmeaAdvertiser::startAdvertising()
 {
-    return false;
 }
 
 void NmeaAdvertiser::stopAdvertising()
