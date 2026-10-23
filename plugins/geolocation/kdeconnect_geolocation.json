@@ -8,7 +8,7 @@
             }
         ],
         "Description": "Retrieve geolocation info from your phone's GPS.",
-        "EnabledByDefault": true,
+        "EnabledByDefault": false,
         "Icon": "mark-location",
         "License": "GPL",
         "Name": "Geolocation"
