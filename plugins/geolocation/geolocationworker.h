@@ -38,6 +38,9 @@ Q_SIGNALS:
 private:
     explicit GeolocationWorker(QObject *parent = nullptr);
 
+    void updateServerState();
+    void dropConsumers(bool onlyRemote);
+
     QList<GeolocationPlugin *> m_plugins;
     QString m_activeProviderId;
     QList<QTcpSocket *> m_consumers;

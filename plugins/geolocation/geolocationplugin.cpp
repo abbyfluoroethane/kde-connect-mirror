@@ -14,6 +14,7 @@ K_PLUGIN_CLASS_WITH_JSON(GeolocationPlugin, "kdeconnect_geolocation.json")
 
 GeolocationPlugin::GeolocationPlugin(QObject *parent, const QVariantList &args)
     : KdeConnectPlugin(parent, args)
+    , m_device(device())
 {
     GeolocationWorker::instance()->registerPlugin(this);
 }
@@ -21,6 +22,9 @@ GeolocationPlugin::GeolocationPlugin(QObject *parent, const QVariantList &args)
 GeolocationPlugin::~GeolocationPlugin()
 {
     GeolocationWorker::instance()->unregisterPlugin(this);
+    if (m_active && m_device && m_device->isPaired() && m_device->isReachable()) {
+        sendLocationRequest(false);
+    }
 }
 
 void GeolocationPlugin::setActive(bool active)
@@ -29,6 +33,11 @@ void GeolocationPlugin::setActive(bool active)
         m_active = active;
         sendLocationRequest(m_active);
     }
+}
+
+bool GeolocationPlugin::isActive() const
+{
+    return m_active;
 }
 
 void GeolocationPlugin::sendLocationRequest(bool enable) const

@@ -41,6 +41,9 @@ public:
     void setGpsProvider(const QString &deviceId);
     QString gpsProvider() const;
 
+    void setGpsAllowRemote(bool allow);
+    bool gpsAllowRemote() const;
+
     /*
      * Trusted devices
      */

@@ -29,15 +29,14 @@ GeolocationWorker::GeolocationWorker(QObject *parent)
     , m_localServer(new QTcpServer(this))
     , m_nmeaAdvertiser(this)
 {
-    if (m_localServer->listen(QHostAddress::Any, 10110)) {
-        m_nmeaAdvertiser.startAdvertising();
-    } else {
-        qCWarning(KDECONNECT_PLUGIN_GEOLOCATION) << "Failed to bind to port 10110:" << m_localServer->errorString();
-    }
-
     connect(m_localServer, &QTcpServer::newConnection, this, &GeolocationWorker::slotNewConnection);
 
     Daemon *d = Daemon::instance();
+    connect(d, &Daemon::gpsAllowRemoteChanged, this, [this](bool allow) {
+        if (!allow) {
+            dropConsumers(true);
+        }
+    });
     connect(d, &Daemon::preferredGpsProviderChanged, this, &GeolocationWorker::chooseGpsProvider);
     connect(this, &GeolocationWorker::pluginsUpdated, this, &GeolocationWorker::chooseGpsProvider);
     connect(this, &GeolocationWorker::consumersUpdated, this, &GeolocationWorker::chooseGpsProvider);
@@ -50,12 +49,34 @@ GeolocationWorker::~GeolocationWorker()
     m_localServer->close();
 }
 
+void GeolocationWorker::updateServerState()
+{
+    const bool enabled = !m_plugins.isEmpty();
+    if (enabled == m_localServer->isListening()) {
+        return;
+    }
+
+    if (enabled) {
+        if (m_localServer->listen(QHostAddress::Any, 10110)) {
+            m_nmeaAdvertiser.startAdvertising();
+        } else {
+            qCWarning(KDECONNECT_PLUGIN_GEOLOCATION) << "Failed to bind to port 10110:" << m_localServer->errorString();
+        }
+    } else {
+        qCDebug(KDECONNECT_PLUGIN_GEOLOCATION) << "Stopping NMEA server";
+        m_nmeaAdvertiser.stopAdvertising();
+        m_localServer->close();
+        dropConsumers(false);
+    }
+}
+
 void GeolocationWorker::registerPlugin(GeolocationPlugin *plugin)
 {
     if (!plugin || m_plugins.contains(plugin)) {
         return;
     }
     m_plugins.append(plugin);
+    updateServerState();
     Q_EMIT pluginsUpdated();
 }
 
@@ -65,9 +86,10 @@ void GeolocationWorker::unregisterPlugin(GeolocationPlugin *plugin)
         return;
     }
     m_plugins.removeOne(plugin);
-    if (plugin->device() && plugin->device()->id() == m_activeProviderId) {
+    if (plugin->isActive()) {
         m_activeProviderId.clear();
     }
+    updateServerState();
     Q_EMIT pluginsUpdated();
 }
 
@@ -133,7 +155,7 @@ void GeolocationWorker::slotNewConnection()
             continue;
         }
 
-        if (!isLocalConnection(consumer->peerAddress())) {
+        if (!Daemon::instance()->gpsAllowRemote() && !isLocalConnection(consumer->peerAddress())) {
             qCWarning(KDECONNECT_PLUGIN_GEOLOCATION) << "Dropping connection from non-local address: " << consumer->peerAddress().toString();
             consumer->abort();
             consumer->deleteLater();
@@ -160,6 +182,23 @@ void GeolocationWorker::slotDisconnected(QTcpSocket *consumer)
         m_consumers.removeOne(consumer);
         Q_EMIT consumersUpdated();
         qCDebug(KDECONNECT_PLUGIN_GEOLOCATION) << "Consumer closed connection to NMEA socket. Consumers:" << m_consumers.length();
+    }
+}
+
+void GeolocationWorker::dropConsumers(bool onlyRemote)
+{
+    const auto consumers = m_consumers;
+    for (QTcpSocket *consumer : consumers) {
+        if (onlyRemote && isLocalConnection(consumer->peerAddress())) {
+            continue;
+        }
+        consumer->disconnect(this);
+        consumer->abort();
+        consumer->deleteLater();
+        m_consumers.removeOne(consumer);
+    }
+    if (consumers.length() != m_consumers.length()) {
+        Q_EMIT consumersUpdated();
     }
 }
 

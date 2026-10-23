@@ -185,8 +185,9 @@ QStringList Daemon::linkProviders() const
 QStringList Daemon::gpsProviders() const
 {
     QStringList ret;
+    const QString plugin = QLatin1String("kdeconnect_geolocation");
     for (auto [id, device] : d->m_devices.asKeyValueRange()) {
-        if (device->isPaired() && device->supportedPlugins().contains(QLatin1String("kdeconnect_geolocation"))) {
+        if (device->isPaired() && device->supportedPlugins().contains(plugin) && device->isPluginEnabled(plugin)) {
             QString line(id + u'|' + device->name());
             ret.append(line);
         }
@@ -241,6 +242,21 @@ void Daemon::setPreferredGpsProvider(const QString &deviceId)
         qCDebug(KDECONNECT_CORE) << "setPreferredGpsProvider:" << deviceId;
         configInstance.setGpsProvider(deviceId);
         Q_EMIT preferredGpsProviderChanged(deviceId);
+    }
+}
+
+bool Daemon::gpsAllowRemote() const
+{
+    return KdeConnectConfig::instance().gpsAllowRemote();
+}
+
+void Daemon::setGpsAllowRemote(bool allow)
+{
+    KdeConnectConfig configInstance = KdeConnectConfig::instance();
+    if (configInstance.gpsAllowRemote() != allow) {
+        qCDebug(KDECONNECT_CORE) << "setGpsAllowRemote:" << allow;
+        configInstance.setGpsAllowRemote(allow);
+        Q_EMIT gpsAllowRemoteChanged(allow);
     }
 }
 

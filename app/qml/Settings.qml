@@ -83,7 +83,19 @@ Kirigami.ScrollablePage
                 read: "preferredGpsProvider"
                 defaultValue: ""
             }
+            DBusProperty {
+                id: gpsAllowRemoteProperty
+                object: DaemonDbusInterface
+                read: "gpsAllowRemote"
+                defaultValue: false
+            }
             visible: gpsProvidersProperty.value.length > 0
+
+            FormCard.FormCheckDelegate {
+                text: i18nc("@option:check", "Allow other computers on the network to access geolocation")
+                checked: gpsAllowRemoteProperty.value
+                onToggled: DaemonDbusInterface.setGpsAllowRemote(checked);
+            }
 
             FormCard.FormComboBoxDelegate {
                 text: i18nc("@title:group", "Preferred GPS provider")
