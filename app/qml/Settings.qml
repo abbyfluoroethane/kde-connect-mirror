@@ -110,16 +110,19 @@ Kirigami.ScrollablePage
                     });
                 }
 
-                currentValue: preferredGpsProviderProperty.value
-
                 textRole: "displayName"
                 valueRole: "deviceId"
 
-                onCurrentValueChanged: {
-                    if (currentValue && currentValue.length > 0) {
-                        DaemonDbusInterface.setPreferredGpsProvider(currentValue);
-                    }
+                readonly property string preferredId: preferredGpsProviderProperty.value
+
+                function selectPreferred() {
+                    currentIndex = indexOfValue(preferredId);
                 }
+
+                onPreferredIdChanged: selectPreferred()
+                onModelChanged: Qt.callLater(selectPreferred)
+
+                onActivated: index => DaemonDbusInterface.setPreferredGpsProvider(valueAt(index))
             }
         }
 
