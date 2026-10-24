@@ -113,6 +113,8 @@ struct DeviceInfo {
         , incomingCapabilities(incomingCapabilities)
         , outgoingCapabilities(outgoingCapabilities)
     {
+        this->incomingCapabilities += internalCapabilities();
+        this->outgoingCapabilities += internalCapabilities();
     }
 
     NetworkPacket toUdpDiscoveryPacket(int tcpPort)
@@ -190,6 +192,17 @@ struct DeviceInfo {
     {
         static const QRegularExpression DEVICE_ID_REGEX(QStringLiteral("^[a-zA-Z0-9_-]{32,38}$"));
         return DEVICE_ID_REGEX.match(deviceId).hasMatch();
+    }
+
+    // Capabilities that will be added to the incoming/outgoing capabilities but don't belong to any plugin.
+    static QSet<QString> internalCapabilities()
+    {
+        return {PACKET_TYPE_ALIVE};
+    }
+
+    static bool isInternalPacket(const QString &type)
+    {
+        return internalCapabilities().contains(type);
     }
 };
 

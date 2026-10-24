@@ -21,10 +21,13 @@
 #include "core_debug.h"
 #include "daemon.h"
 #include "dbushelper.h"
+#include "deviceinfo.h"
 #include "kdeconnectconfig.h"
 #include "kdeconnectplugin.h"
 #include "networkpacket.h"
 #include "pluginloader.h"
+
+constexpr int PING_TIMEOUT = 3000;
 
 class Device::DevicePrivate
 {
@@ -52,6 +55,7 @@ public:
 
     QMultiMap<QString, KdeConnectPlugin *> m_pluginsByIncomingCapability;
     QSet<QString> m_supportedPlugins;
+    QTimer m_pingTimer;
 };
 
 Device::Device(QObject *parent, const QString &id)
@@ -81,10 +85,17 @@ void Device::init()
 
     connect(this, &Device::typeChanged, this, &Device::statusIconNameChanged);
 
+    connect(this, &Device::aliveReceived, this, &Device::onAliveReceived);
+    connect(&d->m_pingTimer, &QTimer::timeout, this, &Device::deviceNotResponding);
+
     connect(d->m_pairingHandler, &PairingHandler::incomingPairRequest, this, &Device::pairingHandler_incomingPairRequest);
     connect(d->m_pairingHandler, &PairingHandler::pairingFailed, this, &Device::pairingHandler_pairingFailed);
     connect(d->m_pairingHandler, &PairingHandler::pairingSuccessful, this, &Device::pairingHandler_pairingSuccessful);
     connect(d->m_pairingHandler, &PairingHandler::unpaired, this, &Device::pairingHandler_unpaired);
+
+    d->m_pingTimer.setParent(this);
+    d->m_pingTimer.setInterval(PING_TIMEOUT);
+    d->m_pingTimer.setSingleShot(true);
 }
 
 Device::~Device()
@@ -378,7 +389,7 @@ bool Device::sendPacket(NetworkPacket &np)
 {
     Q_ASSERT(isPaired() || np.type() == PACKET_TYPE_PAIR);
 
-    if (!(np.isProtocolPacket() || d->m_deviceInfo.incomingCapabilities.contains(np.type()))) {
+    if (!(np.isProtocolPacket() || DeviceInfo::isInternalPacket(np.type()) || d->m_deviceInfo.incomingCapabilities.contains(np.type()))) {
         qCDebug(KDECONNECT_CORE) << metaObject()->className() << "Tried to send an unsupported packet type" << np.type() << "to:" << d->m_deviceInfo.name;
         return false;
     }
@@ -392,10 +403,29 @@ bool Device::sendPacket(NetworkPacket &np)
     return false;
 }
 
+bool Device::ping()
+{
+    if (d->m_pingTimer.isActive()) {
+        return true; // Already pinging.
+    }
+
+    NetworkPacket np(PACKET_TYPE_ALIVE, {{QStringLiteral("ping"), true}});
+
+    if (sendPacket(np)) {
+        d->m_pingTimer.start();
+        return true;
+    }
+
+    return false; // So the caller (e.g. the plugin) can know that pinging is not supported.
+}
+
 void Device::privateReceivedPacket(const NetworkPacket &np)
 {
     if (np.type() == PACKET_TYPE_PAIR) {
         d->m_pairingHandler->packetReceived(np);
+    } else if (np.type() == PACKET_TYPE_ALIVE) {
+        qCDebug(KDECONNECT_CORE) << "Received ACK from" << name();
+        Q_EMIT aliveReceived(np);
     } else if (isPaired()) {
         const QList<KdeConnectPlugin *> plugins = d->m_pluginsByIncomingCapability.values(np.type());
         if (plugins.isEmpty()) {
@@ -412,6 +442,19 @@ void Device::privateReceivedPacket(const NetworkPacket &np)
     } else {
         qCDebug(KDECONNECT_CORE) << "device" << name() << "not paired, ignoring packet" << np.type();
         unpair();
+    }
+}
+
+void Device::onAliveReceived(const NetworkPacket &np)
+{
+    if (np.get<bool>(QStringLiteral("ping"))) {
+        NetworkPacket reply(PACKET_TYPE_ALIVE, {{QStringLiteral("pong"), true}});
+        sendPacket(reply);
+    } else if (np.get<bool>(QStringLiteral("pong"))) {
+        d->m_pingTimer.stop();
+        Q_EMIT deviceAlive(); // Any plugin can ping the device, use Qt::SingleShotConnection to avoid reacting to other plugins's pings.
+    } else {
+        qCDebug(KDECONNECT_CORE) << "Received an invalid alive packet from" << name();
     }
 }
 

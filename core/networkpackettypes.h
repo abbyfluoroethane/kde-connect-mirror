@@ -9,5 +9,6 @@
 
 #define PACKET_TYPE_IDENTITY QStringLiteral("kdeconnect.identity")
 #define PACKET_TYPE_PAIR QStringLiteral("kdeconnect.pair")
+#define PACKET_TYPE_ALIVE QStringLiteral("kdeconnect.internal.alive")
 
 #endif // NETWORKPACKETTYPES_H
